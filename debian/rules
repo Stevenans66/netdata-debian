@@ -1,0 +1,23 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+# see FEATURE AREAS in dpkg-buildflags(1)
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# package maintainers to append CFLAGS
+export DEB_CFLAGS_MAINT_APPEND  = -Wall -O3
+# package maintainers to append LDFLAGS
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	./autogen.sh
+	./configure \
+    --prefix="${NETDATA_PREFIX}/usr" \
+    --sysconfdir="${NETDATA_PREFIX}/etc" \
+    --localstatedir="${NETDATA_PREFIX}/var" \
+    --with-zlib --with-math --with-user=netdata \
+    CFLAGS="${CFLAGS}"
+	dh_auto_build

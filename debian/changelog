@@ -1,0 +1,5 @@
+netdata (1.0.0-1) UNRELEASED; urgency=low
+
+  * Initial release (Closes: #819661)
+
+ -- Federico Ceratto <federico@debian.org>  Wed, 30 Mar 2016 22:41:35 +0100
