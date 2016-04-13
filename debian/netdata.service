@@ -18,7 +18,6 @@ ExecStart=/usr/sbin/netdata
 ExecReload=/usr/sbin/netdata reload
 #ExecStop=/bin/kill -SIGTERM $MAINPID
 ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry=TERM/5/KILL/5 --pidfile /run/netdata.pid
-#ExecStop=/bin/kill -SIGTERM $MAINPID
 TimeoutStopSec=30
 KillMode=mixed
 

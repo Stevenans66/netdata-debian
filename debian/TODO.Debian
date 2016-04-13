@@ -1,0 +1,4 @@
+* De-vendorize JS libraries
+* Restrict security permissions in netdata.service
+* Do cleanup when apt-get purge is run
+  * delete user, /var/cache/netdata, /var/log/netdata
