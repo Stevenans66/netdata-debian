@@ -1,0 +1,4 @@
+etc/netdata
+var/cache/netdata
+var/log/netdata
+var/run

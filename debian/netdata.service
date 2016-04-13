@@ -1,0 +1,58 @@
+# netdata systemd target
+
+[Unit]
+Description=netdata - Real-time performance monitoring
+Documentation=man:netdata
+Documentation=file:///usr/share/doc/netdata/html/index.html
+Documentation=https://github.com/firehol/netdata
+After=network.target httpd.service squid.service nfs-server.service mysqld.service named.service postfix.service
+Wants=network-online.target
+ConditionPathExists=/etc/netdata/netdata.conf
+
+[Service]
+Type=forking
+#PIDFile=/run/netdata.pid
+PIDFile=/var/run/netdata/netdata.pid
+Environment="netdata_LOG_LOCATION=/var/log/netdata/log"
+ExecStart=/usr/sbin/netdata
+ExecReload=/usr/sbin/netdata reload
+#ExecStop=/bin/kill -SIGTERM $MAINPID
+ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry=TERM/5/KILL/5 --pidfile /run/netdata.pid
+#ExecStop=/bin/kill -SIGTERM $MAINPID
+TimeoutStopSec=30
+KillMode=mixed
+
+EnvironmentFile=-/etc/default/%p
+User=netdata
+PermissionsStartOnly=true
+Restart=on-abnormal
+RestartSec=2s
+LimitNOFILE=65536
+
+WorkingDirectory=/tmp
+User=root
+Group=root
+
+# Hardening
+# AppArmorProfile=system_netdata
+# CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_CHOWN CAP_FOWNER
+NoNewPrivileges=yes
+#PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+# TODO: restrict ReadOnlyDirectories
+ReadOnlyDirectories=/
+ReadWriteDirectories=-/proc
+ReadWriteDirectories=-/run
+ReadWriteDirectories=-/var/log/netdata
+ReadWriteDirectories=-/var
+ReadWriteDirectories=-/var/cache
+ReadWriteDirectories=-/var/cache/netdata
+ReadWriteDirectories=-/var/run
+
+[Install]
+WantedBy=multi-user.target
+
+
+
