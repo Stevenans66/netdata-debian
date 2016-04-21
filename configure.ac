@@ -4,7 +4,7 @@
 AC_PREREQ(2.60)
 
 define([VERSION_MAJOR], [1])
-define([VERSION_MINOR], [0])
+define([VERSION_MINOR], [1])
 define([VERSION_FIX], [0])
 define([VERSION_NUMBER], VERSION_MAJOR[.]VERSION_MINOR[.]VERSION_FIX)
 define([VERSION_SUFFIX], [])
@@ -157,12 +157,14 @@ AC_SUBST([OPTIONAL_ZLIB_LIBS])
 AC_CONFIG_FILES([
 	Makefile
 	charts.d/Makefile
-	node.d/Makefile
 	conf.d/Makefile
 	netdata.spec
+	node.d/Makefile
 	plugins.d/Makefile
 	src/Makefile
+	system/Makefile
 	web/Makefile
+	contrib/Makefile
 ])
 AC_OUTPUT
 

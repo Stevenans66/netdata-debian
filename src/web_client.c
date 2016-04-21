@@ -14,6 +14,7 @@
 #include <netinet/tcp.h>
 #include <malloc.h>
 #include <pwd.h>
+#include <grp.h>
 #include <ctype.h>
 
 #include "common.h"
@@ -27,9 +28,11 @@
 #include "rrd2json.h"
 
 #include "web_client.h"
+#include "../config.h"
 
 #define INITIAL_WEB_DATA_LENGTH 16384
 #define WEB_REQUEST_LENGTH 16384
+#define TOO_BIG_REQUEST 16384
 
 int web_client_timeout = DEFAULT_DISCONNECT_IDLE_WEB_CLIENTS_AFTER_SECONDS;
 int web_enable_gzip = 1;
@@ -230,10 +233,13 @@ uid_t web_files_uid(void)
 	static uid_t owner_uid = 0;
 
 	if(unlikely(!web_owner)) {
-		web_owner = config_get("global", "web files owner", NETDATA_USER);
+		web_owner = config_get("global", "web files owner", config_get("global", "run as user", ""));
 		if(!web_owner || !*web_owner)
 			owner_uid = geteuid();
 		else {
+			// getpwnam() is not thread safe,
+			// but we have called this function once
+			// while single threaded
 			struct passwd *pw = getpwnam(web_owner);
 			if(!pw) {
 				error("User %s is not present. Ignoring option.", web_owner);
@@ -247,6 +253,34 @@ uid_t web_files_uid(void)
 	}
 
 	return(owner_uid);
+}
+
+gid_t web_files_gid(void)
+{
+	static char *web_group = NULL;
+	static gid_t owner_gid = 0;
+
+	if(unlikely(!web_group)) {
+		web_group = config_get("global", "web files group", config_get("global", "web files owner", ""));
+		if(!web_group || !*web_group)
+			owner_gid = getegid();
+		else {
+			// getgrnam() is not thread safe,
+			// but we have called this function once
+			// while single threaded
+			struct group *gr = getgrnam(web_group);
+			if(!gr) {
+				error("Group %s is not present. Ignoring option.", web_group);
+				owner_gid = getegid();
+			}
+			else {
+				debug(D_WEB_CLIENT, "Web files group set to %s.\n", web_group);
+				owner_gid = gr->gr_gid;
+			}
+		}
+	}
+
+	return(owner_gid);
 }
 
 int mysendfile(struct web_client *w, char *filename)
@@ -268,7 +302,7 @@ int mysendfile(struct web_client *w, char *filename)
 	for(s = filename; *s ;s++) {
 		if( !isalnum(*s) && *s != '/' && *s != '.' && *s != '-' && *s != '_') {
 			debug(D_WEB_CLIENT_ACCESS, "%llu: File '%s' is not acceptable.", w->id, filename);
-			buffer_sprintf(w->response.data, "File '%s' cannot be served. Filename contains invalid character '%c'", *s);
+			buffer_sprintf(w->response.data, "File '%s' cannot be served. Filename contains invalid character '%c'", filename, *s);
 			return 400;
 		}
 	}
@@ -288,14 +322,21 @@ int mysendfile(struct web_client *w, char *filename)
 	struct stat stat;
 	if(lstat(webfilename, &stat) != 0) {
 		debug(D_WEB_CLIENT_ACCESS, "%llu: File '%s' is not found.", w->id, webfilename);
-		buffer_sprintf(w->response.data, "File '%s' does not exist, or is not accessible.", filename);
+		buffer_sprintf(w->response.data, "File '%s' does not exist, or is not accessible.", webfilename);
 		return 404;
 	}
 
-	// check if the file is owned by us
+	// check if the file is owned by expected user
 	if(stat.st_uid != web_files_uid()) {
-		error("%llu: File '%s' is owned by user %d (I run as user %d). Access Denied.", w->id, webfilename, stat.st_uid, getuid());
-		buffer_sprintf(w->response.data, "Access to file '%s' is not permitted.", filename);
+		error("%llu: File '%s' is owned by user %d (expected user %d). Access Denied.", w->id, webfilename, stat.st_uid, web_files_uid());
+		buffer_sprintf(w->response.data, "Access to file '%s' is not permitted.", webfilename);
+		return 403;
+	}
+
+	// check if the file is owned by expected group
+	if(stat.st_gid != web_files_gid()) {
+		error("%llu: File '%s' is owned by group %d (expected group %d). Access Denied.", w->id, webfilename, stat.st_gid, web_files_gid());
+		buffer_sprintf(w->response.data, "Access to file '%s' is not permitted.", webfilename);
 		return 403;
 	}
 
@@ -306,7 +347,7 @@ int mysendfile(struct web_client *w, char *filename)
 
 	if((stat.st_mode & S_IFMT) != S_IFREG) {
 		error("%llu: File '%s' is not a regular file. Access Denied.", w->id, webfilename);
-		buffer_sprintf(w->response.data, "Access to file '%s' is not permitted.", filename);
+		buffer_sprintf(w->response.data, "Access to file '%s' is not permitted.", webfilename);
 		return 403;
 	}
 
@@ -318,12 +359,12 @@ int mysendfile(struct web_client *w, char *filename)
 		if(errno == EBUSY || errno == EAGAIN) {
 			error("%llu: File '%s' is busy, sending 307 Moved Temporarily to force retry.", w->id, webfilename);
 			buffer_sprintf(w->response.header, "Location: /" WEB_PATH_FILE "/%s\r\n", filename);
-			buffer_sprintf(w->response.data, "The file '%s' is currently busy. Please try again later.", filename);
+			buffer_sprintf(w->response.data, "The file '%s' is currently busy. Please try again later.", webfilename);
 			return 307;
 		}
 		else {
 			error("%llu: Cannot open file '%s'.", w->id, webfilename);
-			buffer_sprintf(w->response.data, "Cannot open file '%s'.", filename);
+			buffer_sprintf(w->response.data, "Cannot open file '%s'.", webfilename);
 			return 404;
 		}
 	}
@@ -747,36 +788,53 @@ int web_client_api_request_v1(struct web_client *w, char *url)
 {
 	// get the command
 	char *tok = mystrsep(&url, "/?&");
-	debug(D_WEB_CLIENT, "%llu: Searching for API v1 command '%s'.", w->id, tok);
+	if(tok && *tok) {
+		debug(D_WEB_CLIENT, "%llu: Searching for API v1 command '%s'.", w->id, tok);
 
-	if(strcmp(tok, "data") == 0)
-		return web_client_api_request_v1_data(w, url);
-	else if(strcmp(tok, "chart") == 0)
-		return web_client_api_request_v1_chart(w, url);
-	else if(strcmp(tok, "charts") == 0)
-		return web_client_api_request_v1_charts(w, url);
-
-	buffer_flush(w->response.data);
-	buffer_sprintf(w->response.data, "Unsupported v1 API command: %s", tok);
-	return 404;
+		if(strcmp(tok, "data") == 0)
+			return web_client_api_request_v1_data(w, url);
+		else if(strcmp(tok, "chart") == 0)
+			return web_client_api_request_v1_chart(w, url);
+		else if(strcmp(tok, "charts") == 0)
+			return web_client_api_request_v1_charts(w, url);
+		else {
+			buffer_flush(w->response.data);
+			buffer_sprintf(w->response.data, "Unsupported v1 API command: %s", tok);
+			return 404;
+		}
+	}
+	else {
+		buffer_flush(w->response.data);
+		buffer_sprintf(w->response.data, "API v1 command?");
+		return 400;
+	}
 }
 
 int web_client_api_request(struct web_client *w, char *url)
 {
 	// get the api version
 	char *tok = mystrsep(&url, "/?&");
-	debug(D_WEB_CLIENT, "%llu: Searching for API version '%s'.", w->id, tok);
-
-	if(strcmp(tok, "v1") == 0)
-		return web_client_api_request_v1(w, url);
-
-	buffer_flush(w->response.data);
-	buffer_sprintf(w->response.data, "Unsupported API version: %s", tok);
-	return 404;
+	if(tok && *tok) {
+		debug(D_WEB_CLIENT, "%llu: Searching for API version '%s'.", w->id, tok);
+		if(strcmp(tok, "v1") == 0)
+			return web_client_api_request_v1(w, url);
+		else {
+			buffer_flush(w->response.data);
+			buffer_sprintf(w->response.data, "Unsupported API version: %s", tok);
+			return 404;
+		}
+	}
+	else {
+		buffer_flush(w->response.data);
+		buffer_sprintf(w->response.data, "Which API version?");
+		return 400;
+	}
 }
 
 int web_client_data_request(struct web_client *w, char *url, int datasource_type)
 {
+	RRDSET *st = NULL;
+
 	char *args = strchr(url, '?');
 	if(args) {
 		*args='\0';
@@ -785,11 +843,14 @@ int web_client_data_request(struct web_client *w, char *url, int datasource_type
 
 	// get the name of the data to show
 	char *tok = mystrsep(&url, "/");
-	debug(D_WEB_CLIENT, "%llu: Searching for RRD data with name '%s'.", w->id, tok);
 
 	// do we have such a data set?
-	RRDSET *st = rrdset_find_byname(tok);
-	if(!st) st = rrdset_find(tok);
+	if(tok && *tok) {
+		debug(D_WEB_CLIENT, "%llu: Searching for RRD data with name '%s'.", w->id, tok);
+		st = rrdset_find_byname(tok);
+		if(!st) st = rrdset_find(tok);
+	}
+
 	if(!st) {
 		// we don't have it
 		// try to send a file with that name
@@ -816,34 +877,36 @@ int web_client_data_request(struct web_client *w, char *url, int datasource_type
 	if(url) {
 		// parse the group count required
 		tok = mystrsep(&url, "/");
-		if(tok) group_count = atoi(tok);
+		if(tok && *tok) group_count = atoi(tok);
 		if(group_count < 1) group_count = 1;
 		//if(group_count > save_history / 20) group_count = save_history / 20;
 	}
 	if(url) {
 		// parse the grouping method required
 		tok = mystrsep(&url, "/");
-		if(strcmp(tok, "max") == 0) group_method = GROUP_MAX;
-		else if(strcmp(tok, "average") == 0) group_method = GROUP_AVERAGE;
-		else if(strcmp(tok, "sum") == 0) group_method = GROUP_SUM;
-		else debug(D_WEB_CLIENT, "%llu: Unknown group method '%s'", w->id, tok);
+		if(tok && *tok) {
+			if(strcmp(tok, "max") == 0) group_method = GROUP_MAX;
+			else if(strcmp(tok, "average") == 0) group_method = GROUP_AVERAGE;
+			else if(strcmp(tok, "sum") == 0) group_method = GROUP_SUM;
+			else debug(D_WEB_CLIENT, "%llu: Unknown group method '%s'", w->id, tok);
+		}
 	}
 	if(url) {
 		// parse after time
 		tok = mystrsep(&url, "/");
-		if(tok) after = strtoul(tok, NULL, 10);
+		if(tok && *tok) after = strtoul(tok, NULL, 10);
 		if(after < 0) after = 0;
 	}
 	if(url) {
 		// parse before time
 		tok = mystrsep(&url, "/");
-		if(tok) before = strtoul(tok, NULL, 10);
+		if(tok && *tok) before = strtoul(tok, NULL, 10);
 		if(before < 0) before = 0;
 	}
 	if(url) {
 		// parse nonzero
 		tok = mystrsep(&url, "/");
-		if(tok && strcmp(tok, "nonzero") == 0) nonzero = 1;
+		if(tok && *tok && strcmp(tok, "nonzero") == 0) nonzero = 1;
 	}
 
 	w->response.data->contenttype = CT_APPLICATION_JSON;
@@ -862,9 +925,9 @@ int web_client_data_request(struct web_client *w, char *url, int datasource_type
 
 		while(args) {
 			tok = mystrsep(&args, "&");
-			if(tok) {
+			if(tok && *tok) {
 				char *name = mystrsep(&tok, "=");
-				if(name && strcmp(name, "tqx") == 0) {
+				if(name && *name && strcmp(name, "tqx") == 0) {
 					char *key = mystrsep(&tok, ":");
 					char *value = mystrsep(&tok, ";");
 					if(key && value && *key && *value) {
@@ -1056,118 +1119,142 @@ void web_client_process(struct web_client *w) {
 			w->last_url[URL_MAX] = '\0';
 
 			tok = mystrsep(&url, "/?");
+			if(tok && *tok) {
+				debug(D_WEB_CLIENT, "%llu: Processing command '%s'.", w->id, tok);
 
-			debug(D_WEB_CLIENT, "%llu: Processing command '%s'.", w->id, tok);
-
-			if(strcmp(tok, "api") == 0) {
-				// the client is requesting api access
-				datasource_type = DATASOURCE_JSON;
-				code = web_client_api_request(w, url);
-			}
-#ifdef NETDATA_INTERNAL_CHECKS
-			else if(strcmp(tok, "exit") == 0) {
-				netdata_exit = 1;
-				code = 200;
-				w->response.data->contenttype = CT_TEXT_PLAIN;
-				buffer_flush(w->response.data);
-				buffer_strcat(w->response.data, "will do");
-			}
-#endif
-			else if(strcmp(tok, WEB_PATH_DATA) == 0) { // "data"
-				// the client is requesting rrd data
-				datasource_type = DATASOURCE_JSON;
-				code = web_client_data_request(w, url, datasource_type);
-			}
-			else if(strcmp(tok, WEB_PATH_DATASOURCE) == 0) { // "datasource"
-				// the client is requesting google datasource
-				code = web_client_data_request(w, url, datasource_type);
-			}
-			else if(strcmp(tok, WEB_PATH_GRAPH) == 0) { // "graph"
-				// the client is requesting an rrd graph
-
-				// get the name of the data to show
-				tok = mystrsep(&url, "/?&");
-				debug(D_WEB_CLIENT, "%llu: Searching for RRD data with name '%s'.", w->id, tok);
-
-				// do we have such a data set?
-				RRDSET *st = rrdset_find_byname(tok);
-				if(!st) st = rrdset_find(tok);
-				if(!st) {
-					// we don't have it
-					// try to send a file with that name
-					buffer_flush(w->response.data);
-					code = mysendfile(w, tok);
+				if(strcmp(tok, "api") == 0) {
+					// the client is requesting api access
+					datasource_type = DATASOURCE_JSON;
+					code = web_client_api_request(w, url);
 				}
-				else {
+#ifdef NETDATA_INTERNAL_CHECKS
+				else if(strcmp(tok, "exit") == 0) {
+					netdata_exit = 1;
 					code = 200;
-					debug(D_WEB_CLIENT_ACCESS, "%llu: Sending %s.json of RRD_STATS...", w->id, st->name);
+					w->response.data->contenttype = CT_TEXT_PLAIN;
+					buffer_flush(w->response.data);
+					buffer_strcat(w->response.data, "will do");
+				}
+#endif
+				else if(strcmp(tok, WEB_PATH_DATA) == 0) { // "data"
+					// the client is requesting rrd data
+					datasource_type = DATASOURCE_JSON;
+					code = web_client_data_request(w, url, datasource_type);
+				}
+				else if(strcmp(tok, WEB_PATH_DATASOURCE) == 0) { // "datasource"
+					// the client is requesting google datasource
+					code = web_client_data_request(w, url, datasource_type);
+				}
+				else if(strcmp(tok, WEB_PATH_GRAPH) == 0) { // "graph"
+					// the client is requesting an rrd graph
+
+					// get the name of the data to show
+					tok = mystrsep(&url, "/?&");
+					if(tok && *tok) {
+						debug(D_WEB_CLIENT, "%llu: Searching for RRD data with name '%s'.", w->id, tok);
+
+						// do we have such a data set?
+						RRDSET *st = rrdset_find_byname(tok);
+						if(!st) st = rrdset_find(tok);
+						if(!st) {
+							// we don't have it
+							// try to send a file with that name
+							buffer_flush(w->response.data);
+							code = mysendfile(w, tok);
+						}
+						else {
+							code = 200;
+							debug(D_WEB_CLIENT_ACCESS, "%llu: Sending %s.json of RRD_STATS...", w->id, st->name);
+							w->response.data->contenttype = CT_APPLICATION_JSON;
+							buffer_flush(w->response.data);
+							rrd_stats_graph_json(st, url, w->response.data);
+						}
+					}
+					else {
+						code = 400;
+						buffer_flush(w->response.data);
+						buffer_strcat(w->response.data, "Graph name?\r\n");
+					}
+				}
+#ifdef NETDATA_INTERNAL_CHECKS
+				else if(strcmp(tok, "debug") == 0) {
+					buffer_flush(w->response.data);
+
+					// get the name of the data to show
+					tok = mystrsep(&url, "/?&");
+					if(tok && *tok) {
+						debug(D_WEB_CLIENT, "%llu: Searching for RRD data with name '%s'.", w->id, tok);
+
+						// do we have such a data set?
+						RRDSET *st = rrdset_find_byname(tok);
+						if(!st) st = rrdset_find(tok);
+						if(!st) {
+							code = 404;
+							buffer_sprintf(w->response.data, "Chart %s is not found.\r\n", tok);
+							debug(D_WEB_CLIENT_ACCESS, "%llu: %s is not found.", w->id, tok);
+						}
+						else {
+							code = 200;
+							debug_flags |= D_RRD_STATS;
+							st->debug = st->debug?0:1;
+							buffer_sprintf(w->response.data, "Chart %s has now debug %s.\r\n", tok, st->debug?"enabled":"disabled");
+							debug(D_WEB_CLIENT_ACCESS, "%llu: debug for %s is %s.", w->id, tok, st->debug?"enabled":"disabled");
+						}
+					}
+					else {
+						code = 500;
+						buffer_flush(w->response.data);
+						buffer_strcat(w->response.data, "debug which chart?\r\n");
+					}
+				}
+				else if(strcmp(tok, "mirror") == 0) {
+					code = 200;
+
+					debug(D_WEB_CLIENT_ACCESS, "%llu: Mirroring...", w->id);
+
+					// replace the zero bytes with spaces
+					buffer_char_replace(w->response.data, '\0', ' ');
+
+					// just leave the buffer as is
+					// it will be copied back to the client
+				}
+#endif
+				else if(strcmp(tok, "list") == 0) {
+					code = 200;
+
+					debug(D_WEB_CLIENT_ACCESS, "%llu: Sending list of RRD_STATS...", w->id);
+
+					buffer_flush(w->response.data);
+					RRDSET *st = rrdset_root;
+
+					for ( ; st ; st = st->next )
+						buffer_sprintf(w->response.data, "%s\n", st->name);
+				}
+				else if(strcmp(tok, "all.json") == 0) {
+					code = 200;
+					debug(D_WEB_CLIENT_ACCESS, "%llu: Sending JSON list of all monitors of RRD_STATS...", w->id);
+
 					w->response.data->contenttype = CT_APPLICATION_JSON;
 					buffer_flush(w->response.data);
-					rrd_stats_graph_json(st, url, w->response.data);
+					rrd_stats_all_json(w->response.data);
 				}
-			}
-#ifdef NETDATA_INTERNAL_CHECKS
-			else if(strcmp(tok, "debug") == 0) {
-				buffer_flush(w->response.data);
+				else if(strcmp(tok, "netdata.conf") == 0) {
+					code = 200;
+					debug(D_WEB_CLIENT_ACCESS, "%llu: Sending netdata.conf ...", w->id);
 
-				// get the name of the data to show
-				tok = mystrsep(&url, "/?&");
-				debug(D_WEB_CLIENT, "%llu: Searching for RRD data with name '%s'.", w->id, tok);
-
-				// do we have such a data set?
-				RRDSET *st = rrdset_find_byname(tok);
-				if(!st) st = rrdset_find(tok);
-				if(!st) {
-					code = 404;
-					buffer_sprintf(w->response.data, "Chart %s is not found.\r\n", tok);
-					debug(D_WEB_CLIENT_ACCESS, "%llu: %s is not found.", w->id, tok);
+					w->response.data->contenttype = CT_TEXT_PLAIN;
+					buffer_flush(w->response.data);
+					generate_config(w->response.data, 0);
 				}
 				else {
-					code = 200;
-					debug_flags |= D_RRD_STATS;
-					st->debug = st->debug?0:1;
-					buffer_sprintf(w->response.data, "Chart %s has now debug %s.\r\n", tok, st->debug?"enabled":"disabled");
-					debug(D_WEB_CLIENT_ACCESS, "%llu: debug for %s is %s.", w->id, tok, st->debug?"enabled":"disabled");
+					char filename[FILENAME_MAX+1];
+					url = filename;
+					strncpy(filename, w->last_url, FILENAME_MAX);
+					filename[FILENAME_MAX] = '\0';
+					tok = mystrsep(&url, "?");
+					buffer_flush(w->response.data);
+					code = mysendfile(w, (tok && *tok)?tok:"/");
 				}
-			}
-			else if(strcmp(tok, "mirror") == 0) {
-				code = 200;
-
-				debug(D_WEB_CLIENT_ACCESS, "%llu: Mirroring...", w->id);
-
-				// replace the zero bytes with spaces
-				buffer_char_replace(w->response.data, '\0', ' ');
-
-				// just leave the buffer as is
-				// it will be copied back to the client
-			}
-#endif
-			else if(strcmp(tok, "list") == 0) {
-				code = 200;
-
-				debug(D_WEB_CLIENT_ACCESS, "%llu: Sending list of RRD_STATS...", w->id);
-
-				buffer_flush(w->response.data);
-				RRDSET *st = rrdset_root;
-
-				for ( ; st ; st = st->next )
-					buffer_sprintf(w->response.data, "%s\n", st->name);
-			}
-			else if(strcmp(tok, "all.json") == 0) {
-				code = 200;
-				debug(D_WEB_CLIENT_ACCESS, "%llu: Sending JSON list of all monitors of RRD_STATS...", w->id);
-
-				w->response.data->contenttype = CT_APPLICATION_JSON;
-				buffer_flush(w->response.data);
-				rrd_stats_all_json(w->response.data);
-			}
-			else if(strcmp(tok, "netdata.conf") == 0) {
-				code = 200;
-				debug(D_WEB_CLIENT_ACCESS, "%llu: Sending netdata.conf ...", w->id);
-
-				w->response.data->contenttype = CT_TEXT_PLAIN;
-				buffer_flush(w->response.data);
-				generate_config(w->response.data, 0);
 			}
 			else {
 				char filename[FILENAME_MAX+1];
@@ -1190,16 +1277,19 @@ void web_client_process(struct web_client *w) {
 		}
 
 		// free url_decode() buffer
-		if(pointer_to_free) free(pointer_to_free);
+		if(pointer_to_free) {
+			free(pointer_to_free);
+			pointer_to_free = NULL;
+		}
 	}
-	else if(w->response.data->len > 8192) {
+	else if(w->response.data->len > TOO_BIG_REQUEST) {
 		strcpy(w->last_url, "too big request");
 
-		debug(D_WEB_CLIENT_ACCESS, "%llu: Received request is too big.", w->id);
+		debug(D_WEB_CLIENT_ACCESS, "%llu: Received request is too big (%zd bytes).", w->id, w->response.data->len);
 
 		code = 400;
 		buffer_flush(w->response.data);
-		buffer_strcat(w->response.data, "Received request is too big.\r\n");
+		buffer_sprintf(w->response.data, "Received request is too big  (%zd bytes).\r\n", w->response.data->len);
 	}
 	else {
 		// wait for more data
