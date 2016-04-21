@@ -1,6 +1,6 @@
 MAINTAINERCLEANFILES= $(srcdir)/Makefile.in
 
-dist_node_SCRIPTS = \
+dist_node_DATA = \
 	README.md \
 	named.node.js \
 	sma_webbox.node.js \
@@ -14,6 +14,7 @@ dist_nodemodules_DATA = \
 	node_modules/pixl-xml.js \
 	node_modules/net-snmp.js \
 	node_modules/asn1.js \
+	node_modules/node-int64.js \
 	$(NULL)
 
 nodemodulesberdir=$(nodedir)/node_modules/ber

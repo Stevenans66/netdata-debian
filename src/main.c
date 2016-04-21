@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
+#include <sys/prctl.h>
 
 #include "common.h"
 #include "log.h"
@@ -35,6 +36,7 @@
 #include "plugin_nfacct.h"
 
 #include "main.h"
+#include "../config.h"
 
 int netdata_exit = 0;
 
@@ -43,7 +45,23 @@ void netdata_cleanup_and_exit(int ret)
 	netdata_exit = 1;
 	rrdset_save_all();
 	// kill_childs();
-	unlink("/var/run/netdata.pid");
+
+	// let it log a few more error messages
+	error_log_limit_reset();
+
+	if(pidfd != -1) {
+		if(ftruncate(pidfd, 0) != 0)
+			error("Cannot truncate pidfile '%s'.", pidfile);
+
+		close(pidfd);
+		pidfd = -1;
+	}
+
+	if(pidfile[0]) {
+		if(unlink(pidfile) != 0)
+			error("Cannot unlink pidfile '%s'.", pidfile);
+	}
+
 	info("NetData exiting. Bye bye...");
 	exit(ret);
 }
@@ -189,6 +207,8 @@ int main(int argc, char **argv)
 	int i;
 	int config_loaded = 0;
 	int dont_fork = 0;
+	size_t wanted_stacksize = 0, stacksize = 0;
+	pthread_attr_t attr;
 
 	// global initialization
 	get_HZ();
@@ -215,7 +235,13 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[i], "-l")  == 0 && (i+1) < argc) { config_set("global", "history",      argv[i+1]); i++; }
 		else if(strcmp(argv[i], "-t")  == 0 && (i+1) < argc) { config_set("global", "update every", argv[i+1]); i++; }
 		else if(strcmp(argv[i], "-ch") == 0 && (i+1) < argc) { config_set("global", "host access prefix", argv[i+1]); i++; }
-		else if(strcmp(argv[i], "-nodeamon") == 0 || strcmp(argv[i], "-nd") == 0) dont_fork = 1;
+		else if(strcmp(argv[i], "-stacksize") == 0 && (i+1) < argc) { config_set("global", "pthread stack size", argv[i+1]); i++; }
+		else if(strcmp(argv[i], "-nodaemon") == 0 || strcmp(argv[i], "-nd") == 0) dont_fork = 1;
+		else if(strcmp(argv[i], "-pidfile") == 0 && (i+1) < argc) {
+			i++;
+			strncpy(pidfile, argv[i], FILENAME_MAX);
+			pidfile[FILENAME_MAX] = '\0';
+		}
 		else if(strcmp(argv[i], "--unittest")  == 0) {
 			rrd_update_every = 1;
 			if(run_all_mockup_tests()) exit(1);
@@ -225,7 +251,7 @@ int main(int argc, char **argv)
 		}
 		else {
 			fprintf(stderr, "Cannot understand option '%s'.\n", argv[i]);
-			fprintf(stderr, "\nUSAGE: %s [-d] [-l LINES_TO_SAVE] [-u UPDATE_TIMER] [-p LISTEN_PORT] [-dl debug log file] [-df debug flags].\n\n", argv[0]);
+			fprintf(stderr, "\nUSAGE: %s [-d] [-l LINES_TO_SAVE] [-u UPDATE_TIMER] [-p LISTEN_PORT] [-df debug flags].\n\n", argv[0]);
 			fprintf(stderr, "  -c CONFIG FILE the configuration file to load. Default: %s.\n", CONFIG_DIR "/" CONFIG_FILENAME);
 			fprintf(stderr, "  -l LINES_TO_SAVE can be from 5 to %d lines in JSON data. Default: %d.\n", RRD_HISTORY_ENTRIES_MAX, RRD_DEFAULT_HISTORY_ENTRIES);
 			fprintf(stderr, "  -t UPDATE_TIMER can be from 1 to %d seconds. Default: %d.\n", UPDATE_EVERY_MAX, UPDATE_EVERY);
@@ -234,6 +260,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "  -ch path to access host /proc and /sys when running in a container. Default: empty.\n");
 			fprintf(stderr, "  -nd or -nodeamon to disable forking in the background. Default: unset.\n");
 			fprintf(stderr, "  -df FLAGS debug options. Default: 0x%08llx.\n", debug_flags);
+			fprintf(stderr, "  -stacksize BYTES to overwrite the pthread stack size.\n");
+			fprintf(stderr, "  -pidfile FILENAME to save a pid while running.\n");
 			exit(1);
 		}
 	}
@@ -276,6 +304,7 @@ int main(int argc, char **argv)
 			struct rlimit rl = { RLIM_INFINITY, RLIM_INFINITY };
 			if(setrlimit(RLIMIT_CORE, &rl) != 0)
 				info("Cannot request unlimited core dumps for debugging... Proceeding anyway...");
+			prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
 		}
 
 		// --------------------------------------------------------------------
@@ -319,6 +348,12 @@ int main(int argc, char **argv)
 		}
 		else error_log_syslog = 0;
 
+		error_log_throttle_period = config_get_number("global", "errors flood protection period", error_log_throttle_period);
+		setenv("NETDATA_ERRORS_THROTTLE_PERIOD", config_get("global", "errors flood protection period"    , ""), 1);
+
+		error_log_errors_per_period = config_get_number("global", "errors to trigger flood protection", error_log_errors_per_period);
+		setenv("NETDATA_ERRORS_PER_PERIOD"     , config_get("global", "errors to trigger flood protection", ""), 1);
+
 		// --------------------------------------------------------------------
 
 		access_log_file = config_get("global", "access log", LOG_DIR "/access.log");
@@ -347,7 +382,7 @@ int main(int argc, char **argv)
 
 		rrd_default_history_entries = (int) config_get_number("global", "history", RRD_DEFAULT_HISTORY_ENTRIES);
 		if(rrd_default_history_entries < 5 || rrd_default_history_entries > RRD_HISTORY_ENTRIES_MAX) {
-			fprintf(stderr, "Invalid save lines %d given. Defaulting to %d.\n", rrd_default_history_entries, RRD_DEFAULT_HISTORY_ENTRIES);
+			info("Invalid save lines %d given. Defaulting to %d.", rrd_default_history_entries, RRD_DEFAULT_HISTORY_ENTRIES);
 			rrd_default_history_entries = RRD_DEFAULT_HISTORY_ENTRIES;
 		}
 		else {
@@ -358,7 +393,7 @@ int main(int argc, char **argv)
 
 		rrd_update_every = (int) config_get_number("global", "update every", UPDATE_EVERY);
 		if(rrd_update_every < 1 || rrd_update_every > 600) {
-			fprintf(stderr, "Invalid update timer %d given. Defaulting to %d.\n", rrd_update_every, UPDATE_EVERY_MAX);
+			info("Invalid update timer %d given. Defaulting to %d.", rrd_update_every, UPDATE_EVERY_MAX);
 			rrd_update_every = UPDATE_EVERY;
 		}
 		else debug(D_OPTIONS, "update timer set to %d.", rrd_update_every);
@@ -372,6 +407,20 @@ int main(int argc, char **argv)
 
 		// --------------------------------------------------------------------
 
+		i = pthread_attr_init(&attr);
+		if(i != 0)
+			fatal("pthread_attr_init() failed with code %d.", i);
+
+		i = pthread_attr_getstacksize(&attr, &stacksize);
+		if(i != 0)
+			fatal("pthread_attr_getstacksize() failed with code %d.", i);
+		else
+			debug(D_OPTIONS, "initial pthread stack size is %zu bytes", stacksize);
+
+		wanted_stacksize = config_get_number("global", "pthread stack size", stacksize);
+
+		// --------------------------------------------------------------------
+
 		for (i = 0; static_threads[i].name != NULL ; i++) {
 			struct netdata_static_thread *st = &static_threads[i];
 
@@ -381,9 +430,13 @@ int main(int argc, char **argv)
 
 		// --------------------------------------------------------------------
 
-		prepare_rundir();
+		// get the user we should run
+		// IMPORTANT: this is required before web_files_uid()
 		user = config_get("global", "run as user"    , (getuid() == 0)?NETDATA_USER:"");
-		web_files_uid();
+
+		// IMPORTANT: these have to run once, while single threaded
+		web_files_uid(); // IMPORTANT: web_files_uid() before web_files_gid()
+		web_files_gid();
 
 		// --------------------------------------------------------------------
 
@@ -391,7 +444,7 @@ int main(int argc, char **argv)
 
 		listen_port = (int) config_get_number("global", "port", LISTEN_PORT);
 		if(listen_port < 1 || listen_port > 65535) {
-			fprintf(stderr, "Invalid listen port %d given. Defaulting to %d.\n", listen_port, LISTEN_PORT);
+			info("Invalid listen port %d given. Defaulting to %d.", listen_port, LISTEN_PORT);
 			listen_port = LISTEN_PORT;
 		}
 		else debug(D_OPTIONS, "Listen port set to %d.", listen_port);
@@ -401,12 +454,12 @@ int main(int argc, char **argv)
 		if(!strcmp(ipv, "any") || !strcmp(ipv, "both") || !strcmp(ipv, "all")) ip = 0;
 		else if(!strcmp(ipv, "ipv4") || !strcmp(ipv, "IPV4") || !strcmp(ipv, "IPv4") || !strcmp(ipv, "4")) ip = 4;
 		else if(!strcmp(ipv, "ipv6") || !strcmp(ipv, "IPV6") || !strcmp(ipv, "IPv6") || !strcmp(ipv, "6")) ip = 6;
-		else fprintf(stderr, "Cannot understand ip version '%s'. Assumming 'any'.", ipv);
+		else info("Cannot understand ip version '%s'. Assuming 'any'.", ipv);
 
-		if(ip == 0 || ip == 6) listen_fd = create_listen_socket6(listen_port, listen_backlog);
+		if(ip == 0 || ip == 6) listen_fd = create_listen_socket6(config_get("global", "bind socket to IP", "*"), listen_port, listen_backlog);
 		if(listen_fd < 0) {
-			listen_fd = create_listen_socket4(listen_port, listen_backlog);
-			if(listen_fd >= 0 && ip != 4) fprintf(stderr, "Managed to open an IPv4 socket on port %d.", listen_port);
+			listen_fd = create_listen_socket4(config_get("global", "bind socket to IP", "*"), listen_port, listen_backlog);
+			if(listen_fd >= 0 && ip != 4) info("Managed to open an IPv4 socket on port %d.", listen_port);
 		}
 
 		if(listen_fd < 0) fatal("Cannot listen socket.");
@@ -418,6 +471,14 @@ int main(int argc, char **argv)
 	if(become_daemon(dont_fork, 0, user, input_log_file, output_log_file, error_log_file, access_log_file, &access_fd, &stdaccess) == -1) {
 		fatal("Cannot demonize myself.");
 		exit(1);
+	}
+
+	if(debug_flags != 0) {
+		struct rlimit rl = { RLIM_INFINITY, RLIM_INFINITY };
+		if(setrlimit(RLIMIT_CORE, &rl) != 0)
+			info("Cannot request unlimited core dumps for debugging... Proceeding anyway...");
+
+		prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
 	}
 
 	if(output_log_syslog || error_log_syslog || access_log_syslog)
@@ -445,15 +506,31 @@ int main(int argc, char **argv)
 		}
 	}
 
+	// ------------------------------------------------------------------------
+	// get default pthread stack size
+
+	if(stacksize < wanted_stacksize) {
+		i = pthread_attr_setstacksize(&attr, wanted_stacksize);
+		if(i != 0)
+			fatal("pthread_attr_setstacksize() to %zu bytes, failed with code %d.", wanted_stacksize, i);
+		else
+			info("Successfully set pthread stacksize to %zu bytes", wanted_stacksize);
+	}
+
+	// ------------------------------------------------------------------------
+	// spawn the threads
+
 	for (i = 0; static_threads[i].name != NULL ; i++) {
 		struct netdata_static_thread *st = &static_threads[i];
 
 		if(st->enabled) {
 			st->thread = malloc(sizeof(pthread_t));
+			if(!st->thread)
+				fatal("Cannot allocate pthread_t memory");
 
 			info("Starting thread %s.", st->name);
 
-			if(pthread_create(st->thread, NULL, st->start_routine, NULL))
+			if(pthread_create(st->thread, &attr, st->start_routine, NULL))
 				error("failed to create new thread for %s.", st->name);
 
 			else if(pthread_detach(*st->thread))

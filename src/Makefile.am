@@ -8,6 +8,7 @@ AM_CPPFLAGS = \
 	-DCONFIG_DIR="\"$(configdir)\"" \
 	-DLOG_DIR="\"$(logdir)\"" \
 	-DPLUGINS_DIR="\"$(pluginsdir)\"" \
+	-DRUN_DIR="\"$(localstatedir)/run/netdata\"" \
 	-DWEB_DIR="\"$(webdir)\"" \
 	$(NULL)
 AM_CFLAGS = \
@@ -47,7 +48,9 @@ netdata_SOURCES = \
 	proc_net_netstat.c \
 	proc_net_rpc_nfsd.c \
 	proc_net_snmp.c \
+	proc_net_snmp6.c \
 	proc_net_stat_conntrack.c \
+	proc_net_stat_synproxy.c \
 	proc_stat.c \
 	proc_sys_kernel_random_entropy_avail.c \
 	proc_vmstat.c \

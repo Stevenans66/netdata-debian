@@ -13,7 +13,6 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <execinfo.h>
 
 #include "common.h"
 #include "appconfig.h"
@@ -24,6 +23,9 @@
 #include "popen.h"
 #include "main.h"
 #include "daemon.h"
+
+char pidfile[FILENAME_MAX + 1] = "";
+int pidfd = -1;
 
 void sig_handler(int signo)
 {
@@ -72,23 +74,6 @@ void sig_handler(int signo)
 	}
 }
 
-char rundir[FILENAME_MAX + 1] = "/var/run/netdata";
-char pidfile[FILENAME_MAX + 1] = "";
-void prepare_rundir() {
-	if(getuid() != 0) {
-		mkdir("/run/user", 0775);
-		snprintf(rundir, FILENAME_MAX, "/run/user/%d", getuid());
-		mkdir(rundir, 0775);
-		snprintf(rundir, FILENAME_MAX, "/run/user/%d/netdata", getuid());
-	}
-
-	snprintf(pidfile, FILENAME_MAX, "%s/netdata.pid", rundir);
-
-	if(mkdir(rundir, 0775) != 0) {
-		if(errno != EEXIST) error("Cannot create directory '%s'.", rundir);
-	}
-}
-
 int become_user(const char *username)
 {
 	struct passwd *pw = getpwnam(username);
@@ -97,35 +82,50 @@ int become_user(const char *username)
 		return -1;
 	}
 
-	if(chown(rundir, pw->pw_uid, pw->pw_gid) != 0) {
-		error("Cannot chown directory '%s' to user %s.", rundir, username);
+	uid_t uid = pw->pw_uid;
+	gid_t gid = pw->pw_gid;
+
+	if(pidfile[0] && getuid() != uid) {
+		// we are dropping privileges
+		if(chown(pidfile, uid, gid) != 0)
+			error("Cannot chown pidfile '%s' to user '%s'", pidfile, username);
+
+		else if(pidfd != -1) {
+			// not need to keep it open
+			close(pidfd);
+			pidfd = -1;
+		}
+	}
+	else if(pidfd != -1) {
+		// not need to keep it open
+		close(pidfd);
+		pidfd = -1;
+	}
+
+	if(setresgid(gid, gid, gid) != 0) {
+		error("Cannot switch to user's %s group (gid: %d).", username, gid);
 		return -1;
 	}
 
-	if(setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) != 0) {
-		error("Cannot switch to user's %s group (gid: %d).", username, pw->pw_gid);
+	if(setresuid(uid, uid, uid) != 0) {
+		error("Cannot switch to user %s (uid: %d).", username, uid);
 		return -1;
 	}
 
-	if(setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) != 0) {
-		error("Cannot switch to user %s (uid: %d).", username, pw->pw_uid);
+	if(setgid(gid) != 0) {
+		error("Cannot switch to user's %s group (gid: %d).", username, gid);
 		return -1;
 	}
-
-	if(setgid(pw->pw_gid) != 0) {
-		error("Cannot switch to user's %s group (gid: %d).", username, pw->pw_gid);
+	if(setegid(gid) != 0) {
+		error("Cannot effectively switch to user's %s group (gid: %d).", username, gid);
 		return -1;
 	}
-	if(setegid(pw->pw_gid) != 0) {
-		error("Cannot effectively switch to user's %s group (gid: %d).", username, pw->pw_gid);
+	if(setuid(uid) != 0) {
+		error("Cannot switch to user %s (uid: %d).", username, uid);
 		return -1;
 	}
-	if(setuid(pw->pw_uid) != 0) {
-		error("Cannot switch to user %s (uid: %d).", username, pw->pw_uid);
-		return -1;
-	}
-	if(seteuid(pw->pw_uid) != 0) {
-		error("Cannot effectively switch to user %s (uid: %d).", username, pw->pw_uid);
+	if(seteuid(uid) != 0) {
+		error("Cannot effectively switch to user %s (uid: %d).", username, uid);
 		return -1;
 	}
 
@@ -294,16 +294,22 @@ int become_daemon(int dont_fork, int close_all_files, const char *user, const ch
 		close(dev_null);
 
 	// generate our pid file
-	{
-		unlink(pidfile);
-		int fd = open(pidfile, O_RDWR | O_CREAT, 0666);
-		if(fd >= 0) {
+	if(pidfile[0]) {
+		pidfd = open(pidfile, O_RDWR | O_CREAT, 0644);
+		if(pidfd >= 0) {
+			if(ftruncate(pidfd, 0) != 0)
+				error("Cannot truncate pidfile '%s'.", pidfile);
+
 			char b[100];
 			sprintf(b, "%d\n", getpid());
-			ssize_t i = write(fd, b, strlen(b));
-			if(i <= 0) perror("Cannot write pid to file.");
-			close(fd);
+			ssize_t i = write(pidfd, b, strlen(b));
+			if(i <= 0)
+				error("Cannot write pidfile '%s'.", pidfile);
+
+			// don't close it, we might need it at exit
+			// close(pidfd);
 		}
+		else error("Failed to open pidfile '%s'.", pidfile);
 	}
 
 	if(user && *user) {
@@ -312,6 +318,8 @@ int become_daemon(int dont_fork, int close_all_files, const char *user, const ch
 		}
 		else info("Successfully became user '%s'.", user);
 	}
+	else if(pidfd != -1)
+		close(pidfd);
 
 	return(0);
 }
