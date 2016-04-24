@@ -9,8 +9,8 @@ License: GPL-3+
 
 Files: debian/*
 Copyright: 2016 Matthew Newton <mcn4@leicester.ac.uk>
-Copyright: 2016 Lennart Weller <lhw@ring0.de>
-Copyright: 2016 Federico Ceratto <federico@debian.org>
+           2016 Lennart Weller <lhw@ring0.de>
+           2016 Federico Ceratto <federico@debian.org>
 License: GPL-3+
 
 License: GPL-3+
