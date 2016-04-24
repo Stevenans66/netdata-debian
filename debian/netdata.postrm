@@ -14,15 +14,11 @@ case "$1" in
         done
 
         if getent passwd netdata >/dev/null; then
-            if [ -x /usr/sbin/deluser ]; then
-                deluser --quiet --system netdata || echo "Unable to remove netdata user"
-            fi
+            deluser --quiet --system netdata || echo "Unable to remove netdata user"
         fi
 
         if getent group netdata >/dev/null; then
-            if [ -x /usr/sbin/delgroup ]; then
-                delgroup --quiet --system netdata || echo "Unable to remove netdata group"
-            fi
+            delgroup --quiet --system netdata || echo "Unable to remove netdata group"
         fi
 
         ;;
