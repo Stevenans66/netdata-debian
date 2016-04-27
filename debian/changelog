@@ -1,5 +1,9 @@
 netdata (1.1.0-1) UNRELEASED; urgency=low
 
+  [ Federico Ceratto ]
   * Initial release (Closes: #819661)
 
- -- Federico Ceratto <federico@debian.org>  Wed, 30 Mar 2016 22:41:35 +0100
+  [ Lennart Weller ]
+  * Split the main package into appropriate sub packages
+
+ -- Lennart Weller <lhw@ring0.de>  Mon, 09 May 2016 17:01:31 +0200
