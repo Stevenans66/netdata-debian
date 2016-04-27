@@ -1,0 +1,2 @@
+/usr/lib/*/netdata/node.d
+/usr/lib/*/netdata/plugins.d/node.d.plugin
