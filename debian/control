@@ -17,6 +17,7 @@ Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/netdata.git
 
 Package: netdata
 Architecture: any
+Multi-Arch: same
 Depends: adduser,
          libcap2-bin (>= 1:2.0),
          lsb-base (>= 3.1-23.2),
@@ -32,6 +33,10 @@ Description: real-time charts for system monitoring
 
 Package: netdata-data
 Architecture: all
+<<<<<<< HEAD
+=======
+Multi-Arch: foreign
+>>>>>>> f2a27bcd6e16cafd4505fc84d9beac11cbcfdf8d
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
@@ -43,6 +48,10 @@ Description: real-time charts for system monitoring
 
 Package: netdata-plugins-nodejs
 Architecture: all
+<<<<<<< HEAD
+=======
+Multi-Arch: foreign
+>>>>>>> f2a27bcd6e16cafd4505fc84d9beac11cbcfdf8d
 Depends: nodejs, ${misc:Depends}, ${shlibs:Depends}
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
