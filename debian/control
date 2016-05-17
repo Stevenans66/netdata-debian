@@ -24,7 +24,7 @@ Depends: adduser,
          netdata-data,
          ${misc:Depends},
          ${shlibs:Depends}
-Recommends: netdata-plugins-nodejs
+Suggests: netdata-plugins-nodejs
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
  and presents a web site to view and analyze them. The presentation
@@ -44,7 +44,7 @@ Description: real-time charts for system monitoring
 
 Package: netdata-plugins-nodejs
 Architecture: all
-Depends: nodejs, ${misc:Depends}, ${shlibs:Depends}
+Depends: nodejs, netdata, ${misc:Depends}, ${shlibs:Depends}
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
  and presents a web site to view and analyze them. The presentation
