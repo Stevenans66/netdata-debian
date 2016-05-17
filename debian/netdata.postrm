@@ -12,6 +12,7 @@ case "$1" in
                 dpkg-statoverride --remove "$dir_name"
             fi
         done
+        rm -rf /var/cache/netdata /var/log/netdata
 
         if getent passwd netdata >/dev/null; then
             deluser --quiet --system netdata || echo "Unable to remove netdata user"
