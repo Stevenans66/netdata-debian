@@ -17,6 +17,3 @@
 		- web/lib/morris.min.js
 	* Create additional or keep them in mind for future linking
 * Restrict security permissions in netdata.service
-* Move arch-indep data to -data package
-* Move interpreter specific plugins to additional packages. e.g. -plugins-nodejs
-	* No massive dependency tree for the simple netdata version
