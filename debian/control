@@ -36,22 +36,10 @@ Package: netdata-data
 Architecture: all
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Description: real-time charts for system monitoring
+Description: real-time charts for system monitoring (Data)
  Netdata is a daemon that collects data in realtime (per second)
  and presents a web site to view and analyze them. The presentation
  is also real-time and full of interactive charts that precisely
  render all collected values.
  .
  This package contains all the architecture independent data
-
-Package: netdata-plugins-nodejs
-Architecture: all
-Multi-Arch: foreign
-Depends: nodejs, netdata, ${misc:Depends}, ${shlibs:Depends}
-Description: real-time charts for system monitoring
- Netdata is a daemon that collects data in realtime (per second)
- and presents a web site to view and analyze them. The presentation
- is also real-time and full of interactive charts that precisely
- render all collected values.
- .
- This package contains all the nodejs plugins

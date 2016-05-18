@@ -11,8 +11,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_CFLAGS_MAINT_APPEND  = -Wall -O3
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
-MULTIARCH_INSTALL = debian/netdata.postinst \
-                    debian/netdata.links
+MULTIARCH_INSTALL = debian/netdata.postinst
 %:
 	# For jessie and beyond
 	#

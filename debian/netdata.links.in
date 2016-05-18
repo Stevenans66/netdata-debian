@@ -1,2 +1,0 @@
-#/usr/share/javascript/netdata/node.d /usr/lib/@DEB_HOST_MULTIARCH@/netdata/
-#/usr/share/javascript/netdata/plugins.d/node.d.plugin /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/
