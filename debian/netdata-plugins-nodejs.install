@@ -1,2 +1,2 @@
-/usr/lib/*/netdata/node.d
-/usr/lib/*/netdata/plugins.d/node.d.plugin
+/usr/lib/*/netdata/node.d /usr/share/javascript/netdata
+/usr/lib/*/netdata/plugins.d/node.d.plugin /usr/share/javascript/netdata

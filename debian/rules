@@ -11,6 +11,8 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_CFLAGS_MAINT_APPEND  = -Wall -O3
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
+MULTIARCH_INSTALL = debian/netdata.postinst \
+                    debian/netdata.links
 %:
 	# For jessie and beyond
 	#
@@ -25,16 +27,16 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 override_dh_auto_configure:
 	dh_auto_configure -- --with-math
 
-debian/%.postinst: debian/%.postinst.in
+$(MULTIARCH_INSTALL): % : %.in
 	sed 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/g' $< > $@
 
-override_dh_install: debian/netdata.postinst
+override_dh_install: $(MULTIARCH_INSTALL)
 	dh_install
 
 	# Remove unneeded .keep files
 	#
 	find "$(TOP)" -name .keep -exec rm '{}' ';'
-	rm -rf $(CURDIR)/debian/netdata-data/usr/share/netdata/web/old
+	rm -rf $(TOP)-data/usr/share/netdata/web/old
 
 	# Move files that local user shouldn't be editing to /usr/share/netdata
 	#
@@ -65,16 +67,3 @@ override_dh_fixperms:
 	# given extra capabilities in the postinst script.
 	#
 	chmod 0754 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/plugins.d/apps.plugin
-
-override_dh_installlogrotate:
-	dh_installlogrotate
-
-override_dh_clean:
-	dh_clean
-
-	# Tidy up copied/generated files
-	rm -f $(CURDIR)/debian/netdata.postinst
-	rm -f $(CURDIR)/debian/netdata.conffiles
-
-override_dh_installchangelogs:
-	dh_installchangelogs ChangeLog
