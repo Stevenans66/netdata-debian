@@ -23,6 +23,7 @@ Depends: adduser,
          lsb-base (>= 3.1-23.2),
          netdata-data,
          ${misc:Depends},
+         ${misc:Pre-Depends},
          ${shlibs:Depends}
 Recommends: netdata-plugins-nodejs
 Description: real-time charts for system monitoring
@@ -33,6 +34,7 @@ Description: real-time charts for system monitoring
 
 Package: netdata-data
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
@@ -44,6 +46,7 @@ Description: real-time charts for system monitoring
 
 Package: netdata-plugins-nodejs
 Architecture: all
+Multi-Arch: foreign
 Depends: nodejs, ${misc:Depends}, ${shlibs:Depends}
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
