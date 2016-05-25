@@ -6,3 +6,4 @@ usr/lib/*/netdata/plugins.d/charts.d.dryrun-helper.sh
 usr/lib/*/netdata/plugins.d/charts.d.plugin
 usr/lib/*/netdata/plugins.d/loopsleepms.sh.inc
 usr/lib/*/netdata/plugins.d/tc-qos-helper.sh
+usr/lib/*/netdata/plugins.d/cgroup-name.sh
