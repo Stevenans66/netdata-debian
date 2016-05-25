@@ -1,19 +1,20 @@
 * De-vendorize JS/font libraries
 	* bootstrap, raphael, jquery + some jquery plugins exist.
-		- web/lib/bootstrap.min.js: libjs-bootstrap
-		- web/lib/raphael-min.js: libjs-raphael
-		- web/lib/d3.min.js: libjs-d3
-		- web/lib/jquery-1.12.0.min.js: libjs-jquery
-		- web/fonts/FontAwesome.otf: fonts-font-awesome
-		- web/fonts/fontawesome-webfont.ttf: fonts-font-awesome
-		- web/fonts/glyphicons-halflings-regular.ttf: libjs-bootstrap -.-
 		- web/lib/c3.min.js: #819891
+		- web/css/c3.min.css #819891
 		- web/lib/dygraph-combined.js: #749603
+		- web/lib/dygraph-smooth-plotter.js
+		- web/lib/bootstrap-toggle.min.js
+		- web/lib/ElementQueries.js
+		- web/lib/ResizeSensor.js
 		- web/lib/gauge.min.js
 		- web/lib/jquery.easypiechart.min.js
 		- web/lib/jquery.nanoscroller.min.js
 		- web/lib/jquery.peity.min.js
 		- web/lib/jquery.sparkline.min.js
 		- web/lib/morris.min.js
+		- web/css/bootstrap.slate.min.css
+		- web/css/bootstrap-toggle.min.css
+		- web/css/morris.css
 	* Create additional or keep them in mind for future linking
 * Restrict security permissions in netdata.service

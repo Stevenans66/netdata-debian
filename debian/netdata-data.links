@@ -1,0 +1,15 @@
+#libjs-bootstrap
+/usr/share/javascript/bootstrap/js/bootstrap.min.js usr/share/netdata/web/lib/bootstrap.min.js
+/usr/share/javascript/bootstrap/fonts/glyphicons-halflings-regular.ttf usr/share/netdata/web/fonts/glyphicons-halflings-regular.ttf
+/usr/share/javascript/bootstrap/css/bootstrap-theme.min.css usr/share/netdata/css/bootstrap-theme.min.css
+/usr/share/javascript/bootstrap/css/bootstrap.min.css usr/share/netdata/css/bootstrap.min.css
+#libjs-jquery
+/usr/share/javascript/jquery/jquery.min.js usr/share/netdata/web/lib/jquery-1.12.0.min.js
+#libjs-d3
+/usr/share/javascript/d3/d3.min.js usr/share/netdata/web/lib/d3.min.js
+#libjs-raphael
+/usr/share/javascript/raphael/raphael.min.js usr/share/netdata/web/lib/raphael-min.js
+#fonts-font-awesome
+/usr/share/fonts-font-awesome/fonts/FontAwesome.otf usr/share/netdata/web/fonts/FontAwesome.otf
+/usr/share/fonts-font-awesome/fonts/fontawesome-webfont.ttf usr/share/netdata/web/fonts/fontawesome-webfont.ttf
+/usr/share/fonts-font-awesome/css/font-awesome.min.css usr/share/netdata/css/font-awesome.min.css

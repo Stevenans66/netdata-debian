@@ -4,6 +4,7 @@
 # the location of plugins in /usr/lib
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 TOP = $(CURDIR)/debian/netdata
+WEB = $(TOP)-data/usr/share/web/
 
 export DH_VERBOSE = 1
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
@@ -12,6 +13,18 @@ export DEB_CFLAGS_MAINT_APPEND  = -Wall -O3
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 MULTIARCH_INSTALL = debian/netdata.postinst
+
+EXISTING_LINKS = $(WEB)lib/bootstrap.min.js \
+	$(WEB)fonts/glyphicons-halflings-regular.ttf \
+	$(WEB)css/bootstrap-theme.min.css \
+	$(WEB)css/bootstrap.min.css \
+	$(WEB)lib/jquery-1.12.0.min.js \
+	$(WEB)lib/d3.min.js \
+	$(WEB)lib/raphael-min.js \
+	$(WEB)fonts/FontAwesome.otf \
+	$(WEB)fonts/fontawesome-webfont.ttf \
+	$(WEB)css/font-awesome.min.css
+
 %:
 	# For jessie and beyond
 	#
@@ -37,14 +50,7 @@ override_dh_install: $(MULTIARCH_INSTALL)
 	find "$(TOP)" -name .keep -exec rm '{}' ';'
 	rm -rf $(TOP)-data/usr/share/netdata/web/old
 
-	# Move files that local user shouldn't be editing to /usr/share/netdata
-	#
-	#mkdir -p "$(TOP)/usr/share/netdata"
-	#for D in $$(find "$(TOP)/var/lib/netdata/www/" -maxdepth 1 -type d -printf '%f '); do \
-	#	echo Relocating $$D; \
-	#	mv "$(TOP)/var/lib/netdata/www/$$D" "$(TOP)/usr/share/netdata/$$D"; \
-	#	ln -s "/usr/share/netdata/$$D" "$(TOP)/var/lib/netdata/www/$$D"; \
-	#done
+	rm -f $(EXISTING_LINKS)
 
 	# Update postinst to set correct group for www files on installation.
 	# Should probably be dpkg-statoverride really, but that gets *really*
