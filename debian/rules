@@ -37,7 +37,6 @@ override_dh_install: $(MULTIARCH_INSTALL)
 	# Remove unneeded .keep files
 	#
 	find "$(TOP)" -name .keep -exec rm '{}' ';'
-	rm -rf $(TOP)-data/usr/share/netdata/web/old
 
 	# Update postinst to set correct group for www files on installation.
 	# Should probably be dpkg-statoverride really, but that gets *really*
