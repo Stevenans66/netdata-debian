@@ -14,17 +14,6 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 MULTIARCH_INSTALL = debian/netdata.postinst
 
-EXISTING_LINKS = $(WEB)lib/bootstrap.min.js \
-	$(WEB)fonts/glyphicons-halflings-regular.ttf \
-	$(WEB)css/bootstrap-theme.min.css \
-	$(WEB)css/bootstrap.min.css \
-	$(WEB)lib/jquery-1.12.0.min.js \
-	$(WEB)lib/d3.min.js \
-	$(WEB)lib/raphael-min.js \
-	$(WEB)fonts/FontAwesome.otf \
-	$(WEB)fonts/fontawesome-webfont.ttf \
-	$(WEB)css/font-awesome.min.css
-
 %:
 	# For jessie and beyond
 	#
@@ -49,8 +38,6 @@ override_dh_install: $(MULTIARCH_INSTALL)
 	#
 	find "$(TOP)" -name .keep -exec rm '{}' ';'
 	rm -rf $(TOP)-data/usr/share/netdata/web/old
-
-	rm -f $(EXISTING_LINKS)
 
 	# Update postinst to set correct group for www files on installation.
 	# Should probably be dpkg-statoverride really, but that gets *really*
