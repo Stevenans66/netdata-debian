@@ -10,27 +10,22 @@ Wants=network-online.target
 ConditionPathExists=/etc/netdata/netdata.conf
 
 [Service]
-Type=forking
-#PIDFile=/run/netdata.pid
-PIDFile=/var/run/netdata/netdata.pid
+Type=simple
 Environment="netdata_LOG_LOCATION=/var/log/netdata/log"
-ExecStart=/usr/sbin/netdata
+ExecStart=/usr/sbin/netdata -nd
 ExecReload=/usr/sbin/netdata reload
-#ExecStop=/bin/kill -SIGTERM $MAINPID
-ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry=TERM/5/KILL/5 --pidfile /run/netdata.pid
-TimeoutStopSec=30
+TimeoutStopSec=10
 KillMode=mixed
+KillSignal=SIGTERM
 
-EnvironmentFile=-/etc/default/%p
 User=netdata
+Group=netdata
 PermissionsStartOnly=true
 Restart=on-abnormal
 RestartSec=2s
 LimitNOFILE=65536
 
 WorkingDirectory=/tmp
-User=root
-Group=root
 
 # Hardening
 # AppArmorProfile=system_netdata
