@@ -11,5 +11,7 @@
 		if service netdata status > /dev/null ; then \
 			service netdata restart > /dev/null; \
 		fi;
+	endscript
 }
+
 
