@@ -1,0 +1,3 @@
+# Source exists in missing-sources as gauge.coffee. It is transpliced into
+# javascript before being minimized
+netdata source: source-is-missing web/lib/gauge.min.js
