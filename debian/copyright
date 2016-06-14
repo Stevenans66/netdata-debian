@@ -13,53 +13,116 @@ Copyright: 2016 Matthew Newton <mcn4@leicester.ac.uk>
            2016 Federico Ceratto <federico@debian.org>
 License: GPL-3+
 
-Files: web/css/bootstrap.slate.min.css
+Files: src/avl.h
+Copyright: 2000 Daniel Nagy
+License: GPL-2
+
+Files:
+ node.d/node_modules/ber/*
+ node.d/node_modules/asn1.js
+Copyright: 2011 Mark Cavage <mcavage@gmail.com>
+License: Expat
+
+Files: node.d/node_modules/net-snmp.js
+Copyright: 2013 Stephen Vickers <stephen.vickers.sv@gmail.com>
+License: Expat
+
+Files: node.d/node_modules/extend.js
+Copyright: 2014 Stefan Thomas
+License: Expat
+
+Files: node.d/node_modules/pixl-xml.js
+Copyright: 2015 Joseph Huckaby
+License: Expat
+
+Files:
+ web/css/bootstrap.slate.min.css
+ debian/missing-sources/bootstrap.slate.css
 Copyright: 2016 Thomas Park
 License: Expat
 
 Files:
  web/lib/bootstrap-toggle.min.js
  web/css/bootstrap-toggle.min.css
+ debian/missing-sources/bootstrap-toggle.js
+ debian/missing-sources/bootstrap-toggle.css
 Copyright: 2014 Min Hur, The New York Times Company
 License: Expat
 
 Files:
  web/lib/c3.min.js
  web/css/c3.min.css
+ debian/missing-sources/c3.js
+ debian/missing-sources/c3.css
 Copyright: 2013 Masayuki Tanaka
 License: Expat
 
 Files:
  web/lib/dygraph-combined.js
  web/lib/dygraph-smooth-plotter.js
+ debian/missing-sources/dygraph-combined.js
 Copyright: 2014 Dan Vanderkam <danvdk@gmail.com>
 License: Expat
 
-Files: web/lib/gauge.min.js
+Files:
+ web/lib/gauge.min.js
+ debian/missing-sources/gauge.coffee
 Copyright: 2016 Bernard Kobos <bkobos@extensa.pl>
 License: Expat
 
-Files: web/lib/jquery.easypiechart.min.js
+Files:
+ web/lib/jquery.easypiechart.min.js
+ debian/missing-sources/jquery.easypiechart.js
 Copyright: 2013 Robert Fleischmann
 License: Expat
 
-Files: web/lib/jquery.nanoscroller.min.js
+Files:
+ web/lib/jquery.nanoscroller.min.js
+ debian/missing-sources/jquery.nanoscroller.js
 Copyright: 2015 James Florentino
 License: Expat
 
-Files: web/lib/jquery.peity.min.js
-Copyright: 2015 James Florentino
+Files:
+ web/lib/jquery.peity.min.js
+ debian/missing-sources/jquery.peity.js
+Copyright: 2015 Ben Pickles
 License: Expat
 
-Files: web/lib/jquery.sparkline.min.js
+Files:
+ web/lib/jquery.sparkline.min.js
+ debian/missing-sources/jquery.sparkline.js
 Copyright: 2013 Gareth Watts <gareth@splunk.com>, Splunk Inc
 License: BSD-3-clause
 
 Files:
  web/lib/morris.min.js
  web/css/morris.css
+ debian/missing-sources/morris.js
+ debian/missing-sources/morris.css
 Copyright: 2014 Olly Smith
 License: BSD-2-clause
+
+Files:
+ web/lib/ElementQueries.js
+ web/lib/ResizeSensor.js
+Copyright: 2016 Marc J. Schmidt
+License: Expat
+
+License: GPL-2
+ This package is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation version 2 of the License.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>
+ .
+ On Debian systems, the complete text of the GNU General Public
+ License version 2 can be found in "/usr/share/common-licenses/GPL-2".
 
 License: GPL-3+
  This program is free software: you can redistribute it and/or modify it under
