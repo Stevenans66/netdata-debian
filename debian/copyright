@@ -13,21 +13,25 @@ Copyright: 2016 Matthew Newton <mcn4@leicester.ac.uk>
            2016 Federico Ceratto <federico@debian.org>
 License: GPL-3+
 
-Files: web/lib/bootstrap-toogle.min.js
- web/css/bootstrap-toogle.min.css
-Copyright: 2014 Min Hur, The New York Times Company
-License: Expat
-
 Files: web/css/bootstrap.slate.min.css
 Copyright: 2016 Thomas Park
 License: Expat
 
-Files: web/lib/c3.min.js
+Files:
+ web/lib/bootstrap-toggle.min.js
+ web/css/bootstrap-toggle.min.css
+Copyright: 2014 Min Hur, The New York Times Company
+License: Expat
+
+Files:
+ web/lib/c3.min.js
  web/css/c3.min.css
 Copyright: 2013 Masayuki Tanaka
 License: Expat
 
-Files: web/lib/dygraph-combined.min.js
+Files:
+ web/lib/dygraph-combined.js
+ web/lib/dygraph-smooth-plotter.js
 Copyright: 2014 Dan Vanderkam <danvdk@gmail.com>
 License: Expat
 
@@ -39,7 +43,7 @@ Files: web/lib/jquery.easypiechart.min.js
 Copyright: 2013 Robert Fleischmann
 License: Expat
 
-Files web/lib/jquery.nanoscroller.min.js
+Files: web/lib/jquery.nanoscroller.min.js
 Copyright: 2015 James Florentino
 License: Expat
 
@@ -51,8 +55,9 @@ Files: web/lib/jquery.sparkline.min.js
 Copyright: 2013 Gareth Watts <gareth@splunk.com>, Splunk Inc
 License: BSD-3-clause
 
-Files: web/lib/morris.min.js
- web/css/morris.min.css
+Files:
+ web/lib/morris.min.js
+ web/css/morris.css
 Copyright: 2014 Olly Smith
 License: BSD-2-clause
 
