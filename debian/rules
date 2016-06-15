@@ -4,7 +4,6 @@
 # the location of plugins in /usr/lib
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 TOP = $(CURDIR)/debian/netdata
-WEB = $(TOP)-data/usr/share/web/
 
 export DH_VERBOSE = 1
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
@@ -37,19 +36,6 @@ override_dh_install: $(MULTIARCH_INSTALL)
 	# Remove unneeded .keep files
 	#
 	find "$(TOP)" -name .keep -exec rm '{}' ';'
-
-	# Update postinst to set correct group for www files on installation.
-	# Should probably be dpkg-statoverride really, but that gets *really*
-	# messy. We also set all web files in /var as conffiles so an upgrade
-	# doesn't splat them.
-	#
-	#for D in $$(find "$(TOP)/var/lib/netdata/www/" -maxdepth 1 -type f -printf '%f '); do \
-	#	echo Updating postinst for $$D; \
-	#	sed -i "s/^#PERMS#/chgrp netdata \/var\/lib\/netdata\/www\/$$D\n#PERMS#/g" \
-	#		$(CURDIR)/debian/netdata.postinst; \
-	#	echo "/var/lib/netdata/www/$$D" >> $(CURDIR)/debian/netdata.conffiles; \
-	#done
-	#sed -i "/^#PERMS#/d" $(CURDIR)/debian/netdata.postinst
 
 override_dh_fixperms:
 	dh_fixperms
