@@ -1,0 +1,11 @@
+--- a/web/index.html
++++ b/web/index.html
+@@ -465,7 +465,7 @@
+ 				<ul class="nav navbar-nav">
+ 					<li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal"><i class="fa fa-cog"></i> settings</a></li>
+ 					<li class="hidden-sm"><a href="https://github.com/firehol/netdata/wiki" class="btn" target="_blank"><i class="fa fa-github"></i> community</a></li>
+-					<li hidden class="hidden-sm" id="updateButton"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal"><i class="fa fa-cloud-download"></i> update</a></li>
++					<li hidden class="hidden-sm" id="updateButton" style="display:none;"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal"><i class="fa fa-cloud-download"></i> update</a></li>
+ 					<li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#helpModal"><i class="fa fa-question-circle"></i> help</a></li>
+ 					<li class="dropdown hidden-md hidden-lg hidden-xs">
+ 						<a href="#" class="dropdown-toggle" data-toggle="dropdown" id="current_view">Menu <strong class="caret"></strong></a>
