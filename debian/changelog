@@ -1,9 +1,12 @@
-netdata (1.2.0+dfsg-1) UNRELEASED; urgency=low
+netdata (1.2.0+dfsg-1) unstable; urgency=low
 
   [ Federico Ceratto ]
   * Initial release (Closes: #819661)
+  * Removed update button	
 
   [ Lennart Weller ]
   * Split the main package into appropriate sub packages
+  * DFSG-compliant via debian/copyright file removal
+  * Linked to Javascript packages available in debian
 
- -- Lennart Weller <lhw@ring0.de>  Wed, 25 May 2016 12:36:31 +0200
+ -- Lennart Weller <lhw@ring0.de>  Fri, 22 Jul 2016 11:28:50 +0200
