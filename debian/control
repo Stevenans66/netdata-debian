@@ -13,12 +13,11 @@ Build-Depends: debhelper (>= 9),
                zlib1g-dev
 Standards-Version: 3.9.8
 Homepage: https://github.com/firehol/netdata
-Vcs-Git: https://anonscm.debian.org/collab-maint/netdata.git
-Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/netdata.git
+Vcs-Git: https://anonscm.debian.org/git/collab-maint/netdata.git
+Vcs-Browser: https://anonscm.debian.org/git/collab-maint/netdata.git
 
 Package: netdata
 Architecture: any
-Multi-Arch: no
 Depends: adduser,
          fonts-font-awesome (>= 4.6),
          libcap2-bin (>= 1:2.0),

@@ -1,3 +1,10 @@
+netdata (1.2.0+dfsg-2) unstable; urgency=low
+
+  * Remove Multi-Arch from binary package
+  * Fix Vcs-links
+
+ -- Lennart Weller <lhw@ring0.de>  Fri, 22 Jul 2016 16:09:04 +0200
+
 netdata (1.2.0+dfsg-1) unstable; urgency=low
 
   [ Federico Ceratto ]
