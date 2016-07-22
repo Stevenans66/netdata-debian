@@ -7,11 +7,9 @@ case "$1" in
         ;;
 
     purge)
-        for dir_name in /var/cache/netdata /var/lib/netdata /usr/share/netdata/web; do
-            if dpkg-statoverride --list | grep -qw "$dir_name"; then
-                dpkg-statoverride --remove "$dir_name"
-            fi
-        done
+        if dpkg-statoverride --list | grep -qw "/var/cache/netdata"; then
+            dpkg-statoverride --remove "$dir_name"
+        fi
         rm -rf /var/cache/netdata /var/log/netdata
 
         if getent passwd netdata >/dev/null; then
