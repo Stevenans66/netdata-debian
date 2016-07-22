@@ -36,6 +36,9 @@ override_dh_install: $(MULTIARCH_INSTALL)
 	# Remove unneeded .keep files
 	#
 	find "$(TOP)" -name .keep -exec rm '{}' ';'
+	# Deactivate automatic update check
+	#
+	echo 0 > $(TOP)-data/usr/share/netdata/web/version.txt
 
 override_dh_fixperms:
 	dh_fixperms
