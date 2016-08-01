@@ -20,7 +20,6 @@ KillSignal=SIGTERM
 
 User=netdata
 Group=netdata
-PermissionsStartOnly=true
 Restart=on-abnormal
 RestartSec=2s
 LimitNOFILE=65536
@@ -28,25 +27,18 @@ LimitNOFILE=65536
 WorkingDirectory=/tmp
 
 # Hardening
-# AppArmorProfile=system_netdata
-# CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_CHOWN CAP_FOWNER
-NoNewPrivileges=yes
-#PrivateDevices=yes
-PrivateTmp=yes
-ProtectHome=yes
+#AppArmorProfile=system_netdata
+#NoNewPrivileges=true
+PermissionsStartOnly=true
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+PrivateTmp=true
+ProtectHome=read-only
 ProtectSystem=full
-# TODO: restrict ReadOnlyDirectories
+
 ReadOnlyDirectories=/
-ReadWriteDirectories=-/proc
-ReadWriteDirectories=-/run
-ReadWriteDirectories=-/var/log/netdata
-ReadWriteDirectories=-/var
-ReadWriteDirectories=-/var/cache
-ReadWriteDirectories=-/var/cache/netdata
-ReadWriteDirectories=-/var/run
+ReadWriteDirectories=/run
+ReadWriteDirectories=/var/log/netdata
+ReadWriteDirectories=/var/cache/netdata
 
 [Install]
 WantedBy=multi-user.target
-
-
-

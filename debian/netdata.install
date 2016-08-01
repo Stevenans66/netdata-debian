@@ -1,5 +1,6 @@
 /usr/sbin
 debian/netdata.conf /etc/netdata/
+etc/netdata/
 usr/lib/*/netdata/charts.d/*.sh
 usr/lib/*/netdata/plugins.d/apps.plugin
 usr/lib/*/netdata/plugins.d/charts.d.dryrun-helper.sh
