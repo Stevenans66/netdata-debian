@@ -235,6 +235,8 @@ pluginsdir = @pluginsdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+pythondir = @pythondir@
+registrydir = @registrydir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -251,6 +253,7 @@ dist_noinst_DATA = \
 	debian/copyright \
 	debian/netdata.conf \
 	debian/source/format \
+	debian/control.wheezy \
 	debian/compat \
 	debian/netdata.install \
 	debian/netdata.lintian-overrides \

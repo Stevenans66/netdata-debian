@@ -80,8 +80,10 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = web
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(dist_web_DATA) $(dist_webcss_DATA) $(dist_webfonts_DATA) \
-	$(dist_webimages_DATA) $(dist_weblib_DATA) $(dist_webold_DATA)
+	$(dist_web_DATA) $(dist_webcss_DATA) $(dist_webdnt_DATA) \
+	$(dist_webfonts_DATA) $(dist_webimages_DATA) \
+	$(dist_weblib_DATA) $(dist_webold_DATA) \
+	$(dist_webwellknown_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
 	$(top_srcdir)/configure.ac
@@ -138,10 +140,13 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(webdir)" "$(DESTDIR)$(webcssdir)" \
-	"$(DESTDIR)$(webfontsdir)" "$(DESTDIR)$(webimagesdir)" \
-	"$(DESTDIR)$(weblibdir)" "$(DESTDIR)$(webolddir)"
-DATA = $(dist_web_DATA) $(dist_webcss_DATA) $(dist_webfonts_DATA) \
-	$(dist_webimages_DATA) $(dist_weblib_DATA) $(dist_webold_DATA)
+	"$(DESTDIR)$(webdntdir)" "$(DESTDIR)$(webfontsdir)" \
+	"$(DESTDIR)$(webimagesdir)" "$(DESTDIR)$(weblibdir)" \
+	"$(DESTDIR)$(webolddir)" "$(DESTDIR)$(webwellknowndir)"
+DATA = $(dist_web_DATA) $(dist_webcss_DATA) $(dist_webdnt_DATA) \
+	$(dist_webfonts_DATA) $(dist_webimages_DATA) \
+	$(dist_weblib_DATA) $(dist_webold_DATA) \
+	$(dist_webwellknown_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
@@ -265,6 +270,8 @@ pluginsdir = @pluginsdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+pythondir = @pythondir@
+registrydir = @registrydir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -293,6 +300,7 @@ dist_web_DATA = \
 	netdata-swagger.yaml \
 	netdata-swagger.json \
 	robots.txt \
+	registry.html \
 	tv.html \
 	version.txt \
 	$(NULL)
@@ -354,6 +362,8 @@ dist_webfonts_DATA = \
 
 webimagesdir = $(webdir)/images
 dist_webimages_DATA = \
+	images/animated.gif \
+	images/post.png \
 	images/seo-performance-16.png \
 	images/seo-performance-24.png \
 	images/seo-performance-32.png \
@@ -366,6 +376,15 @@ dist_webimages_DATA = \
 	images/seo-performance-512.png \
 	images/seo-performance-multi-size.ico \
 	images/seo-performance-multi-size.icns \
+	$(NULL)
+
+webwellknowndir = $(webdir)/.well-known
+dist_webwellknown_DATA = \
+	$(NULL)
+
+webdntdir = $(webdir)/.well-known/dnt
+dist_webdnt_DATA = \
+	.well-known/dnt/cookies \
 	$(NULL)
 
 all: all-am
@@ -443,6 +462,27 @@ uninstall-dist_webcssDATA:
 	@list='$(dist_webcss_DATA)'; test -n "$(webcssdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(webcssdir)'; $(am__uninstall_files_from_dir)
+install-dist_webdntDATA: $(dist_webdnt_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_webdnt_DATA)'; test -n "$(webdntdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(webdntdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(webdntdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webdntdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webdntdir)" || exit $$?; \
+	done
+
+uninstall-dist_webdntDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_webdnt_DATA)'; test -n "$(webdntdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(webdntdir)'; $(am__uninstall_files_from_dir)
 install-dist_webfontsDATA: $(dist_webfonts_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_webfonts_DATA)'; test -n "$(webfontsdir)" || list=; \
@@ -527,6 +567,27 @@ uninstall-dist_weboldDATA:
 	@list='$(dist_webold_DATA)'; test -n "$(webolddir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(webolddir)'; $(am__uninstall_files_from_dir)
+install-dist_webwellknownDATA: $(dist_webwellknown_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_webwellknown_DATA)'; test -n "$(webwellknowndir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(webwellknowndir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(webwellknowndir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webwellknowndir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webwellknowndir)" || exit $$?; \
+	done
+
+uninstall-dist_webwellknownDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_webwellknown_DATA)'; test -n "$(webwellknowndir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(webwellknowndir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -568,7 +629,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(webdir)" "$(DESTDIR)$(webcssdir)" "$(DESTDIR)$(webfontsdir)" "$(DESTDIR)$(webimagesdir)" "$(DESTDIR)$(weblibdir)" "$(DESTDIR)$(webolddir)"; do \
+	for dir in "$(DESTDIR)$(webdir)" "$(DESTDIR)$(webcssdir)" "$(DESTDIR)$(webdntdir)" "$(DESTDIR)$(webfontsdir)" "$(DESTDIR)$(webimagesdir)" "$(DESTDIR)$(weblibdir)" "$(DESTDIR)$(webolddir)" "$(DESTDIR)$(webwellknowndir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -623,8 +684,9 @@ info: info-am
 info-am:
 
 install-data-am: install-dist_webDATA install-dist_webcssDATA \
-	install-dist_webfontsDATA install-dist_webimagesDATA \
-	install-dist_weblibDATA install-dist_weboldDATA
+	install-dist_webdntDATA install-dist_webfontsDATA \
+	install-dist_webimagesDATA install-dist_weblibDATA \
+	install-dist_weboldDATA install-dist_webwellknownDATA
 
 install-dvi: install-dvi-am
 
@@ -669,8 +731,9 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-dist_webDATA uninstall-dist_webcssDATA \
-	uninstall-dist_webfontsDATA uninstall-dist_webimagesDATA \
-	uninstall-dist_weblibDATA uninstall-dist_weboldDATA
+	uninstall-dist_webdntDATA uninstall-dist_webfontsDATA \
+	uninstall-dist_webimagesDATA uninstall-dist_weblibDATA \
+	uninstall-dist_weboldDATA uninstall-dist_webwellknownDATA
 
 .MAKE: install-am install-strip
 
@@ -678,17 +741,20 @@ uninstall-am: uninstall-dist_webDATA uninstall-dist_webcssDATA \
 	ctags-am distclean distclean-generic distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dist_webDATA install-dist_webcssDATA \
-	install-dist_webfontsDATA install-dist_webimagesDATA \
-	install-dist_weblibDATA install-dist_weboldDATA install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic pdf pdf-am ps ps-am tags-am uninstall \
-	uninstall-am uninstall-dist_webDATA uninstall-dist_webcssDATA \
+	install-dist_webdntDATA install-dist_webfontsDATA \
+	install-dist_webimagesDATA install-dist_weblibDATA \
+	install-dist_weboldDATA install-dist_webwellknownDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags-am \
+	uninstall uninstall-am uninstall-dist_webDATA \
+	uninstall-dist_webcssDATA uninstall-dist_webdntDATA \
 	uninstall-dist_webfontsDATA uninstall-dist_webimagesDATA \
-	uninstall-dist_weblibDATA uninstall-dist_weboldDATA
+	uninstall-dist_weblibDATA uninstall-dist_weboldDATA \
+	uninstall-dist_webwellknownDATA
 
 
 version.txt:

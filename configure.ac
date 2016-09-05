@@ -4,7 +4,7 @@
 AC_PREREQ(2.60)
 
 define([VERSION_MAJOR], [1])
-define([VERSION_MINOR], [2])
+define([VERSION_MINOR], [3])
 define([VERSION_FIX], [0])
 define([VERSION_NUMBER], VERSION_MAJOR[.]VERSION_MINOR[.]VERSION_FIX)
 define([VERSION_SUFFIX], [])
@@ -34,6 +34,7 @@ AC_PROG_CC
 AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
 AC_USE_SYSTEM_EXTENSIONS
+AC_CHECK_FUNCS_ONCE(accept4)
 
 AC_ARG_ENABLE(
 	[plugin-nfacct],
@@ -149,9 +150,11 @@ fi
 AC_DEFINE_UNQUOTED([NETDATA_USER], ["${with_user}"], [use this user to drop privileged])
 
 AC_SUBST([varlibdir], ["\$(localstatedir)/lib/netdata"])
+AC_SUBST([registrydir], ["\$(localstatedir)/lib/netdata/registry"])
 AC_SUBST([cachedir], ["\$(localstatedir)/cache/netdata"])
 AC_SUBST([chartsdir], ["\$(libexecdir)/netdata/charts.d"])
 AC_SUBST([nodedir], ["\$(libexecdir)/netdata/node.d"])
+AC_SUBST([pythondir], ["\$(libexecdir)/netdata/python.d"])
 AC_SUBST([configdir], ["\$(sysconfdir)/netdata"])
 AC_SUBST([logdir], ["\$(localstatedir)/log/netdata"])
 AC_SUBST([pluginsdir], ["\$(libexecdir)/netdata/plugins.d"])
@@ -171,6 +174,7 @@ AC_CONFIG_FILES([
 	charts.d/Makefile
 	conf.d/Makefile
 	netdata.spec
+	python.d/Makefile
 	node.d/Makefile
 	plugins.d/Makefile
 	src/Makefile

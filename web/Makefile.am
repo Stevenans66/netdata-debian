@@ -16,6 +16,7 @@ dist_web_DATA = \
 	netdata-swagger.yaml \
 	netdata-swagger.json \
 	robots.txt \
+	registry.html \
 	tv.html \
 	version.txt \
 	$(NULL)
@@ -77,6 +78,8 @@ dist_webfonts_DATA = \
 
 webimagesdir=$(webdir)/images
 dist_webimages_DATA = \
+	images/animated.gif \
+	images/post.png \
 	images/seo-performance-16.png \
 	images/seo-performance-24.png \
 	images/seo-performance-32.png \
@@ -89,6 +92,16 @@ dist_webimages_DATA = \
 	images/seo-performance-512.png \
 	images/seo-performance-multi-size.ico \
 	images/seo-performance-multi-size.icns \
+	$(NULL)
+
+
+webwellknowndir=$(webdir)/.well-known
+dist_webwellknown_DATA = \
+	$(NULL)
+
+webdntdir=$(webdir)/.well-known/dnt
+dist_webdnt_DATA = \
+	.well-known/dnt/cookies \
 	$(NULL)
 
 version.txt:
