@@ -7,10 +7,10 @@ Subject: linked js/css/fonts removed from make
  1 file changed, 27 deletions(-)
 
 diff --git a/web/Makefile.am b/web/Makefile.am
-index 174ef22..6a33a1e 100644
+index 0432f8a..8078e67 100644
 --- a/web/Makefile.am
 +++ b/web/Makefile.am
-@@ -20,59 +20,32 @@ dist_web_DATA = \
+@@ -21,59 +21,32 @@ dist_web_DATA = \
  	version.txt \
  	$(NULL)
  

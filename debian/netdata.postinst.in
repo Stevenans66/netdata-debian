@@ -10,13 +10,16 @@ case "$1" in
           fi
 
           if ! getent passwd netdata >/dev/null; then
-              adduser --quiet --system --ingroup netdata --home /run/netdata --no-create-home netdata
+              adduser --quiet --system --ingroup netdata --home /var/lib/netdata --no-create-home netdata
+							mkdir -p /var/lib/netdata
           fi
 
-          if ! dpkg-statoverride --list /var/cache/netdata >/dev/null 2>&1; then
-              dpkg-statoverride --update --add netdata netdata 0755 /var/cache/netdata
-          fi
+					for dir_name in /var/cache/netdata /var/lib/netdata; do
+							if ! dpkg-statoverride --list "$dir_name" >/dev/null 2>&1; then
+									dpkg-statoverride --update --add netdata netdata 0755 "$dir_name"
+							fi
 
+					done
         fi
 
         chown -R root:netdata /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d

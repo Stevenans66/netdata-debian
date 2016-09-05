@@ -12,7 +12,7 @@ ConditionPathExists=/etc/netdata/netdata.conf
 [Service]
 Type=simple
 Environment="netdata_LOG_LOCATION=/var/log/netdata/log"
-ExecStart=/usr/sbin/netdata -nd
+ExecStart=/usr/sbin/netdata -D
 ExecReload=/usr/sbin/netdata reload
 TimeoutStopSec=10
 KillMode=mixed
@@ -36,7 +36,8 @@ ProtectHome=read-only
 ProtectSystem=full
 
 ReadOnlyDirectories=/
-ReadWriteDirectories=/run
+ReadWriteDirectories=/proc/self
+ReadWriteDirectories=/var/lib/netdata
 ReadWriteDirectories=/var/log/netdata
 ReadWriteDirectories=/var/cache/netdata
 

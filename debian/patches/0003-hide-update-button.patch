@@ -1,5 +1,5 @@
-From: Federico Ceratto <federico.ceratto@gmail.com>
-Date: Fri, 22 Jul 2016 14:21:13 +0200
+From: Lennart Weller <lhw@ring0.de>
+Date: Mon, 5 Sep 2016 10:52:35 +0200
 Subject: hide update button
 
 ---
@@ -7,15 +7,15 @@ Subject: hide update button
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/web/index.html b/web/index.html
-index 9cc2b4b..949d3e8 100644
+index 3e6c221..0026f94 100644
 --- a/web/index.html
 +++ b/web/index.html
-@@ -465,7 +465,7 @@
- 				<ul class="nav navbar-nav">
- 					<li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal"><i class="fa fa-cog"></i> settings</a></li>
- 					<li class="hidden-sm"><a href="https://github.com/firehol/netdata/wiki" class="btn" target="_blank"><i class="fa fa-github"></i> community</a></li>
--					<li class="hidden-sm" id="updateButton"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal"><i class="fa fa-cloud-download"></i> update</a></li>
-+					<li class="hidden-sm" id="updateButton" style="display:none;"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal"><i class="fa fa-cloud-download"></i> update</a></li>
- 					<li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#helpModal"><i class="fa fa-question-circle"></i> help</a></li>
- 					<li class="dropdown hidden-md hidden-lg hidden-xs">
- 						<a href="#" class="dropdown-toggle" data-toggle="dropdown" id="current_view">Menu <strong class="caret"></strong></a>
+@@ -579,7 +579,7 @@
+                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#alarmsModal" title="alarms"><i class="fa fa-bell"></i><span id="alarms_count_badge" class="badge"></span></a></li>
+                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal" title="dashboard settings"><i class="fa fa-cog"></i></a></li>
+                     <li class="hidden-sm"><a href="https://github.com/firehol/netdata/wiki" class="btn" target="_blank" title="netdata community"><i class="fa fa-github"></i></a></li>
+-                    <li class="hidden-sm" id="updateButton"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal" title="check for update"><i class="fa fa-cloud-download"></i><span id="update_badge" class="badge"></span></a></li>
++                    <li class="hidden-sm" id="updateButton" style="display:none;"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal" title="check for update"><i class="fa fa-cloud-download"></i><span id="update_badge" class="badge"></span></a></li>
+                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#helpModal" title="dashboard help"><i class="fa fa-question-circle"></i></a></li>
+                     <li class="dropdown hidden-md hidden-lg hidden-xs">
+                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="current_view">Menu <strong class="caret"></strong></a>

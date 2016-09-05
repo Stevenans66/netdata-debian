@@ -1,3 +1,4 @@
 0001-linked-js-css-fonts-removed-from-make.patch
-0002-remove-file-serve-ownership-restrictions-for-root.patch
+0002-remove-file-serve-restrictions-for-symlinks.patch
 0003-hide-update-button.patch
+0004-readd-shebang-to-chart-scripts.patch
