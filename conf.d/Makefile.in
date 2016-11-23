@@ -84,8 +84,13 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(dist_healthconfig_DATA) $(dist_nodeconfig_DATA) \
 	$(dist_pythonconfig_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
+	$(top_srcdir)/m4/ax_c__generic.m4 \
+	$(top_srcdir)/m4/ax_c_mallinfo.m4 \
+	$(top_srcdir)/m4/ax_c_mallopt.m4 \
+	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/jemalloc.m4 \
+	$(top_srcdir)/m4/tcmalloc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -212,6 +217,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SSE_CANDIDATE = @SSE_CANDIDATE@
 STRIP = @STRIP@
 UUID_CFLAGS = @UUID_CFLAGS@
 UUID_LIBS = @UUID_LIBS@
@@ -244,6 +250,8 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+has_jemalloc = @has_jemalloc@
+has_tcmalloc = @has_tcmalloc@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -288,6 +296,8 @@ dist_config_DATA = \
 	apps_groups.conf \
 	charts.d.conf \
 	python.d.conf \
+	health_alarm_notify.conf \
+	health_email_recipients.conf \
 	$(NULL)
 
 chartsconfigdir = $(configdir)/charts.d
@@ -315,6 +325,7 @@ dist_pythonconfig_DATA = \
 	python.d/phpfpm.conf \
 	python.d/postfix.conf \
 	python.d/redis.conf \
+	python.d/retroshare.conf \
 	python.d/sensors.conf \
 	python.d/squid.conf \
 	python.d/tomcat.conf \
@@ -326,13 +337,17 @@ dist_healthconfig_DATA = \
 	health.d/cpu.conf \
 	health.d/disks.conf \
 	health.d/entropy.conf \
+	health.d/tcp_resets.conf \
 	health.d/memcached.conf \
+	health.d/mysql.conf \
 	health.d/named.conf \
 	health.d/net.conf \
 	health.d/nginx.conf \
 	health.d/qos.conf \
 	health.d/ram.conf \
 	health.d/redis.conf \
+	health.d/retroshare.conf \
+	health.d/softnet.conf \
 	health.d/swap.conf \
 	health.d/squid.conf \
 	$(NULL)
