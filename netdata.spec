@@ -17,15 +17,16 @@
 
 Summary:	Real-time performance monitoring, done right
 Name:		netdata
-Version:	1.3.0
+Version:	1.4.0
 Release:	1%{?dist}
 License:	GPL v3+
 Group:		Applications/System
-Source0:	http://firehol.org/download/netdata/releases/v1.3.0/%{name}-1.3.0.tar.xz
+Source0:	http://firehol.org/download/netdata/releases/v1.4.0/%{name}-1.4.0.tar.xz
 URL:		http://netdata.firehol.org/
 BuildRequires:	pkgconfig
 BuildRequires:	xz
 BuildRequires:	zlib-devel
+BuildRequires:	libuuid-devel
 
 # Packages can be found in the EPEL repo
 %if %{with nfacct}
@@ -57,7 +58,7 @@ so that you can get insights of what is happening now and what just
 happened, on your systems and applications.
 
 %prep
-%setup -q -n %{name}-1.3.0
+%setup -q -n %{name}-1.4.0
 
 %build
 %configure \
@@ -171,6 +172,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/%{name}/web
 
 %changelog
+* Tue Oct 4 2016 Costa Tsaousis <costa@tsaousis.gr> - 1.4.0-1
+- the fastest netdata ever (with a better look too)!
+- improved IoT and containers support!
+- alarms improved in almost every way!
+- Several more improvements, new features and bugfixes.
 * Sun Aug 28 2016 Costa Tsaousis <costa@tsaousis.gr> - 1.3.0-1
 - netdata now has health monitoring
 - netdata now generates badges

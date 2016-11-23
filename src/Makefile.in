@@ -86,8 +86,13 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp $(dist_cache_DATA) $(dist_log_DATA) \
 	$(dist_registry_DATA) $(dist_varlib_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
+	$(top_srcdir)/m4/ax_c__generic.m4 \
+	$(top_srcdir)/m4/ax_c_mallinfo.m4 \
+	$(top_srcdir)/m4/ax_c_mallopt.m4 \
+	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/jemalloc.m4 \
+	$(top_srcdir)/m4/tcmalloc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -113,8 +118,9 @@ am_netdata_OBJECTS = appconfig.$(OBJEXT) avl.$(OBJEXT) \
 	proc_interrupts.$(OBJEXT) proc_softirqs.$(OBJEXT) \
 	proc_loadavg.$(OBJEXT) proc_meminfo.$(OBJEXT) \
 	proc_net_dev.$(OBJEXT) proc_net_ip_vs_stats.$(OBJEXT) \
-	proc_net_netstat.$(OBJEXT) proc_net_rpc_nfsd.$(OBJEXT) \
-	proc_net_snmp.$(OBJEXT) proc_net_snmp6.$(OBJEXT) \
+	proc_net_netstat.$(OBJEXT) proc_net_rpc_nfs.$(OBJEXT) \
+	proc_net_rpc_nfsd.$(OBJEXT) proc_net_snmp.$(OBJEXT) \
+	proc_net_snmp6.$(OBJEXT) proc_net_softnet_stat.$(OBJEXT) \
 	proc_net_stat_conntrack.$(OBJEXT) \
 	proc_net_stat_synproxy.$(OBJEXT) proc_stat.$(OBJEXT) \
 	proc_self_mountinfo.$(OBJEXT) \
@@ -279,6 +285,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SSE_CANDIDATE = @SSE_CANDIDATE@
 STRIP = @STRIP@
 UUID_CFLAGS = @UUID_CFLAGS@
 UUID_LIBS = @UUID_LIBS@
@@ -311,6 +318,8 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+has_jemalloc = @has_jemalloc@
+has_tcmalloc = @has_tcmalloc@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -398,9 +407,11 @@ netdata_SOURCES = \
 	proc_net_dev.c \
 	proc_net_ip_vs_stats.c \
 	proc_net_netstat.c \
+	proc_net_rpc_nfs.c \
 	proc_net_rpc_nfsd.c \
 	proc_net_snmp.c \
 	proc_net_snmp6.c \
+	proc_net_softnet_stat.c \
 	proc_net_stat_conntrack.c \
 	proc_net_stat_synproxy.c \
 	proc_stat.c \
@@ -596,9 +607,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_dev.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_ip_vs_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_netstat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_rpc_nfs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_rpc_nfsd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_snmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_snmp6.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_softnet_stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_stat_conntrack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_stat_synproxy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_self_mountinfo.Po@am__quote@
