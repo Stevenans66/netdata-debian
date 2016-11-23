@@ -1,4 +1,10 @@
-netdata (1.3.0+dfsg-1) unstable; urgency=medium
+netdata (1.4.0+dfsg-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Wed, 23 Nov 2016 15:49:44 +0000
+
+netdata (1.3.0+dfsg-1) UNRELEASED; urgency=medium
 
   [ Lennart Weller ]
   * New upstream version. Fixes license issues
