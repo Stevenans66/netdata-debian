@@ -1,0 +1,37 @@
+--- a/web/dashboard.js
++++ b/web/dashboard.js
+@@ -108,14 +108,14 @@
+     // default URLs for all the external files we need
+     // make them RELATIVE so that the whole thing can also be
+     // installed under a web server
+-    NETDATA.jQuery              = NETDATA.serverDefault + 'lib/jquery-2.2.4.min.js';
++    NETDATA.jQuery              = NETDATA.serverDefault + 'lib/jquery.min.js';
+     NETDATA.peity_js            = NETDATA.serverDefault + 'lib/jquery.peity-3.2.0.min.js';
+     NETDATA.sparkline_js        = NETDATA.serverDefault + 'lib/jquery.sparkline-2.1.2.min.js';
+     NETDATA.easypiechart_js     = NETDATA.serverDefault + 'lib/jquery.easypiechart-97b5824.min.js';
+     NETDATA.gauge_js            = NETDATA.serverDefault + 'lib/gauge-d5260c3.min.js';
+     NETDATA.dygraph_js          = NETDATA.serverDefault + 'lib/dygraph-combined-dd74404.js';
+     NETDATA.dygraph_smooth_js   = NETDATA.serverDefault + 'lib/dygraph-smooth-plotter-dd74404.js';
+-    NETDATA.raphael_js          = NETDATA.serverDefault + 'lib/raphael-2.2.4-min.js';
++    NETDATA.raphael_js          = NETDATA.serverDefault + 'lib/raphael-min.js';
+     NETDATA.c3_js               = NETDATA.serverDefault + 'lib/c3-0.4.11.min.js';
+     NETDATA.c3_css              = NETDATA.serverDefault + 'css/c3-0.4.11.min.css';
+     NETDATA.d3_js               = NETDATA.serverDefault + 'lib/d3-3.5.17.min.js';
+@@ -125,7 +125,7 @@
+ 
+     NETDATA.themes = {
+         white: {
+-            bootstrap_css: NETDATA.serverDefault + 'css/bootstrap-3.3.7.min.css',
++            bootstrap_css: NETDATA.serverDefault + 'css/bootstrap.min.css',
+             dashboard_css: NETDATA.serverDefault + 'dashboard.css?v20161002-1',
+             background: '#FFFFFF',
+             foreground: '#000000',
+@@ -5577,7 +5577,7 @@
+ 
+     NETDATA.requiredJs = [
+         {
+-            url: NETDATA.serverDefault + 'lib/bootstrap-3.3.7.min.js',
++            url: NETDATA.serverDefault + 'lib/bootstrap.min.js',
+             async: false,
+             isAlreadyLoaded: function() {
+                 // check if bootstrap is loaded
