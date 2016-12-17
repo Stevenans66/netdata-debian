@@ -6,16 +6,14 @@ Subject: hide update button
  web/index.html | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/web/index.html b/web/index.html
-index 3e6c221..0026f94 100644
 --- a/web/index.html
 +++ b/web/index.html
-@@ -579,7 +579,7 @@
-                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#alarmsModal" title="alarms"><i class="fa fa-bell"></i><span id="alarms_count_badge" class="badge"></span></a></li>
-                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal" title="dashboard settings"><i class="fa fa-cog"></i></a></li>
-                     <li class="hidden-sm"><a href="https://github.com/firehol/netdata/wiki" class="btn" target="_blank" title="netdata community"><i class="fa fa-github"></i></a></li>
--                    <li class="hidden-sm" id="updateButton"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal" title="check for update"><i class="fa fa-cloud-download"></i><span id="update_badge" class="badge"></span></a></li>
-+                    <li class="hidden-sm" id="updateButton" style="display:none;"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal" title="check for update"><i class="fa fa-cloud-download"></i><span id="update_badge" class="badge"></span></a></li>
-                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#helpModal" title="dashboard help"><i class="fa fa-question-circle"></i></a></li>
+@@ -2527,7 +2527,7 @@
+                     <li><a href="#" class="btn" data-toggle="modal" data-target="#alarmsModal" title="alarms"><i class="fa fa-bell"></i></span>&nbsp;<span class="hidden-sm">Alarms&nbsp;</span><span id="alarms_count_badge" class="badge"></a></li>
+                     <li><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal" title="dashboard settings"><i class="fa fa-sliders"></i>&nbsp;<span class="hidden-sm">Settings</span></a></li>
+                     <li><a href="https://github.com/firehol/netdata/wiki" class="btn" target="_blank" title="netdata community"><i class="fa fa-github"></i>&nbsp;<span class="hidden-sm hidden-md">Community</span></a></li>
+-                    <li class="hidden-sm" id="updateButton"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal" title="check for update"><i class="fa fa-cloud-download"></i><span id="update_badge" class="badge"></span>&nbsp;<span class="hidden-sm hidden-md">Update</span></a></li>
++                    <li class="hidden-sm" id="updateButton" style="display:none;"><a href="#" class="btn" data-toggle="modal" data-target="#updateModal" title="check for update"><i class="fa fa-cloud-download"></i><span id="update_badge" class="badge"></span>&nbsp;<span class="hidden-sm hidden-md">Update</span></a></li>
+                     <li class="hidden-sm"><a href="#" class="btn" data-toggle="modal" data-target="#helpModal" title="dashboard help"><i class="fa fa-question-circle"></i>&nbsp;<span class="hidden-sm hidden-md">Help</span></a></li>
+                     <!--
                      <li class="dropdown hidden-md hidden-lg hidden-xs">
-                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="current_view">Menu <strong class="caret"></strong></a>

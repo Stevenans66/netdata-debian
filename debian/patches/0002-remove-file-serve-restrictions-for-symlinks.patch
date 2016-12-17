@@ -6,11 +6,9 @@ Subject: remove file serve restrictions for symlinks
  src/web_client.c | 22 +++++++++++-----------
  1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/src/web_client.c b/src/web_client.c
-index 4036d4c..a7cc424 100644
 --- a/src/web_client.c
 +++ b/src/web_client.c
-@@ -325,33 +325,33 @@ int mysendfile(struct web_client *w, char *filename)
+@@ -325,33 +325,33 @@
      snprintfz(webfilename, FILENAME_MAX, "%s/%s", web_dir, filename);
  
      // check if the file exists
@@ -52,7 +50,7 @@ index 4036d4c..a7cc424 100644
          error("%llu: File '%s' is not a regular file. Access Denied.", w->id, webfilename);
          buffer_sprintf(w->response.data, "Access to file '%s' is not permitted.", webfilename);
          return 403;
-@@ -399,14 +399,14 @@ int mysendfile(struct web_client *w, char *filename)
+@@ -399,14 +399,14 @@
      else if(strstr(filename, ".icns") != NULL)  w->response.data->contenttype = CT_IMAGE_ICNS;
      else w->response.data->contenttype = CT_APPLICATION_OCTET_STREAM;
  
@@ -67,6 +65,6 @@ index 4036d4c..a7cc424 100644
 -    w->response.data->date = stat.st_mtim.tv_sec;
 +    w->response.rlen = wstat.st_size;
 +    w->response.data->date = wstat.st_mtim.tv_sec;
+     buffer_cacheable(w->response.data);
  
      return 200;
- }

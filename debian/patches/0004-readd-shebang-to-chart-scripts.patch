@@ -24,8 +24,6 @@ Subject: re-add shebang to chart scripts
  plugins.d/loopsleepms.sh.inc   | 2 +-
  19 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/charts.d/ap.chart.sh b/charts.d/ap.chart.sh
-index 7b4f690..ebd4808 100755
 --- a/charts.d/ap.chart.sh
 +++ b/charts.d/ap.chart.sh
 @@ -1,4 +1,4 @@
@@ -34,8 +32,6 @@ index 7b4f690..ebd4808 100755
  
  # _update_every is a special variable - it holds the number of seconds
  # between the calls of the _update() function
-diff --git a/charts.d/apache.chart.sh b/charts.d/apache.chart.sh
-index 2d68d43..14af66b 100755
 --- a/charts.d/apache.chart.sh
 +++ b/charts.d/apache.chart.sh
 @@ -1,4 +1,4 @@
@@ -44,8 +40,6 @@ index 2d68d43..14af66b 100755
  
  # the URL to download apache status info
  apache_url="http://127.0.0.1:80/server-status?auto"
-diff --git a/charts.d/cpu_apps.chart.sh b/charts.d/cpu_apps.chart.sh
-index 6b2513d..1237a7b 100755
 --- a/charts.d/cpu_apps.chart.sh
 +++ b/charts.d/cpu_apps.chart.sh
 @@ -1,4 +1,4 @@
@@ -54,8 +48,6 @@ index 6b2513d..1237a7b 100755
  
  # THIS PLUGIN IS OBSOLETE
  # USE apps.plugin INSTEAD
-diff --git a/charts.d/cpufreq.chart.sh b/charts.d/cpufreq.chart.sh
-index 06f692f..a17b235 100755
 --- a/charts.d/cpufreq.chart.sh
 +++ b/charts.d/cpufreq.chart.sh
 @@ -1,4 +1,4 @@
@@ -64,8 +56,6 @@ index 06f692f..a17b235 100755
  
  # if this chart is called X.chart.sh, then all functions and global variables
  # must start with X_
-diff --git a/charts.d/example.chart.sh b/charts.d/example.chart.sh
-index 1f020de..dab22ba 100755
 --- a/charts.d/example.chart.sh
 +++ b/charts.d/example.chart.sh
 @@ -1,4 +1,4 @@
@@ -74,8 +64,6 @@ index 1f020de..dab22ba 100755
  
  # if this chart is called X.chart.sh, then all functions and global variables
  # must start with X_
-diff --git a/charts.d/exim.chart.sh b/charts.d/exim.chart.sh
-index c60ae94..9cf5950 100644
 --- a/charts.d/exim.chart.sh
 +++ b/charts.d/exim.chart.sh
 @@ -1,4 +1,4 @@
@@ -84,8 +72,6 @@ index c60ae94..9cf5950 100644
  
  exim_command=
  
-diff --git a/charts.d/hddtemp.chart.sh b/charts.d/hddtemp.chart.sh
-index 41c3e24..fea9f80 100755
 --- a/charts.d/hddtemp.chart.sh
 +++ b/charts.d/hddtemp.chart.sh
 @@ -1,4 +1,4 @@
@@ -94,8 +80,6 @@ index 41c3e24..fea9f80 100755
  
  # if this chart is called X.chart.sh, then all functions and global variables
  # must start with X_
-diff --git a/charts.d/load_average.chart.sh b/charts.d/load_average.chart.sh
-index e6790d8..c829064 100755
 --- a/charts.d/load_average.chart.sh
 +++ b/charts.d/load_average.chart.sh
 @@ -1,4 +1,4 @@
@@ -104,8 +88,6 @@ index e6790d8..c829064 100755
  
  load_average_update_every=5
  load_priority=100
-diff --git a/charts.d/mem_apps.chart.sh b/charts.d/mem_apps.chart.sh
-index ab95b36..2a1669b 100755
 --- a/charts.d/mem_apps.chart.sh
 +++ b/charts.d/mem_apps.chart.sh
 @@ -1,4 +1,4 @@
@@ -114,8 +96,6 @@ index ab95b36..2a1669b 100755
  
  mem_apps_apps=
  
-diff --git a/charts.d/mysql.chart.sh b/charts.d/mysql.chart.sh
-index 120fec6..e2392c2 100755
 --- a/charts.d/mysql.chart.sh
 +++ b/charts.d/mysql.chart.sh
 @@ -1,4 +1,4 @@
@@ -124,8 +104,6 @@ index 120fec6..e2392c2 100755
  
  # http://dev.mysql.com/doc/refman/5.0/en/server-status-variables.html
  #
-diff --git a/charts.d/nginx.chart.sh b/charts.d/nginx.chart.sh
-index a2a9b32..a082c57 100755
 --- a/charts.d/nginx.chart.sh
 +++ b/charts.d/nginx.chart.sh
 @@ -1,4 +1,4 @@
@@ -134,8 +112,6 @@ index a2a9b32..a082c57 100755
  
  # if this chart is called X.chart.sh, then all functions and global variables
  # must start with X_
-diff --git a/charts.d/nut.chart.sh b/charts.d/nut.chart.sh
-index 3c8e1c9..a472084 100755
 --- a/charts.d/nut.chart.sh
 +++ b/charts.d/nut.chart.sh
 @@ -1,4 +1,4 @@
@@ -144,8 +120,6 @@ index 3c8e1c9..a472084 100755
  
  # a space separated list of UPS names
  # if empty, the list returned by 'upsc -l' will be used
-diff --git a/charts.d/opensips.chart.sh b/charts.d/opensips.chart.sh
-index ce42ccd..5792c6e 100755
 --- a/charts.d/opensips.chart.sh
 +++ b/charts.d/opensips.chart.sh
 @@ -1,4 +1,4 @@
@@ -154,8 +128,6 @@ index ce42ccd..5792c6e 100755
  
  opensips_opts="fifo get_statistics all"
  opensips_cmd=
-diff --git a/charts.d/phpfpm.chart.sh b/charts.d/phpfpm.chart.sh
-index 976ce91..7cd7726 100755
 --- a/charts.d/phpfpm.chart.sh
 +++ b/charts.d/phpfpm.chart.sh
 @@ -1,4 +1,4 @@
@@ -164,8 +136,6 @@ index 976ce91..7cd7726 100755
  
  # if this chart is called X.chart.sh, then all functions and global variables
  # must start with X_
-diff --git a/charts.d/postfix.chart.sh b/charts.d/postfix.chart.sh
-index 7f07a18..8669fda 100755
 --- a/charts.d/postfix.chart.sh
 +++ b/charts.d/postfix.chart.sh
 @@ -1,4 +1,4 @@
@@ -174,8 +144,6 @@ index 7f07a18..8669fda 100755
  
  # the postqueue command
  # if empty, it will use the one found in the system path
-diff --git a/charts.d/sensors.chart.sh b/charts.d/sensors.chart.sh
-index 9652f89..c697268 100755
 --- a/charts.d/sensors.chart.sh
 +++ b/charts.d/sensors.chart.sh
 @@ -1,4 +1,4 @@
@@ -184,8 +152,6 @@ index 9652f89..c697268 100755
  
  # sensors docs
  # https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
-diff --git a/charts.d/squid.chart.sh b/charts.d/squid.chart.sh
-index 3e72ba6..231b2a9 100755
 --- a/charts.d/squid.chart.sh
 +++ b/charts.d/squid.chart.sh
 @@ -1,4 +1,4 @@
@@ -194,8 +160,6 @@ index 3e72ba6..231b2a9 100755
  
  squid_host=
  squid_port=
-diff --git a/charts.d/tomcat.chart.sh b/charts.d/tomcat.chart.sh
-index cc6baea..50a17e2 100755
 --- a/charts.d/tomcat.chart.sh
 +++ b/charts.d/tomcat.chart.sh
 @@ -1,4 +1,4 @@
@@ -204,13 +168,11 @@ index cc6baea..50a17e2 100755
  
  # Description: Tomcat netdata charts.d plugin
  # Author: Jorge Romero
-diff --git a/plugins.d/loopsleepms.sh.inc b/plugins.d/loopsleepms.sh.inc
-index 02ab694..14ba64e 100644
 --- a/plugins.d/loopsleepms.sh.inc
 +++ b/plugins.d/loopsleepms.sh.inc
 @@ -1,4 +1,4 @@
 -# no need for shebang - this file is included from other scripts
 +#!/bin/bash
  
- # this function is used to sleep a fraction of a second
- # it calculates the difference between every time is called
+ LOOPSLEEP_DATE="$(which date)"
+ if [ -z "$LOOPSLEEP_DATE" ]
