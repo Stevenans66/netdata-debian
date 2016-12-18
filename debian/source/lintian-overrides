@@ -1,3 +1,8 @@
-# Source exists in missing-sources as gauge.coffee. It is transpliced into
-# javascript before being minimized
-netdata source: source-is-missing web/lib/gauge.min.js
+# Long HTML blocks; not a minified JS file
+netdata: insane-line-length-in-source-file web/dashboard_info.js *
+
+# Not a minified JS file
+netdata source: source-contains-prebuilt-javascript-object web/dashboard_info.js *
+
+# Not a minified JS file
+netdata: source-is-missing web/dashboard_info.js *
