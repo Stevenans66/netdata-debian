@@ -34,6 +34,11 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="the netdata daemon"
 PIDFILE=/var/run/netdata/netdata.pid
 DEFAULTSFILE=/etc/default/$NAME
+CONF_FNAME=/etc/netdata/netdata.conf
+
+# Include defaults if available
+if [ -r $DEFAULTSFILE ] ; then
+	. $DEFAULTSFILE
 
 case "$1" in
   start)
