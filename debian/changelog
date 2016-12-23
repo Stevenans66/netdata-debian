@@ -1,3 +1,9 @@
+netdata (1.4.0+dfsg-2) unstable; urgency=medium
+
+  * Fix init script
+
+ -- Federico Ceratto <federico@debian.org>  Fri, 23 Dec 2016 18:30:45 +0000
+
 netdata (1.4.0+dfsg-1) unstable; urgency=medium
 
   * New upstream release (Closes: #848311)
