@@ -39,6 +39,7 @@ CONF_FNAME=/etc/netdata/netdata.conf
 # Include defaults if available
 if [ -r $DEFAULTSFILE ] ; then
 	. $DEFAULTSFILE
+fi
 
 case "$1" in
   start)
