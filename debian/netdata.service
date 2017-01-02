@@ -17,6 +17,7 @@ ExecReload=/usr/sbin/netdata reload
 TimeoutStopSec=10
 KillMode=mixed
 KillSignal=SIGTERM
+OOMScoreAdjust=-900
 
 User=netdata
 Group=netdata
