@@ -46,7 +46,7 @@ override_dh_install-indep:
 	# Deactivate automatic update check
 	echo 0 > $(TOP)-data/usr/share/netdata/web/version.txt
 
-override_dh_fixperms:
+override_dh_fixperms-arch:
 	dh_fixperms
 
 	# apps.plugin should only be runnable by the netdata user. It will be

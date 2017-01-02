@@ -3,6 +3,7 @@ netdata (1.4.0+dfsg-3) UNRELEASED; urgency=medium
   * Install Python plugins
   * Add alarm-notify.sh (Closes: #848730)
   * Adjust OOM score (Closes: #848642)
+  * Fix dh_fixperms (Closes: #848351)
 
  -- Federico Ceratto <federico@debian.org>  Mon, 02 Jan 2017 19:08:25 +0000
 
