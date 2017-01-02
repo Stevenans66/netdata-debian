@@ -1,11 +1,11 @@
-netdata (1.4.0+dfsg-3) UNRELEASED; urgency=medium
+netdata (1.4.0+dfsg-3) unstable; urgency=medium
 
   * Install Python plugins
   * Add alarm-notify.sh (Closes: #848730)
   * Adjust OOM score (Closes: #848642)
   * Fix dh_fixperms (Closes: #848351)
 
- -- Federico Ceratto <federico@debian.org>  Mon, 02 Jan 2017 19:08:25 +0000
+ -- Federico Ceratto <federico@debian.org>  Mon, 02 Jan 2017 20:35:53 +0000
 
 netdata (1.4.0+dfsg-2) unstable; urgency=medium
 
