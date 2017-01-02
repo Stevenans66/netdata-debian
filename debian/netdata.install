@@ -9,3 +9,4 @@ usr/lib/*/netdata/plugins.d/loopsleepms.sh.inc
 usr/lib/*/netdata/plugins.d/tc-qos-helper.sh
 usr/lib/*/netdata/plugins.d/cgroup-name.sh
 usr/lib/*/netdata/plugins.d/alarm-email.sh
+usr/lib/*/netdata/plugins.d/alarm-notify.sh
