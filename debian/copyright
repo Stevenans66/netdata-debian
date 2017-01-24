@@ -68,6 +68,14 @@ Copyright: 2014 Min Hur, The New York Times Company
 License: Expat
 
 Files:
+ web/lib/bootstrap-table-1.11.0.min.js
+ web/lib/bootstrap-table-export-1.11.0.min.js
+ debian/missing-sources/bootstrap-table-1.11.0.js
+ debian/missing-sources/bootstrap-table-export-1.11.0.js
+Copyright: 2016 Zhixin Wen
+License: Expat
+
+Files:
  web/lib/c3-0.4.11.min.js
  web/css/c3-0.4.11.min.css
  debian/missing-sources/c3-0.4.11.min.js
@@ -139,6 +147,13 @@ Files:
  web/images/post.png
 Copyright: 2016 IconsDB.com Icons
 License: CC0
+
+Files:
+ web/lib/tableExport-1.6.0.min.js
+ debian/missing-sources/tableExport-1.6.0.js
+Copyright: 2016 hhurz
+           2014 Giri Raj
+License: Expat
 
 License: LGPL-3+
  This library is free software; you can redistribute it and/or modify it under
