@@ -3,15 +3,13 @@ Upstream-Name: netdata
 Upstream-Contact: Costa Tsaousis <costa@tsaousis.gr>
 Source: https://github.com/firehol/netdata
 Files-Excluded:
- web/old/*
- web/fonts/*
- web/css/bootstrap-theme.min.css
- web/css/bootstrap.min.css
+ python.d/python_modules/pyyaml2
+ python.d/python_modules/pyyaml3
+ web/old
+ web/fonts
+ web/.well-known
  web/css/font-awesome.min.css
- web/lib/bootstrap.min.js
- web/lib/d3.min.js
- web/lib/jquery-1.12.0.min.js
- web/lib/raphael-min.js
+ web/demo*
 Comment:
  Excluded files are available as debian package or are old files still being
  distributed with the tarball.
