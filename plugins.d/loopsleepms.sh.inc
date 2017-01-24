@@ -1,6 +1,6 @@
 # no need for shebang - this file is included from other scripts
 
-LOOPSLEEP_DATE="$(which date)"
+LOOPSLEEP_DATE="$(which date 2>/dev/null || command -v date 2>/dev/null)"
 if [ -z "$LOOPSLEEP_DATE" ]
     then
     echo >&2 "$0: ERROR: Cannot find the command 'date' in the system path."
@@ -139,7 +139,7 @@ loopsleepms() {
 
     # calculate ms since last run
     [ ${LOOPSLEEPMS_LASTRUN} -gt 0 ] && \
-        LOOPSLEEPMS_LASTWORK=$((now_ms - LOOPSLEEPMS_LASTRUN - LOOPSLEEPMS_LASTSLEEP))
+        LOOPSLEEPMS_LASTWORK=$((now_ms - LOOPSLEEPMS_LASTRUN - LOOPSLEEPMS_LASTSLEEP + current_time_ms_accuracy))
     # echo "# last loop's work took $LOOPSLEEPMS_LASTWORK ms"
     
     # remember this run

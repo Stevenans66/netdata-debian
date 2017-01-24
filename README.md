@@ -1,148 +1,240 @@
-[![Build Status](https://travis-ci.org/firehol/netdata.svg?branch=master)](https://travis-ci.org/firehol/netdata)
-<a href="https://scan.coverity.com/projects/firehol-netdata"><img alt="Coverity Scan Build Status" src="https://scan.coverity.com/projects/9140/badge.svg"/></a>
-[![Docker Pulls](https://img.shields.io/docker/pulls/titpetric/netdata.svg)](https://hub.docker.com/r/titpetric/netdata/)
+# netdata [![Build Status](https://travis-ci.org/firehol/netdata.svg?branch=master)](https://travis-ci.org/firehol/netdata) [![Coverity Scan Build Status](https://scan.coverity.com/projects/9140/badge.svg)](https://scan.coverity.com/projects/firehol-netdata) [![Code Climate](https://codeclimate.com/github/firehol/netdata/badges/gpa.svg)](https://codeclimate.com/github/firehol/netdata) [![Docker Pulls](https://img.shields.io/docker/pulls/titpetric/netdata.svg)](https://hub.docker.com/r/titpetric/netdata/)
+> *New to netdata? Here is a live demo: [http://my-netdata.io](http://my-netdata.io)*
 
-[![User Base](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=persons&label=user%20base&units=null&value_color=blue&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
-[![Monitored Servers](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=machines&label=servers%20monitored&units=null&value_color=orange&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
-[![Sessions Served](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_sessions&label=sessions%20served&units=null&value_color=yellowgreen&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
+**netdata** is a system for **distributed real-time performance and health monitoring**.
+It provides **unparalleled insights, in real-time**, of everything happening on the
+system it runs (including applications such as web and database servers), using
+**modern interactive web dashboards**.
 
-[![New Users Today](http://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=persons&after=-86400&options=unaligned&group=incremental-sum&label=new%20users%20today&units=null&value_color=blue&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
-[![New Machines Today](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=machines&group=incremental-sum&after=-86400&options=unaligned&label=servers%20added%20today&units=null&value_color=orange&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
-[![Sessions Today](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_sessions&after=-86400&group=incremental-sum&options=unaligned&label=sessions%20served%20today&units=null&value_color=yellowgreen&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
-
-
-# netdata
-
-> Oct 4th, 2016
->
-> [netdata v1.4.0 released!](https://github.com/firehol/netdata/releases)
->
-> - the fastest netdata ever (with a better look too)!
-> - improved IoT and containers support!
-> - alarms improved in almost every way!
-> - new plugins:  softnet netdev, extended TCP metrics, UDPLite, NFS v2, v3 client (server was there already), NFS v4 server & client, APCUPSd, RetroShare
-> - improved plugins: mysql, cgroups, hddtemp, sensors, phpfm, tc (QoS)
+_netdata is **fast** and **efficient**, designed to permanently run on all systems
+(**physical** & **virtual** servers, **containers**, **IoT** devices), without
+disrupting their core function._
 
 ---
 
-> Aug 28th, 2016
->
-> [netdata v1.3.0 released!](https://github.com/firehol/netdata/releases)
->
-> - netdata has **[health monitoring / alarms](https://github.com/firehol/netdata/wiki/health-monitoring)**!
-> - netdata **[generates badges](https://github.com/firehol/netdata/wiki/Generating-Badges)** that can be embeded anywhere!
-> - netdata plugins are now written in python!
-> - new plugins: redis, memcached, nginx_log, ipfs, apache_cache
+## User base
+
+*Since May 16th 2016 (the date the [global public netdata registry](https://github.com/firehol/netdata/wiki/mynetdata-menu-item) was released):*<br/>
+[![User Base](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=persons&label=user%20base&units=null&value_color=blue&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry) [![Monitored Servers](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=machines&label=servers%20monitored&units=null&value_color=orange&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry) [![Sessions Served](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_sessions&label=sessions%20served&units=null&value_color=yellowgreen&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
+
+*in the last 24 hours:*<br/>
+[![New Users Today](http://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=persons&after=-86400&options=unaligned&group=incremental-sum&label=new%20users%20today&units=null&value_color=blue&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry) [![New Machines Today](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_entries&dimensions=machines&group=incremental-sum&after=-86400&options=unaligned&label=servers%20added%20today&units=null&value_color=orange&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry) [![Sessions Today](https://registry.my-netdata.io/api/v1/badge.svg?chart=netdata.registry_sessions&after=-86400&group=incremental-sum&options=unaligned&label=sessions%20served%20today&units=null&value_color=yellowgreen&precision=0&v42)](https://registry.my-netdata.io/#menu_netdata_submenu_registry)
 
 ---
 
-**Real-time performance and health monitoring, done right!**
+## News
 
-This is the default dashboard of **netdata**:
+<p align="center">
+Netdata is featured at <b><a href="https://octoverse.github.com/" target="_blank">GitHub's State Of The Octoverse 2016</a></b><br/>
+<a href="https://octoverse.github.com/" target="_blank"><img src="https://cloud.githubusercontent.com/assets/2662304/21743260/23ebe62c-d507-11e6-80c0-76b95f53e464.png"/></a>
+</p>
 
- - real-time, per second updates, snappy refreshes!
- - 300+ charts out of the box, 2000+ metrics monitored!
- - zero configuration, zero maintenance, zero dependencies!
- - dozens of health monitoring alarms, out of the box!
+`Jan 22nd, 2017` - **[netdata v1.5.0 released!](https://github.com/firehol/netdata/releases)**
 
-Live demo: [http://my-netdata.io](http://my-netdata.io)
-
-![netdata](https://cloud.githubusercontent.com/assets/2662304/14092712/93b039ea-f551-11e5-822c-beadbf2b2a2e.gif)
+ - netdata now runs on **FreeBSD** and **MacOS**
+ - netdata now supports **Graphite**, **OpenTSDB**, **Prometheus** and compatible backends
+ - netdata now monitors **SystemD Services**
+ - new plugins: fping, postgres, varnish, elasticsearch, haproxy, freeradius, mdstat, ISC dhcpd, fail2ban, openvpn, NUMA memory, CPU Idle States, gunicorn, ECC memory errors, IPC semaphores, uptime
+ - improved plugins: netfilter conntrack, mysql/mariadb, ipfs, cpufreq, hddtemp, sensors, nginx, nginx_log, phpfpm, redis, dovecot, containers and cgroups, disk space, apps.plugin, tc (QoS) and almost all internal plugins (memory, IPv4 and IPv6, network interfaces, QoS, etc)
+ - dozens of new and improved alarms (including performance monitoring alarms for mysql)
+ - new alarm notifications: messagebird.com, pagerduty.com, pushbullet.com, twilio.com, hipchat, kafka
+ - dozens more improvements and performance optimizations
 
 ---
 
 ## Features
 
-**netdata** is a highly optimized Linux daemon providing **real-time performance monitoring for Linux systems, Applications, SNMP devices, over the web**!
+<p align="center">
+<img src="https://cloud.githubusercontent.com/assets/2662304/19168687/f6a567be-8c19-11e6-8561-ce8d589e8346.gif"/>
+</p>
 
-It tries to visualize the **truth of now**, in its **greatest detail**, so that you can get insights of what is happening now and what just happened, on your systems and applications.
+ - **Stunning interactive bootstrap dashboards**<br/>
+   mouse and touch friendly, in 2 themes: dark, light
+   
+ - **Amazingly fast**<br/>
+   responds to all queries in less than 0.5 ms per metric,
+   even on low-end hardware
+   
+ - **Highly efficient**<br/>
+   collects thousands of metrics per server per second,
+   with just 1% CPU utilization of a single core, a few MB of RAM and no disk I/O at all
+   
+ - **Sophisticated alarming**<br/>
+   supports dynamic thresholds, hysteresis, alarm templates,
+   multiple role-based notification methods (such as email, slack.com,
+   pushover.net, pushbullet.com telegram.org, twilio.com, messagebird.com)
+   
+ - **Extensible**<br/>
+   you can monitor anything you can get a metric for,
+   using its Plugin API (anything can be a netdata plugin,
+   BASH, python, perl, node.js, java, Go, ruby, etc)
+   
+ - **Embeddable**<br/>
+   it can run anywhere a Linux kernel runs (even IoT)
+   and its charts can be embedded on your web pages too
+   
+ - **Customizable**<br/>
+   custom dashboards can be built using simple HTML (no javascript necessary)
+   
+ - **Zero configuration**<br/>
+   auto-detects everything, it can collect up to 5000 metrics
+   per server out of the box
+   
+ - **Zero dependencies**<br/>
+   it is even its own web server, for its static web files and its web API
+   
+ - **Zero maintenance**<br/>
+   you just run it, it does the rest
+   
+ - **scales to infinity**<br/>
+   requiring minimal central resources
+   
+ - **back-ends supported**<br/>
+   can archive its metrics on `graphite` or `opentsdb`, in the same or lower detail
+   (lower: to prevent it from congesting these servers due to the amount of data collected)
 
-This is what you get:
-
-- **Stunning bootstrap dashboards**, out of the box (theme-able: dark, light)
-- **Blazingly fast** and **super efficient**, mostly written in C (for default installations, expect just 2% of a single core CPU usage and a few MB of RAM)
-- **Zero configuration** - you just install it and it auto-detects everything
-- **Zero dependencies**, it is its own web server for its static web files and its web API
-- **Zero maintenance**, you just run it, it does the rest
-- **Custom dashboards** that can be built using simple HTML (no javascript necessary)
-- **Extensible**, you can monitor anything you can get a metric for, using its Plugin API (anything can be a netdata plugin - from BASH to python and node.js, so you can easily monitor any application, any API)
-- **Embeddable**, it can run anywhere a Linux kernel runs (even IoT) and its charts can be embedded on your web pages too
+![netdata](https://cloud.githubusercontent.com/assets/2662304/14092712/93b039ea-f551-11e5-822c-beadbf2b2a2e.gif)
 
 ---
 
 ## What does it monitor?
 
-This is what it currently monitors (most with zero configuration):
+netdata monitors several thousands of metrics per device.
+All these metrics are collected and visualized in real-time.
 
-- **CPU usage, interrupts, softirqs and frequency** (total and per core)
+> _Almost all metrics are auto-detected, without any configuration._
 
-- **RAM, swap and kernel memory usage** (including KSM and kernel memory deduper)
+This is a list of what it currently monitors:
 
-- **Disks** (per disk: I/O, operations, backlog, utilization, space, etc)
+- **CPU**<br/>
+  usage, interrupts, softirqs, frequency, total and per core
+
+- **Memory**<br/>
+  RAM, swap and kernel memory usage, KSM (Kernel Samepage Merging), NUMA
+
+- **Disks**<br/>
+  per disk: I/O, operations, backlog, utilization, space
 
    ![sda](https://cloud.githubusercontent.com/assets/2662304/14093195/c882bbf4-f554-11e5-8863-1788d643d2c0.gif)
 
-- **Network interfaces** (per interface: bandwidth, packets, errors, drops, etc)
+- **Network interfaces**<br/>
+  per interface: bandwidth, packets, errors, drops
 
    ![dsl0](https://cloud.githubusercontent.com/assets/2662304/14093128/4d566494-f554-11e5-8ee4-5392e0ac51f0.gif)
 
-- **IPv4 networking** (bandwidth, packets, errors, fragments, tcp: connections, packets, errors, handshake, udp: packets, errors, broadcast: bandwidth, packets, multicast: bandwidth, packets)
+- **IPv4 networking**<br/>
+  bandwidth, packets, errors, fragments,
+  tcp: connections, packets, errors, handshake,
+  udp: packets, errors,
+  broadcast: bandwidth, packets,
+  multicast: bandwidth, packets
 
-- **IPv6 networking** (bandwidth, packets, errors, fragments, ECT, udp: packets, errors, udplite: packets, errors, broadcast: bandwidth, multicast: bandwidth, packets, icmp: messages, errors, echos, router, neighbor, MLDv2, group membership, break down by type)
+- **IPv6 networking**<br/>
+  bandwidth, packets, errors, fragments, ECT,
+  udp: packets, errors,
+  udplite: packets, errors,
+  broadcast: bandwidth,
+  multicast: bandwidth, packets,
+  icmp: messages, errors, echos, router, neighbor, MLDv2, group membership,
+  break down by type
 
-- **netfilter / iptables Linux firewall** (connections, connection tracker events, errors, etc)
+- **Interprocess Communication - IPC**<br/>
+  such as semaphores and semaphores arrays
 
-- **Linux DDoS protection** (SYNPROXY metrics)
+- **netfilter / iptables Linux firewall**<br/>
+  connections, connection tracker events, errors
 
-- **Processes** (running, blocked, forks, active, etc)
+- **Linux DDoS protection**<br/>
+  SYNPROXY metrics
 
-- **Entropy** (random numbers pool, using in cryptography)
+- **fping** latencies</br>
+  for any number of hosts, showing latency, packets and packet loss
 
-- **NFS file servers and clients**, v2, v3, v4 (I/O, cache, read ahead, RPC calls)
+   ![image](https://cloud.githubusercontent.com/assets/2662304/20464811/9517d2b4-af57-11e6-8361-f6cc57541cd7.png)
 
-- **Network QoS** (yes, the only tool that visualizes network `tc` classes in realtime)
+
+- **Processes**<br/>
+  running, blocked, forks, active
+
+- **Entropy**<br/>
+  random numbers pool, using in cryptography
+
+- **NFS file servers and clients**<br/>
+  NFS v2, v3, v4: I/O, cache, read ahead, RPC calls
+
+- **Network QoS**<br/>
+  the only tool that visualizes network `tc` classes in realtime
 
    ![qos-tc-classes](https://cloud.githubusercontent.com/assets/2662304/14093004/68966020-f553-11e5-98fe-ffee2086fafd.gif)
 
-- **Linux Control Groups** (containers), systemd, lxc, docker, etc
+- **Linux Control Groups**<br/>
+  containers: systemd, lxc, docker
 
-- **Applications**, by grouping the process tree (CPU, memory, disk reads, disk writes, swap, threads, pipes, sockets, etc)
+- **Applications**<br/>
+  by grouping the process tree and reporting CPU, memory, disk reads,
+  disk writes, swap, threads, pipes, sockets - per group
 
    ![apps](https://cloud.githubusercontent.com/assets/2662304/14093565/67c4002c-f557-11e5-86bd-0154f5135def.gif)
 
-- **Users and User Groups resource usage**, by summarizing the process tree per user and group (CPU, memory, disk reads, disk writes, swap, threads, pipes, sockets, etc)
+- **Users and User Groups resource usage**<br/>
+  by summarizing the process tree per user and group,
+  reporting: CPU, memory, disk reads, disk writes, swap, threads, pipes, sockets
 
-- **Apache web servers** mod-status (v2.2, v2.4) and cache log statistics (multiple servers - compatible with lighttpd too)
+- **Apache and lighttpd web servers**<br/>
+   `mod-status` (v2.2, v2.4) and cache log statistics, for multiple servers
 
-- **Nginx web servers** stub-status (multiple servers)
+- **Nginx web servers**<br/>
+  `stub-status`, for multiple servers
 
-- **mySQL databases** (multiple servers, each showing: bandwidth, queries/s, handlers, locks, issues, tmp operations, connections, binlog metrics, threads, innodb metrics, etc)
+- **Tomcat**<br/>
+  accesses, threads, free memory, volume
 
-- **Redis databases** (multiple servers, each showing: operations, hit rate, memory, keys, clients, slaves)
+- **mySQL databases**<br/>
+  multiple servers, each showing: bandwidth, queries/s, handlers, locks, issues,
+  tmp operations, connections, binlog metrics, threads, innodb metrics, and more
 
-- **memcached databases** (multiple servers, each showing: bandwidth, connections, items, etc)
+- **Postgres databases**<br/>
+  multiple servers, each showing: per database statistics (connections, tuples
+  read - written - returned, transactions, locks), backend processes, indexes,
+  tables, write ahead, background writer and more
 
-- **ISC Bind name servers** (multiple servers, each showing: clients, requests, queries, updates, failures and several per view metrics)
+- **Redis databases**<br/>
+  multiple servers, each showing: operations, hit rate, memory, keys, clients, slaves
 
-- **Postfix email servers** message queue (entries, size)
+- **memcached databases**<br/>
+  multiple servers, each showing: bandwidth, connections, items
 
-- **exim email servers** message queue (emails queued)
+- **ISC Bind name servers**<br/>
+  multiple servers, each showing: clients, requests, queries, updates, failures and several per view metrics
 
-- **IPFS** (Bandwidth, Peers)
+- **Postfix email servers**<br/>
+  message queue (entries, size)
 
-- **Squid proxy servers** (multiple servers, each showing: clients bandwidth and requests, servers bandwidth and requests)
+- **exim email servers**<br/>
+  message queue (emails queued)
 
-- **Hardware sensors** (temperature, voltage, fans, power, humidity, etc)
+- **Dovecot** POP3/IMAP servers<br/>
 
-- **NUT and APC UPSes** (load, charge, battery voltage, temperature, utility metrics, output metrics)
+- **IPFS**<br/>
+  bandwidth, peers
 
-- **Tomcat** (accesses, threads, free memory, volume)
+- **Squid proxy servers**<br/>
+  multiple servers, each showing: clients bandwidth and requests, servers bandwidth and requests
 
-- **PHP-FPM** (multiple instances, each reporting connections, requests, performance)
+- **Hardware sensors**<br/>
+  temperature, voltage, fans, power, humidity
 
-- **hddtemp** (disk temperatures)
+- **NUT and APC UPSes**<br/>
+  load, charge, battery voltage, temperature, utility metrics, output metrics
 
-- **SNMP devices** can be monitored too (although you will need to configure these)
+- **PHP-FPM**<br/>
+  multiple instances, each reporting connections, requests, performance
+
+- **hddtemp**<br/>
+  disk temperatures
+
+- **SNMP devices**<br/>
+  can be monitored too (although you will need to configure these)
 
 And you can extend it, by writing plugins that collect data from any source, using any computer language.
 
@@ -150,22 +242,30 @@ And you can extend it, by writing plugins that collect data from any source, usi
 
 ## Installation
 
-Use our **[automatic installer](https://github.com/firehol/netdata/wiki/Installation)** to build and install it on your system
+Use our **[automatic installer](https://github.com/firehol/netdata/wiki/Installation)** to build and install it on your system.
 
-It should run on **any Linux** system. It has been tested on:
+It should run on **any Linux** system (including IoT). It has been tested on:
 
-- Gentoo
+- Alpine
 - Arch Linux
-- Ubuntu / Debian
 - CentOS
+- Debian
 - Fedora
+- Gentoo
+- openSUSE
+- PLD Linux
 - RedHat Enterprise Linux
 - SUSE
-- Alpine Linux
-- PLD Linux
+- Ubuntu
 
 ---
 
 ## Documentation
 
 Check the **[netdata wiki](https://github.com/firehol/netdata/wiki)**.
+
+## License
+
+netdata is GPLv3+.
+
+It re-distributes other open-source tools and libraries. Please check its [License Statement](https://github.com/firehol/netdata/blob/master/LICENSE.md).

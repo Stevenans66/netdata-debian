@@ -87,15 +87,16 @@ static int pluginsd_split_words(char *str, char **words, int max_words) {
 void *pluginsd_worker_thread(void *arg)
 {
     struct plugind *cd = (struct plugind *)arg;
+    cd->obsolete = 0;
+
     char line[PLUGINSD_LINE_MAX + 1];
 
 #ifdef DETACH_PLUGINS_FROM_NETDATA
-    unsigned long long usec = 0, susec = 0;
+    usec_t usec = 0, susec = 0;
     struct timeval last = {0, 0} , now = {0, 0};
 #endif
 
     char *words[MAX_WORDS] = { NULL };
-    uint32_t SET_HASH = simple_hash("SET");
     uint32_t BEGIN_HASH = simple_hash("BEGIN");
     uint32_t END_HASH = simple_hash("END");
     uint32_t FLUSH_HASH = simple_hash("FLUSH");
@@ -121,7 +122,6 @@ void *pluginsd_worker_thread(void *arg)
         info("PLUGINSD: '%s' running on pid %d", cd->fullfilename, cd->pid);
 
         RRDSET *st = NULL;
-        char *s;
         uint32_t hash;
 
         while(likely(fgets(line, PLUGINSD_LINE_MAX, fp) != NULL)) {
@@ -132,7 +132,7 @@ void *pluginsd_worker_thread(void *arg)
             // debug(D_PLUGINSD, "PLUGINSD: %s: %s", cd->filename, line);
 
             int w = pluginsd_split_words(line, words, MAX_WORDS);
-            s = words[0];
+            char *s = words[0];
             if(unlikely(!s || !*s || !w)) {
                 // debug(D_PLUGINSD, "PLUGINSD: empty line");
                 continue;
@@ -140,9 +140,7 @@ void *pluginsd_worker_thread(void *arg)
 
             // debug(D_PLUGINSD, "PLUGINSD: words 0='%s' 1='%s' 2='%s' 3='%s' 4='%s' 5='%s' 6='%s' 7='%s' 8='%s' 9='%s'", words[0], words[1], words[2], words[3], words[4], words[5], words[6], words[7], words[8], words[9]);
 
-            hash = simple_hash(s);
-
-            if(likely(hash == SET_HASH && !strcmp(s, "SET"))) {
+            if(likely(!simple_hash_strcmp(s, "SET", &hash))) {
                 char *dimension = words[1];
                 char *value = words[2];
 
@@ -186,10 +184,10 @@ void *pluginsd_worker_thread(void *arg)
                 }
 
                 if(likely(st->counter_done)) {
-                    unsigned long long microseconds = 0;
-                    if(microseconds_txt && *microseconds_txt) microseconds = strtoull(microseconds_txt, NULL, 10);
+                    usec_t microseconds = 0;
+                    if(microseconds_txt && *microseconds_txt) microseconds = str2ull(microseconds_txt);
                     if(microseconds) rrdset_next_usec(st, microseconds);
-                    else rrdset_next_plugins(st);
+                    else rrdset_next(st);
                 }
             }
             else if(likely(hash == END_HASH && !strcmp(s, "END"))) {
@@ -241,10 +239,10 @@ void *pluginsd_worker_thread(void *arg)
                 }
 
                 int priority = 1000;
-                if(likely(priority_s)) priority = atoi(priority_s);
+                if(likely(priority_s)) priority = str2i(priority_s);
 
                 int update_every = cd->update_every;
-                if(likely(update_every_s)) update_every = atoi(update_every_s);
+                if(likely(update_every_s)) update_every = str2i(update_every_s);
                 if(unlikely(!update_every)) update_every = cd->update_every;
 
                 int chart_type = RRDSET_TYPE_LINE;
@@ -326,7 +324,7 @@ void *pluginsd_worker_thread(void *arg)
                 else if(unlikely(st->debug)) debug(D_PLUGINSD, "PLUGINSD: dimension %s/%s already exists. Not adding it again.", st->id, id);
             }
             else if(unlikely(hash == DISABLE_HASH && !strcmp(s, "DISABLE"))) {
-                error("PLUGINSD: '%s' called DISABLE. Disabling it.", cd->fullfilename);
+                info("PLUGINSD: '%s' called DISABLE. Disabling it.", cd->fullfilename);
                 cd->enabled = 0;
                 killpid(cd->pid, SIGTERM);
                 break;
@@ -342,17 +340,17 @@ void *pluginsd_worker_thread(void *arg)
             else if(likely(hash == STOPPING_WAKE_ME_UP_PLEASE_HASH && !strcmp(s, "STOPPING_WAKE_ME_UP_PLEASE"))) {
                 error("PLUGINSD: '%s' (pid %d) called STOPPING_WAKE_ME_UP_PLEASE.", cd->fullfilename, cd->pid);
 
-                gettimeofday(&now, NULL);
+                now_realtime_timeval(&now);
                 if(unlikely(!usec && !susec)) {
                     // our first run
-                    susec = cd->rrd_update_every * 1000000ULL;
+                    susec = cd->rrd_update_every * USEC_PER_SEC;
                 }
                 else {
                     // second+ run
-                    usec = usec_dt(&now, &last) - susec;
+                    usec = dt_usec(&now, &last) - susec;
                     error("PLUGINSD: %s last loop took %llu usec (worked for %llu, sleeped for %llu).\n", cd->fullfilename, usec + susec, usec, susec);
-                    if(unlikely(usec < (rrd_update_every * 1000000ULL / 2ULL))) susec = (rrd_update_every * 1000000ULL) - usec;
-                    else susec = rrd_update_every * 1000000ULL / 2ULL;
+                    if(unlikely(usec < (rrd_update_every * USEC_PER_SEC / 2ULL))) susec = (rrd_update_every * USEC_PER_SEC) - usec;
+                    else susec = rrd_update_every * USEC_PER_SEC / 2ULL;
                 }
 
                 error("PLUGINSD: %s sleeping for %llu. Will kill with SIGCONT pid %d to wake it up.\n", cd->fullfilename, susec, cd->pid);
@@ -394,7 +392,7 @@ void *pluginsd_worker_thread(void *arg)
                 // we have collected something
 
                 if(likely(cd->serial_failures <= 10)) {
-                    error("PLUGINSD: '%s' exited with error code %d, but has given useful output in the past (%zu times). Waiting a bit before starting it again.", cd->fullfilename, code, cd->successful_collections);
+                    error("PLUGINSD: '%s' exited with error code %d, but has given useful output in the past (%zu times). %s", cd->fullfilename, code, cd->successful_collections, cd->enabled?"Waiting a bit before starting it again.":"Will not start it again - it is disabled.");
                     sleep((unsigned int) (cd->update_every * 10));
                 }
                 else {
@@ -410,7 +408,7 @@ void *pluginsd_worker_thread(void *arg)
                 // we have collected nothing so far
 
                 if(likely(cd->serial_failures <= 10)) {
-                    error("PLUGINSD: '%s' (pid %d) does not generate useful output but it reports success (exits with 0). Waiting a bit before starting it again.", cd->fullfilename, cd->pid);
+                    error("PLUGINSD: '%s' (pid %d) does not generate useful output but it reports success (exits with 0). %s.", cd->fullfilename, cd->pid, cd->enabled?"Waiting a bit before starting it again.":"Will not start it again - it is disabled.");
                     sleep((unsigned int) (cd->update_every * 10));
                 }
                 else {
@@ -434,7 +432,7 @@ void *pluginsd_worker_thread(void *arg)
 }
 
 void *pluginsd_main(void *ptr) {
-    (void)ptr;
+    struct netdata_static_thread *static_thread = (struct netdata_static_thread *)ptr;
 
     info("PLUGINS.D thread created with task id %d", gettid());
 
@@ -462,8 +460,7 @@ void *pluginsd_main(void *ptr) {
         dir = opendir(dir_name);
         if(unlikely(!dir)) {
             error("Cannot open directory '%s'.", dir_name);
-            pthread_exit(NULL);
-            return NULL;
+            goto cleanup;
         }
 
         while(likely((file = readdir(dir)))) {
@@ -490,9 +487,9 @@ void *pluginsd_main(void *ptr) {
             }
 
             // check if it runs already
-            for(cd = pluginsd_root ; likely(cd) ; cd = cd->next) {
+            for(cd = pluginsd_root ; cd ; cd = cd->next)
                 if(unlikely(strcmp(cd->filename, file->d_name) == 0)) break;
-            }
+
             if(likely(cd && !cd->obsolete)) {
                 debug(D_PLUGINSD, "PLUGINSD: plugin '%s' is already running", cd->filename);
                 continue;
@@ -510,7 +507,7 @@ void *pluginsd_main(void *ptr) {
 
                 cd->enabled = enabled;
                 cd->update_every = (int) config_get_number(cd->id, "update every", rrd_update_every);
-                cd->started_t = time(NULL);
+                cd->started_t = now_realtime_sec();
 
                 char *def = "";
                 snprintfz(cd->cmd, PLUGINSD_CMD_MAX, "exec %s %d %s", cd->fullfilename, cd->update_every, config_get(cd->id, "command options", def));
@@ -518,26 +515,29 @@ void *pluginsd_main(void *ptr) {
                 // link it
                 if(likely(pluginsd_root)) cd->next = pluginsd_root;
                 pluginsd_root = cd;
-            }
-            cd->obsolete = 0;
 
-            if(unlikely(!cd->enabled)) continue;
-
-            // spawn a new thread for it
-            if(unlikely(pthread_create(&cd->thread, NULL, pluginsd_worker_thread, cd) != 0)) {
-                error("PLUGINSD: failed to create new thread for plugin '%s'.", cd->filename);
+                // it is not currently running
                 cd->obsolete = 1;
+
+                if(cd->enabled) {
+                    // spawn a new thread for it
+                    if(unlikely(pthread_create(&cd->thread, NULL, pluginsd_worker_thread, cd) != 0))
+                        error("PLUGINSD: failed to create new thread for plugin '%s'.", cd->filename);
+
+                    else if(unlikely(pthread_detach(cd->thread) != 0))
+                        error("PLUGINSD: Cannot request detach of newly created thread for plugin '%s'.", cd->filename);
+                }
             }
-            else if(unlikely(pthread_detach(cd->thread) != 0))
-                error("PLUGINSD: Cannot request detach of newly created thread for plugin '%s'.", cd->filename);
         }
 
         closedir(dir);
         sleep((unsigned int) scan_frequency);
     }
 
+cleanup:
     info("PLUGINS.D thread exiting");
 
+    static_thread->enabled = 0;
     pthread_exit(NULL);
     return NULL;
 }
