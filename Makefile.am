@@ -18,6 +18,13 @@ MAINTAINERCLEANFILES= \
 
 EXTRA_DIST = \
 	.gitignore \
+	.codeclimate.yml \
+	.csslintrc \
+	.eslintignore \
+	.eslintrc \
+	.travis \
+	m4/ax_check_enable_debug.m4 \
+	m4/ax_c_statement_expressions.m4 \
 	autogen.sh \
 	README.md \
 	LICENSE.md \
@@ -39,6 +46,8 @@ SUBDIRS = \
 	$(NULL)
 
 dist_noinst_DATA= \
+	diagrams/config.puml \
+	diagrams/registry.puml \
 	configs.signatures \
 	Dockerfile \
 	netdata.spec \
@@ -47,7 +56,7 @@ dist_noinst_DATA= \
 # until integrated within build
 # should be proper init.d/openrc/systemd usable
 dist_noinst_SCRIPTS= \
-	ansible/netdata.yml \
+	diagrams/build.sh \
 	coverity-scan.sh \
 	docker-build.sh \
 	netdata-installer.sh \

@@ -84,8 +84,17 @@ cmake_install.cmake
 
 .jetbrains*
 
+.DS_Store
+
 contrib/debian/changelog
 profile/benchmark-dictionary
 profile/benchmark-registry
 
 *.pyc
+
+diagrams/*.png
+diagrams/*.svg
+diagrams/*.atxt
+diagrams/plantuml.jar
+
+netdata.cppcheck

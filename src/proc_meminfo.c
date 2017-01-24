@@ -1,96 +1,135 @@
 #include "common.h"
 
-#define MAX_PROC_MEMINFO_LINE 4096
-#define MAX_PROC_MEMINFO_NAME 1024
-
-int do_proc_meminfo(int update_every, unsigned long long dt) {
-    static procfile *ff = NULL;
-
-    static int do_ram = -1, do_swap = -1, do_hwcorrupt = -1, do_committed = -1, do_writeback = -1, do_kernel = -1, do_slab = -1;
-
-    if(do_ram == -1)        do_ram          = config_get_boolean("plugin:proc:/proc/meminfo", "system ram", 1);
-    if(do_swap == -1)       do_swap         = config_get_boolean_ondemand("plugin:proc:/proc/meminfo", "system swap", CONFIG_ONDEMAND_ONDEMAND);
-    if(do_hwcorrupt == -1)  do_hwcorrupt    = config_get_boolean_ondemand("plugin:proc:/proc/meminfo", "hardware corrupted ECC", CONFIG_ONDEMAND_ONDEMAND);
-    if(do_committed == -1)  do_committed    = config_get_boolean("plugin:proc:/proc/meminfo", "committed memory", 1);
-    if(do_writeback == -1)  do_writeback    = config_get_boolean("plugin:proc:/proc/meminfo", "writeback memory", 1);
-    if(do_kernel == -1)     do_kernel       = config_get_boolean("plugin:proc:/proc/meminfo", "kernel memory", 1);
-    if(do_slab == -1)       do_slab         = config_get_boolean("plugin:proc:/proc/meminfo", "slab memory", 1);
-
+int do_proc_meminfo(int update_every, usec_t dt) {
     (void)dt;
 
-    if(!ff) {
+    static procfile *ff = NULL;
+    static int do_ram = -1, do_swap = -1, do_hwcorrupt = -1, do_committed = -1, do_writeback = -1, do_kernel = -1, do_slab = -1;
+
+    static ARL_BASE *arl_base = NULL;
+    static ARL_ENTRY *arl_hwcorrupted = NULL;
+
+    static unsigned long long
+            MemTotal = 0,
+            MemFree = 0,
+            Buffers = 0,
+            Cached = 0,
+            //SwapCached = 0,
+            //Active = 0,
+            //Inactive = 0,
+            //ActiveAnon = 0,
+            //InactiveAnon = 0,
+            //ActiveFile = 0,
+            //InactiveFile = 0,
+            //Unevictable = 0,
+            //Mlocked = 0,
+            SwapTotal = 0,
+            SwapFree = 0,
+            Dirty = 0,
+            Writeback = 0,
+            //AnonPages = 0,
+            //Mapped = 0,
+            //Shmem = 0,
+            Slab = 0,
+            SReclaimable = 0,
+            SUnreclaim = 0,
+            KernelStack = 0,
+            PageTables = 0,
+            NFS_Unstable = 0,
+            Bounce = 0,
+            WritebackTmp = 0,
+            //CommitLimit = 0,
+            Committed_AS = 0,
+            //VmallocTotal = 0,
+            VmallocUsed = 0,
+            //VmallocChunk = 0,
+            //AnonHugePages = 0,
+            //HugePages_Total = 0,
+            //HugePages_Free = 0,
+            //HugePages_Rsvd = 0,
+            //HugePages_Surp = 0,
+            //Hugepagesize = 0,
+            //DirectMap4k = 0,
+            //DirectMap2M = 0,
+            HardwareCorrupted = 0;
+
+    if(unlikely(!arl_base)) {
+        do_ram          = config_get_boolean("plugin:proc:/proc/meminfo", "system ram", 1);
+        do_swap         = config_get_boolean_ondemand("plugin:proc:/proc/meminfo", "system swap", CONFIG_ONDEMAND_ONDEMAND);
+        do_hwcorrupt    = config_get_boolean_ondemand("plugin:proc:/proc/meminfo", "hardware corrupted ECC", CONFIG_ONDEMAND_ONDEMAND);
+        do_committed    = config_get_boolean("plugin:proc:/proc/meminfo", "committed memory", 1);
+        do_writeback    = config_get_boolean("plugin:proc:/proc/meminfo", "writeback memory", 1);
+        do_kernel       = config_get_boolean("plugin:proc:/proc/meminfo", "kernel memory", 1);
+        do_slab         = config_get_boolean("plugin:proc:/proc/meminfo", "slab memory", 1);
+
+        arl_base = arl_create("meminfo", NULL, 60);
+        arl_expect(arl_base, "MemTotal", &MemTotal);
+        arl_expect(arl_base, "MemFree", &MemFree);
+        arl_expect(arl_base, "Buffers", &Buffers);
+        arl_expect(arl_base, "Cached", &Cached);
+        //arl_expect(arl_base, "SwapCached", &SwapCached);
+        //arl_expect(arl_base, "Active", &Active);
+        //arl_expect(arl_base, "Inactive", &Inactive);
+        //arl_expect(arl_base, "ActiveAnon", &ActiveAnon);
+        //arl_expect(arl_base, "InactiveAnon", &InactiveAnon);
+        //arl_expect(arl_base, "ActiveFile", &ActiveFile);
+        //arl_expect(arl_base, "InactiveFile", &InactiveFile);
+        //arl_expect(arl_base, "Unevictable", &Unevictable);
+        //arl_expect(arl_base, "Mlocked", &Mlocked);
+        arl_expect(arl_base, "SwapTotal", &SwapTotal);
+        arl_expect(arl_base, "SwapFree", &SwapFree);
+        arl_expect(arl_base, "Dirty", &Dirty);
+        arl_expect(arl_base, "Writeback", &Writeback);
+        //arl_expect(arl_base, "AnonPages", &AnonPages);
+        //arl_expect(arl_base, "Mapped", &Mapped);
+        //arl_expect(arl_base, "Shmem", &Shmem);
+        arl_expect(arl_base, "Slab", &Slab);
+        arl_expect(arl_base, "SReclaimable", &SReclaimable);
+        arl_expect(arl_base, "SUnreclaim", &SUnreclaim);
+        arl_expect(arl_base, "KernelStack", &KernelStack);
+        arl_expect(arl_base, "PageTables", &PageTables);
+        arl_expect(arl_base, "NFS_Unstable", &NFS_Unstable);
+        arl_expect(arl_base, "Bounce", &Bounce);
+        arl_expect(arl_base, "WritebackTmp", &WritebackTmp);
+        //arl_expect(arl_base, "CommitLimit", &CommitLimit);
+        arl_expect(arl_base, "Committed_AS", &Committed_AS);
+        //arl_expect(arl_base, "VmallocTotal", &VmallocTotal);
+        arl_expect(arl_base, "VmallocUsed", &VmallocUsed);
+        //arl_expect(arl_base, "VmallocChunk", &VmallocChunk);
+        arl_hwcorrupted = arl_expect(arl_base, "HardwareCorrupted", &HardwareCorrupted);
+        //arl_expect(arl_base, "AnonHugePages", &AnonHugePages);
+        //arl_expect(arl_base, "HugePages_Total", &HugePages_Total);
+        //arl_expect(arl_base, "HugePages_Free", &HugePages_Free);
+        //arl_expect(arl_base, "HugePages_Rsvd", &HugePages_Rsvd);
+        //arl_expect(arl_base, "HugePages_Surp", &HugePages_Surp);
+        //arl_expect(arl_base, "Hugepagesize", &Hugepagesize);
+        //arl_expect(arl_base, "DirectMap4k", &DirectMap4k);
+        //arl_expect(arl_base, "DirectMap2M", &DirectMap2M);
+    }
+
+    if(unlikely(!ff)) {
         char filename[FILENAME_MAX + 1];
         snprintfz(filename, FILENAME_MAX, "%s%s", global_host_prefix, "/proc/meminfo");
         ff = procfile_open(config_get("plugin:proc:/proc/meminfo", "filename to monitor", filename), " \t:", PROCFILE_FLAG_DEFAULT);
+        if(unlikely(!ff))
+            return 1;
     }
-    if(!ff) return 1;
 
     ff = procfile_readall(ff);
-    if(!ff) return 0; // we return 0, so that we will retry to open it next time
+    if(unlikely(!ff))
+        return 0; // we return 0, so that we will retry to open it next time
 
-    uint32_t lines = procfile_lines(ff), l;
-    uint32_t words;
+    size_t lines = procfile_lines(ff), l;
 
-    int hwcorrupted = 0;
-
-    unsigned long long MemTotal = 0, MemFree = 0, Buffers = 0, Cached = 0, SwapCached = 0,
-        Active = 0, Inactive = 0, ActiveAnon = 0, InactiveAnon = 0, ActiveFile = 0, InactiveFile = 0,
-        Unevictable = 0, Mlocked = 0, SwapTotal = 0, SwapFree = 0, Dirty = 0, Writeback = 0, AnonPages = 0,
-        Mapped = 0, Shmem = 0, Slab = 0, SReclaimable = 0, SUnreclaim = 0, KernelStack = 0, PageTables = 0,
-        NFS_Unstable = 0, Bounce = 0, WritebackTmp = 0, CommitLimit = 0, Committed_AS = 0,
-        VmallocTotal = 0, VmallocUsed = 0, VmallocChunk = 0,
-        AnonHugePages = 0, HugePages_Total = 0, HugePages_Free = 0, HugePages_Rsvd = 0, HugePages_Surp = 0, Hugepagesize = 0,
-        DirectMap4k = 0, DirectMap2M = 0, HardwareCorrupted = 0;
+    arl_begin(arl_base);
 
     for(l = 0; l < lines ;l++) {
-        words = procfile_linewords(ff, l);
-        if(words < 2) continue;
+        size_t words = procfile_linewords(ff, l);
+        if(unlikely(words < 2)) continue;
 
-        char *name = procfile_lineword(ff, l, 0);
-        unsigned long long value = strtoull(procfile_lineword(ff, l, 1), NULL, 10);
-
-             if(!MemTotal && strcmp(name, "MemTotal") == 0) MemTotal = value;
-        else if(!MemFree && strcmp(name, "MemFree") == 0) MemFree = value;
-        else if(!Buffers && strcmp(name, "Buffers") == 0) Buffers = value;
-        else if(!Cached && strcmp(name, "Cached") == 0) Cached = value;
-        else if(!SwapCached && strcmp(name, "SwapCached") == 0) SwapCached = value;
-        else if(!Active && strcmp(name, "Active") == 0) Active = value;
-        else if(!Inactive && strcmp(name, "Inactive") == 0) Inactive = value;
-        else if(!ActiveAnon && strcmp(name, "ActiveAnon") == 0) ActiveAnon = value;
-        else if(!InactiveAnon && strcmp(name, "InactiveAnon") == 0) InactiveAnon = value;
-        else if(!ActiveFile && strcmp(name, "ActiveFile") == 0) ActiveFile = value;
-        else if(!InactiveFile && strcmp(name, "InactiveFile") == 0) InactiveFile = value;
-        else if(!Unevictable && strcmp(name, "Unevictable") == 0) Unevictable = value;
-        else if(!Mlocked && strcmp(name, "Mlocked") == 0) Mlocked = value;
-        else if(!SwapTotal && strcmp(name, "SwapTotal") == 0) SwapTotal = value;
-        else if(!SwapFree && strcmp(name, "SwapFree") == 0) SwapFree = value;
-        else if(!Dirty && strcmp(name, "Dirty") == 0) Dirty = value;
-        else if(!Writeback && strcmp(name, "Writeback") == 0) Writeback = value;
-        else if(!AnonPages && strcmp(name, "AnonPages") == 0) AnonPages = value;
-        else if(!Mapped && strcmp(name, "Mapped") == 0) Mapped = value;
-        else if(!Shmem && strcmp(name, "Shmem") == 0) Shmem = value;
-        else if(!Slab && strcmp(name, "Slab") == 0) Slab = value;
-        else if(!SReclaimable && strcmp(name, "SReclaimable") == 0) SReclaimable = value;
-        else if(!SUnreclaim && strcmp(name, "SUnreclaim") == 0) SUnreclaim = value;
-        else if(!KernelStack && strcmp(name, "KernelStack") == 0) KernelStack = value;
-        else if(!PageTables && strcmp(name, "PageTables") == 0) PageTables = value;
-        else if(!NFS_Unstable && strcmp(name, "NFS_Unstable") == 0) NFS_Unstable = value;
-        else if(!Bounce && strcmp(name, "Bounce") == 0) Bounce = value;
-        else if(!WritebackTmp && strcmp(name, "WritebackTmp") == 0) WritebackTmp = value;
-        else if(!CommitLimit && strcmp(name, "CommitLimit") == 0) CommitLimit = value;
-        else if(!Committed_AS && strcmp(name, "Committed_AS") == 0) Committed_AS = value;
-        else if(!VmallocTotal && strcmp(name, "VmallocTotal") == 0) VmallocTotal = value;
-        else if(!VmallocUsed && strcmp(name, "VmallocUsed") == 0) VmallocUsed = value;
-        else if(!VmallocChunk && strcmp(name, "VmallocChunk") == 0) VmallocChunk = value;
-        else if(!HardwareCorrupted && strcmp(name, "HardwareCorrupted") == 0) { HardwareCorrupted = value; hwcorrupted = 1; }
-        else if(!AnonHugePages && strcmp(name, "AnonHugePages") == 0) AnonHugePages = value;
-        else if(!HugePages_Total && strcmp(name, "HugePages_Total") == 0) HugePages_Total = value;
-        else if(!HugePages_Free && strcmp(name, "HugePages_Free") == 0) HugePages_Free = value;
-        else if(!HugePages_Rsvd && strcmp(name, "HugePages_Rsvd") == 0) HugePages_Rsvd = value;
-        else if(!HugePages_Surp && strcmp(name, "HugePages_Surp") == 0) HugePages_Surp = value;
-        else if(!Hugepagesize && strcmp(name, "Hugepagesize") == 0) Hugepagesize = value;
-        else if(!DirectMap4k && strcmp(name, "DirectMap4k") == 0) DirectMap4k = value;
-        else if(!DirectMap2M && strcmp(name, "DirectMap2M") == 0) DirectMap2M = value;
+        if(unlikely(arl_check(arl_base,
+                procfile_lineword(ff, l, 0),
+                procfile_lineword(ff, l, 1)))) break;
     }
 
     RRDSET *st;
@@ -143,12 +182,12 @@ int do_proc_meminfo(int update_every, unsigned long long dt) {
 
     // --------------------------------------------------------------------
 
-    if(hwcorrupted && do_hwcorrupt && HardwareCorrupted > 0) {
+    if(arl_hwcorrupted->flags & ARL_ENTRY_FLAG_FOUND && (do_hwcorrupt == CONFIG_ONDEMAND_YES || (do_hwcorrupt == CONFIG_ONDEMAND_ONDEMAND && HardwareCorrupted > 0))) {
         do_hwcorrupt = CONFIG_ONDEMAND_YES;
 
         st = rrdset_find("mem.hwcorrupt");
         if(!st) {
-            st = rrdset_create("mem", "hwcorrupt", NULL, "errors", NULL, "Hardware Corrupted ECC", "MB", 9000, update_every, RRDSET_TYPE_LINE);
+            st = rrdset_create("mem", "hwcorrupt", NULL, "ecc", NULL, "Hardware Corrupted ECC", "MB", 9000, update_every, RRDSET_TYPE_LINE);
             st->isdetail = 1;
 
             rrddim_add(st, "HardwareCorrupted", NULL, 1, 1024, RRDDIM_ABSOLUTE);

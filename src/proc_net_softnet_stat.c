@@ -1,6 +1,6 @@
 #include "common.h"
 
-static inline char *softnet_column_name(uint32_t column) {
+static inline char *softnet_column_name(size_t column) {
     switch(column) {
         // https://github.com/torvalds/linux/blob/a7fd20d1c476af4563e66865213474a2f9f473a4/net/core/net-procfs.c#L161-L166
         case 0: return "processed";
@@ -12,35 +12,36 @@ static inline char *softnet_column_name(uint32_t column) {
     }
 }
 
-int do_proc_net_softnet_stat(int update_every, unsigned long long dt) {
+int do_proc_net_softnet_stat(int update_every, usec_t dt) {
     (void)dt;
 
     static procfile *ff = NULL;
     static int do_per_core = -1;
-    static uint32_t allocated_lines = 0, allocated_columns = 0, *data = NULL;
+    static size_t allocated_lines = 0, allocated_columns = 0;
+    static uint32_t *data = NULL;
 
-    if(do_per_core == -1) do_per_core = config_get_boolean("plugin:proc:/proc/net/softnet_stat", "softnet_stat per core", 1);
+    if(unlikely(do_per_core == -1)) do_per_core = config_get_boolean("plugin:proc:/proc/net/softnet_stat", "softnet_stat per core", 1);
 
-    if(!ff) {
+    if(unlikely(!ff)) {
         char filename[FILENAME_MAX + 1];
         snprintfz(filename, FILENAME_MAX, "%s%s", global_host_prefix, "/proc/net/softnet_stat");
         ff = procfile_open(config_get("plugin:proc:/proc/net/softnet_stat", "filename to monitor", filename), " \t", PROCFILE_FLAG_DEFAULT);
+        if(unlikely(!ff)) return 1;
     }
-    if(!ff) return 1;
 
     ff = procfile_readall(ff);
-    if(!ff) return 0; // we return 0, so that we will retry to open it next time
+    if(unlikely(!ff)) return 0; // we return 0, so that we will retry to open it next time
 
-    uint32_t lines = procfile_lines(ff), l;
-    uint32_t words = procfile_linewords(ff, 0), w;
+    size_t lines = procfile_lines(ff), l;
+    size_t words = procfile_linewords(ff, 0), w;
 
-    if(!lines || !words) {
-        error("Cannot read /proc/net/softnet_stat, %u lines and %u columns reported.", lines, words);
+    if(unlikely(!lines || !words)) {
+        error("Cannot read /proc/net/softnet_stat, %zu lines and %zu columns reported.", lines, words);
         return 1;
     }
 
-    if(lines > 200) lines = 200;
-    if(words > 50) words = 50;
+    if(unlikely(lines > 200)) lines = 200;
+    if(unlikely(words > 50)) words = 50;
 
     if(unlikely(!data || lines > allocated_lines || words > allocated_columns)) {
         freez(data);
@@ -55,20 +56,21 @@ int do_proc_net_softnet_stat(int update_every, unsigned long long dt) {
     // parse the values
     for(l = 0; l < lines ;l++) {
         words = procfile_linewords(ff, l);
-        if(!words) continue;
+        if(unlikely(!words)) continue;
 
-        if(words > allocated_columns) words = allocated_columns;
+        if(unlikely(words > allocated_columns))
+            words = allocated_columns;
 
         for(w = 0; w < words ; w++) {
             if(unlikely(softnet_column_name(w))) {
-                uint32_t t = strtoul(procfile_lineword(ff, l, w), NULL, 16);
+                uint32_t t = (uint32_t)strtoul(procfile_lineword(ff, l, w), NULL, 16);
                 data[w] += t;
                 data[((l + 1) * allocated_columns) + w] = t;
             }
         }
     }
 
-    if(data[(lines * allocated_columns)] == 0)
+    if(unlikely(data[(lines * allocated_columns)] == 0))
         lines--;
 
     RRDSET *st;
@@ -76,7 +78,7 @@ int do_proc_net_softnet_stat(int update_every, unsigned long long dt) {
     // --------------------------------------------------------------------
 
     st = rrdset_find_bytype("system", "softnet_stat");
-    if(!st) {
+    if(unlikely(!st)) {
         st = rrdset_create("system", "softnet_stat", NULL, "softnet_stat", NULL, "System softnet_stat", "events/s", 955, update_every, RRDSET_TYPE_LINE);
         for(w = 0; w < allocated_columns ;w++)
             if(unlikely(softnet_column_name(w)))
@@ -93,12 +95,12 @@ int do_proc_net_softnet_stat(int update_every, unsigned long long dt) {
     if(do_per_core) {
         for(l = 0; l < lines ;l++) {
             char id[50+1];
-            snprintfz(id, 50, "cpu%u_softnet_stat", l);
+            snprintfz(id, 50, "cpu%zu_softnet_stat", l);
 
             st = rrdset_find_bytype("cpu", id);
-            if(!st) {
+            if(unlikely(!st)) {
                 char title[100+1];
-                snprintfz(title, 100, "CPU%u softnet_stat", l);
+                snprintfz(title, 100, "CPU%zu softnet_stat", l);
 
                 st = rrdset_create("cpu", id, NULL, "softnet_stat", NULL, title, "events/s", 4101 + l, update_every, RRDSET_TYPE_LINE);
                 for(w = 0; w < allocated_columns ;w++)
