@@ -53,3 +53,6 @@ override_dh_fixperms-arch:
 	# given extra capabilities in the postinst script.
 	#
 	chmod 0754 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/plugins.d/apps.plugin
+	chmod 0644 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/plugins.d/loopsleepms.sh.inc
+	chmod 0644 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/charts.d/*.sh
+	chmod 0644 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/python.d/*.py
