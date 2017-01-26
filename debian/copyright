@@ -48,7 +48,6 @@ Copyright: 2015 Joseph Huckaby
 License: Expat
 
 Files:
- web/css/bootstrap-3.3.7.min.css
  web/css/bootstrap-theme-3.3.7.min.css
  web/lib/bootstrap-3.3.7.min.js
  debian/missing-sources/bootstrap-3.3.7.js
@@ -158,7 +157,7 @@ Copyright: 2016 hhurz
 License: Expat
 
 Files:
- web/lib/raphael-2.2.4.min.js
+ web/lib/raphael-2.2.4-min.js
  debian/missing-sources/raphael-2.2.4.js
 Copyright: 2016 Dmitry Baranovskiy
            2016 Sencha Labs

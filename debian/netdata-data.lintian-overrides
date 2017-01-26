@@ -1,5 +1,0 @@
-# Acceptable for a demo page
-netdata-data: privacy-breach-generic usr/share/netdata/web/demo2.html *
-
-# Acceptable for a demo page
-netdata-data: privacy-breach-generic usr/share/netdata/web/demosites.html *
