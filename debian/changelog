@@ -1,6 +1,10 @@
 netdata (1.5.0+dfsg-1) UNRELEASED; urgency=medium
 
-  * New upstre release (Closes: #850004)
+  * New upstream release (Closes: #850004)
+  * Removed unnecessary patches
+  * Fixed lintian-overrides
+  * Fixed script permissions
+  * Include versioned assets
 
  -- Lennart Weller <lhw@ring0.de>  Tue, 24 Jan 2017 16:22:44 +0100
 
