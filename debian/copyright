@@ -48,9 +48,11 @@ Copyright: 2015 Joseph Huckaby
 License: Expat
 
 Files:
- web/css/bootstrap-3.3.7.css
+ web/css/bootstrap-3.3.7.min.css
+ web/css/bootstrap-theme-3.3.7.min.css
  web/lib/bootstrap-3.3.7.min.js
  debian/missing-sources/bootstrap-3.3.7.js
+ debian/missing-sources/bootstrap-theme-3.3.7.css
 Copyright: 2011-2016 Twitter, Inc
 License: Expat
 
@@ -78,8 +80,8 @@ License: Expat
 Files:
  web/lib/c3-0.4.11.min.js
  web/css/c3-0.4.11.min.css
- debian/missing-sources/c3-0.4.11.min.js
- debian/missing-sources/c3-0.4.11.min.css
+ debian/missing-sources/c3-0.4.11.js
+ debian/missing-sources/c3-0.4.11.css
 Copyright: 2013 Masayuki Tanaka
 License: Expat
 
@@ -123,7 +125,7 @@ License: BSD-3-clause
 Files:
  web/lib/morris-0.5.1.min.js
  web/css/morris-0.5.1.css
- debian/missing-sources/morris-0.5.1.min.js
+ debian/missing-sources/morris-0.5.1.js
  debian/missing-sources/morris-0.5.1.css
 Copyright: 2014 Olly Smith
 License: BSD-2-clause
@@ -153,6 +155,13 @@ Files:
  debian/missing-sources/tableExport-1.6.0.js
 Copyright: 2016 hhurz
            2014 Giri Raj
+License: Expat
+
+Files:
+ web/lib/raphael-2.2.4.min.js
+ debian/missing-sources/raphael-2.2.4.js
+Copyright: 2016 Dmitry Baranovskiy
+           2016 Sencha Labs
 License: Expat
 
 License: LGPL-3+
