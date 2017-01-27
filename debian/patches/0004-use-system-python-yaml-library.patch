@@ -1,0 +1,33 @@
+From: Lennart Weller <lhw@ring0.de>
+Date: Sat, 28 Jan 2017 18:34:35 +0100
+Subject: use system python-yaml library
+
+---
+ plugins.d/python.d.plugin | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/plugins.d/python.d.plugin b/plugins.d/python.d.plugin
+index b4e6473..867fe5b 100755
+--- a/plugins.d/python.d.plugin
++++ b/plugins.d/python.d.plugin
+@@ -55,19 +55,11 @@ except (AssertionError, ImportError):
+         msg.info('Using python v2')
+     except ImportError:
+         msg.fatal('Cannot start. No importlib.machinery on python3 or lack of imp on python2')
+-# try:
+-#     import yaml
+-# except ImportError:
+-#     msg.fatal('Cannot find yaml library')
+ try:
+-    if PY_VERSION == 3:
+-        import pyyaml3 as yaml
+-    else:
+-        import pyyaml2 as yaml
++    import yaml
+ except ImportError:
+     msg.fatal('Cannot find yaml library')
+ 
+-
+ class PythonCharts(object):
+     """
+     Main class used to control every python module.

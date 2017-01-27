@@ -1,28 +1,20 @@
 From: Lennart Weller <lhw@ring0.de>
-Date: Thu, 26 Jan 2017 14:03:06 +0100
+Date: Sat, 28 Jan 2017 17:57:59 +0100
 Subject: linked js/css/fonts removed from make
 
 ---
- python.d/Makefile.am | 50 --------------------------------------------------
+ python.d/Makefile.am | 42 ------------------------------------------
  web/Makefile.am      | 35 -----------------------------------
- 2 files changed, 85 deletions(-)
+ 2 files changed, 77 deletions(-)
 
 diff --git a/python.d/Makefile.am b/python.d/Makefile.am
-index 883f06c..f8b14da 100644
+index 883f06c..a163fe7 100644
 --- a/python.d/Makefile.am
 +++ b/python.d/Makefile.am
-@@ -45,53 +45,3 @@ dist_python_SCRIPTS = \
- dist_python_DATA = \
-     README.md \
+@@ -53,45 +53,3 @@ dist_pythonmodules_DATA = \
+     python_modules/msg.py \
+     python_modules/lm_sensors.py \
      $(NULL)
--
--pythonmodulesdir=$(pythondir)/python_modules
--dist_pythonmodules_DATA = \
--    python_modules/__init__.py \
--    python_modules/base.py \
--    python_modules/msg.py \
--    python_modules/lm_sensors.py \
--    $(NULL)
 -
 -pythonyaml2dir=$(pythonmodulesdir)/pyyaml2
 -dist_pythonyaml2_DATA = \

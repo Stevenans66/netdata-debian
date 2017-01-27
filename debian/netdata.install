@@ -6,3 +6,4 @@ usr/lib/*/netdata/plugins.d/*.plugin
 usr/lib/*/netdata/plugins.d/*.sh
 usr/lib/*/netdata/plugins.d/loopsleepms.sh.inc
 usr/lib/*/netdata/python.d/*.py
+usr/lib/*/netdata/python.d/python_modules
