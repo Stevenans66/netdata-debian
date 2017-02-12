@@ -28,10 +28,11 @@ LimitNOFILE=65536
 WorkingDirectory=/tmp
 
 # Hardening
-#AppArmorProfile=system_netdata
-#NoNewPrivileges=true
+
+NoNewPrivileges=false
 PermissionsStartOnly=true
-CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+# CAP_SETGID is required for setgroups()
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE CAP_SETGID
 PrivateTmp=true
 ProtectHome=read-only
 ProtectSystem=full
@@ -41,6 +42,14 @@ ReadWriteDirectories=/proc/self
 ReadWriteDirectories=/var/lib/netdata
 ReadWriteDirectories=/var/log/netdata
 ReadWriteDirectories=/var/cache/netdata
+
+# Access to devices and kernel modules and tunables is required
+PrivateDevices=no
+ProtectKernelModules=no
+ProtectKernelTunables=no
+
+StandardOutput=syslog+console
+StandardError=syslog+console
 
 [Install]
 WantedBy=multi-user.target
