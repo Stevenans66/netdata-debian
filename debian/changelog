@@ -1,12 +1,13 @@
-netdata (1.5.0+dfsg-1) UNRELEASED; urgency=medium
+netdata (1.5.0+dfsg-1) unstable; urgency=medium
 
-  * New upstream release (Closes: #850004)
+  [ Lennart Weller ]
+  * New upstream release (Closes: #850004, #854401)
   * Removed unnecessary patches
   * Fixed lintian-overrides
   * Fixed script permissions
   * Include versioned assets
 
- -- Lennart Weller <lhw@ring0.de>  Tue, 24 Jan 2017 16:22:44 +0100
+ -- Federico Ceratto <federico@debian.org>  Sun, 12 Feb 2017 14:03:06 +0000
 
 netdata (1.4.0+dfsg-3) unstable; urgency=medium
 
