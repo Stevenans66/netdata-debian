@@ -7,3 +7,5 @@ usr/lib/*/netdata/plugins.d/*.sh
 usr/lib/*/netdata/plugins.d/loopsleepms.sh.inc
 usr/lib/*/netdata/python.d/*.py
 usr/lib/*/netdata/python.d/python_modules
+usr/lib/*/netdata/node.d/*.js
+usr/lib/*/netdata/node.d/node_modules

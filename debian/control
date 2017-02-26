@@ -19,9 +19,7 @@ Vcs-Browser: https://anonscm.debian.org/git/collab-maint/netdata.git
 Package: netdata
 Architecture: any
 Depends: adduser,
-         fonts-font-awesome (>= 4.6),
          libcap2-bin (>= 1:2.0),
-         libjs-bootstrap,
          lsb-base (>= 3.1-23.2),
          netdata-data (=${source:Version}),
          python,
@@ -39,7 +37,10 @@ Description: real-time charts for system monitoring
 Package: netdata-data
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: fonts-font-awesome (>= 4.6),
+         libjs-bootstrap,
+         ${misc:Depends},
+         ${shlibs:Depends}
 Description: real-time charts for system monitoring (Data)
  Netdata is a daemon that collects data in realtime (per second)
  and presents a web site to view and analyze them. The presentation
