@@ -1,9 +1,10 @@
 netdata (1.5.0+dfsg-2) unstable; urgency=medium
 
+  [ Lennart Weller ]
   * Include node.d modules now as we recommend nodejs (Closes: #856182)
   * Move data dependencies to data package
 
- -- Lennart Weller <lhw@ring0.de>  Sun, 26 Feb 2017 18:05:54 +0100
+ -- Federico Ceratto <federico@debian.org>  Sun, 26 Feb 2017 18:27:33 +0000
 
 netdata (1.5.0+dfsg-1) unstable; urgency=medium
 
