@@ -1,8 +1,8 @@
-netdata (1.5.0+dfsg-3) UNRELEASED; urgency=medium
+netdata (1.5.0+dfsg-3) unstable; urgency=medium
 
   * Update service unit configuration (Closes: #851852)
 
- -- Federico Ceratto <federico@debian.org>  Sun, 26 Feb 2017 21:18:18 +0000
+ -- Federico Ceratto <federico@debian.org>  Sun, 26 Feb 2017 23:58:43 +0000
 
 netdata (1.5.0+dfsg-2) unstable; urgency=medium
 
