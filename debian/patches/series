@@ -3,3 +3,4 @@
 0003-hide-update-button.patch
 0004-use-system-python-yaml-library.patch
 0005-Dont-include-prctl.h-on-kFreeBSD-or-Hurd.patch
+0006-fix-exim-path.patch

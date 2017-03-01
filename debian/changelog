@@ -1,6 +1,7 @@
 netdata (1.5.0+dfsg-4) UNRELEASED; urgency=medium
 
   * Update service unit configuration (Closes: #856412)
+  * Fix exim path, thanks to Sven Hartge (Closes: #856252)
 
  -- Federico Ceratto <federico@debian.org>  Wed, 01 Mar 2017 11:17:09 +0000
 
