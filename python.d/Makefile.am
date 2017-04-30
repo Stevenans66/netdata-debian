@@ -8,6 +8,11 @@ include $(top_srcdir)/build/subst.inc
 SUFFIXES = .in
 
 dist_python_SCRIPTS = \
+    python-modules-installer.sh \
+    $(NULL)
+
+dist_python_DATA = \
+    README.md \
     apache.chart.py \
     apache_cache.chart.py \
     bind_rndc.chart.py \
@@ -19,16 +24,16 @@ dist_python_SCRIPTS = \
     exim.chart.py \
     fail2ban.chart.py \
     freeradius.chart.py \
-    gunicorn_log.chart.py \
     haproxy.chart.py \
     hddtemp.chart.py \
     ipfs.chart.py \
     isc_dhcpd.chart.py \
     mdstat.chart.py \
     memcached.chart.py \
+    mongodb.chart.py \
     mysql.chart.py \
     nginx.chart.py \
-    nginx_log.chart.py \
+    nsd.chart.py \
     ovpn_status_log.chart.py \
     phpfpm.chart.py \
     postfix.chart.py \
@@ -37,13 +42,10 @@ dist_python_SCRIPTS = \
     retroshare.chart.py \
     sensors.chart.py \
     squid.chart.py \
+    smartd_log.chart.py \
     tomcat.chart.py \
     varnish.chart.py \
-    python-modules-installer.sh \
-    $(NULL)
-
-dist_python_DATA = \
-    README.md \
+    web_log.chart.py \
     $(NULL)
 
 pythonmodulesdir=$(pythondir)/python_modules

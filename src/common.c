@@ -8,10 +8,21 @@
 #    define MADV_DONTFORK INHERIT_NONE
 #endif /* __FreeBSD__ || __APPLE__*/
 
-char *global_host_prefix = "";
+char *netdata_configured_hostname    = NULL;
+char *netdata_configured_config_dir  = NULL;
+char *netdata_configured_log_dir     = NULL;
+char *netdata_configured_plugins_dir = NULL;
+char *netdata_configured_web_dir     = NULL;
+char *netdata_configured_cache_dir   = NULL;
+char *netdata_configured_varlib_dir  = NULL;
+char *netdata_configured_home_dir    = NULL;
+char *netdata_configured_host_prefix = NULL;
+
 int enable_ksm = 1;
 
 volatile sig_atomic_t netdata_exit = 0;
+const char *os_type = NETDATA_OS_TYPE;
+const char *program_version = VERSION;
 
 // ----------------------------------------------------------------------------
 // memory allocation functions that handle failures
@@ -903,6 +914,9 @@ char *trim(char *s) {
 }
 
 void *mymmap(const char *filename, size_t size, int flags, int ksm) {
+#ifndef MADV_MERGEABLE
+    (void)ksm;
+#endif
     static int log_madvise_1 = 1;
 #ifdef MADV_MERGEABLE
     static int log_madvise_2 = 1, log_madvise_3 = 1;
@@ -1060,17 +1074,6 @@ char *fgets_trim_len(char *buf, size_t buf_size, FILE *fp, size_t *len) {
     return s;
 }
 
-char *strncpyz(char *dst, const char *src, size_t n) {
-    char *p = dst;
-
-    while (*src && n--)
-        *dst++ = *src++;
-
-    *dst = '\0';
-
-    return p;
-}
-
 int vsnprintfz(char *dst, size_t n, const char *fmt, va_list args) {
     int size = vsnprintf(dst, n, fmt, args);
 
@@ -1104,7 +1107,17 @@ long get_system_cpus(void) {
     #ifdef __APPLE__
         int32_t tmp_processors;
 
-        if (unlikely(GETSYSCTL("hw.logicalcpu", tmp_processors))) {
+        if (unlikely(GETSYSCTL_BY_NAME("hw.logicalcpu", tmp_processors))) {
+            error("Assuming system has %d processors.", processors);
+        } else {
+            processors = tmp_processors;
+        }
+
+        return processors;
+    #elif __FreeBSD__
+        int32_t tmp_processors;
+
+        if (unlikely(GETSYSCTL_BY_NAME("hw.ncpu", tmp_processors))) {
             error("Assuming system has %d processors.", processors);
         } else {
             processors = tmp_processors;
@@ -1114,7 +1127,7 @@ long get_system_cpus(void) {
     #else
 
     char filename[FILENAME_MAX + 1];
-    snprintfz(filename, FILENAME_MAX, "%s/proc/stat", global_host_prefix);
+    snprintfz(filename, FILENAME_MAX, "%s/proc/stat", netdata_configured_host_prefix);
 
     procfile *ff = procfile_open(filename, NULL, PROCFILE_FLAG_DEFAULT);
     if(!ff) {
@@ -1143,7 +1156,7 @@ long get_system_cpus(void) {
     debug(D_SYSTEM, "System has %d processors.", processors);
     return processors;
 
-    #endif /* __APPLE__ */
+    #endif /* __APPLE__, __FreeBSD__ */
 }
 
 pid_t pid_max = 32768;
@@ -1153,35 +1166,41 @@ pid_t get_system_pid_max(void) {
         // we use the number defined in bsd/sys/proc_internal.h in XNU sources
         pid_max = 99999;
         return pid_max;
+    #elif __FreeBSD__
+        int32_t tmp_pid_max;
+
+        if (unlikely(GETSYSCTL_BY_NAME("kern.pid_max", tmp_pid_max))) {
+            pid_max = 99999;
+            error("Assuming system's maximum pid is %d.", pid_max);
+        } else {
+            pid_max = tmp_pid_max;
+        }
+
+        return pid_max;
     #else
 
+    static char read = 0;
+    if(unlikely(read)) return pid_max;
+    read = 1;
+
     char filename[FILENAME_MAX + 1];
-    snprintfz(filename, FILENAME_MAX, "%s/proc/sys/kernel/pid_max", global_host_prefix);
-    procfile *ff = procfile_open(filename, NULL, PROCFILE_FLAG_DEFAULT);
-    if(!ff) {
+    snprintfz(filename, FILENAME_MAX, "%s/proc/sys/kernel/pid_max", netdata_configured_host_prefix);
+
+    unsigned long long max = 0;
+    if(read_single_number_file(filename, &max) != 0) {
         error("Cannot open file '%s'. Assuming system supports %d pids.", filename, pid_max);
         return pid_max;
     }
 
-    ff = procfile_readall(ff);
-    if(!ff) {
-        error("Cannot read file '%s'. Assuming system supports %d pids.", filename, pid_max);
-        return pid_max;
-    }
-
-    pid_max = (pid_t)str2i(procfile_lineword(ff, 0, 0));
-    if(!pid_max) {
-        procfile_close(ff);
-        pid_max = 32768;
+    if(!max) {
         error("Cannot parse file '%s'. Assuming system supports %d pids.", filename, pid_max);
         return pid_max;
     }
 
-    procfile_close(ff);
-    debug(D_SYSTEM, "System supports %d pids.", pid_max);
+    pid_max = (pid_t) max;
     return pid_max;
 
-    #endif /* __APPLE__ */
+    #endif /* __APPLE__, __FreeBSD__ */
 }
 
 unsigned int hz;
