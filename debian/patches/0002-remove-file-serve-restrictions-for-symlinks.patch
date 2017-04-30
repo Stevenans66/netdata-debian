@@ -6,12 +6,10 @@ Subject: remove file serve restrictions for symlinks
  src/web_client.c | 24 ++++++++++++------------
  1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/src/web_client.c b/src/web_client.c
-index 4b6ccf6..59c695e 100644
 --- a/src/web_client.c
 +++ b/src/web_client.c
-@@ -327,8 +327,8 @@ int mysendfile(struct web_client *w, char *filename)
-     snprintfz(webfilename, FILENAME_MAX, "%s/%s", web_dir, filename);
+@@ -327,8 +327,8 @@
+     snprintfz(webfilename, FILENAME_MAX, "%s/%s", netdata_configured_web_dir, filename);
  
      // check if the file exists
 -    struct stat stat;
@@ -19,9 +17,9 @@ index 4b6ccf6..59c695e 100644
 +    struct stat wstat;
 +    if(stat(webfilename, &wstat) != 0) {
          debug(D_WEB_CLIENT_ACCESS, "%llu: File '%s' is not found.", w->id, webfilename);
+         w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "File does not exist, or is not accessible: ");
-         buffer_strcat_htmlescape(w->response.data, webfilename);
-@@ -336,27 +336,27 @@ int mysendfile(struct web_client *w, char *filename)
+@@ -337,8 +337,8 @@
      }
  
      // check if the file is owned by expected user
@@ -29,9 +27,10 @@ index 4b6ccf6..59c695e 100644
 -        error("%llu: File '%s' is owned by user %u (expected user %u). Access Denied.", w->id, webfilename, stat.st_uid, web_files_uid());
 +    if(wstat.st_uid != web_files_uid()) {
 +        error("%llu: File '%s' is owned by user %u (expected user %u). Access Denied.", w->id, webfilename, wstat.st_uid, web_files_uid());
+         w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
          buffer_strcat_htmlescape(w->response.data, webfilename);
-         return 403;
+@@ -346,20 +346,20 @@
      }
  
      // check if the file is owned by expected group
@@ -39,6 +38,7 @@ index 4b6ccf6..59c695e 100644
 -        error("%llu: File '%s' is owned by group %u (expected group %u). Access Denied.", w->id, webfilename, stat.st_gid, web_files_gid());
 +    if(wstat.st_gid != web_files_gid()) {
 +        error("%llu: File '%s' is owned by group %u (expected group %u). Access Denied.", w->id, webfilename, wstat.st_gid, web_files_gid());
+         w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
          buffer_strcat_htmlescape(w->response.data, webfilename);
          return 403;
@@ -53,9 +53,9 @@ index 4b6ccf6..59c695e 100644
 -    if((stat.st_mode & S_IFMT) != S_IFREG) {
 +    if((wstat.st_mode & S_IFMT) != S_IFREG) {
          error("%llu: File '%s' is not a regular file. Access Denied.", w->id, webfilename);
+         w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
-         buffer_strcat_htmlescape(w->response.data, webfilename);
-@@ -407,17 +407,17 @@ int mysendfile(struct web_client *w, char *filename)
+@@ -413,17 +413,17 @@
      else if(strstr(filename, ".icns") != NULL)  w->response.data->contenttype = CT_IMAGE_ICNS;
      else w->response.data->contenttype = CT_APPLICATION_OCTET_STREAM;
  
