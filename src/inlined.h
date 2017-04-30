@@ -3,6 +3,19 @@
 
 #include "common.h"
 
+#ifdef KERNEL_32BIT
+typedef uint32_t kernel_uint_t;
+#define str2kernel_uint_t(string) str2uint32_t(string)
+#define KERNEL_UINT_FORMAT "%u"
+#else
+typedef uint64_t kernel_uint_t;
+#define str2kernel_uint_t(string) str2uint64_t(string)
+#define KERNEL_UINT_FORMAT "%" PRIu64
+#endif
+
+#define str2pid_t(string) str2uint32_t(string)
+
+
 // for faster execution, allow the compiler to inline
 // these functions that are called thousands of times per second
 
@@ -70,6 +83,26 @@ static inline long str2l(const char *s) {
     return n;
 }
 
+static inline uint32_t str2uint32_t(const char *s) {
+    uint32_t n = 0;
+    char c;
+    for(c = *s; c >= '0' && c <= '9' ; c = *(++s)) {
+        n *= 10;
+        n += c - '0';
+    }
+    return n;
+}
+
+static inline uint64_t str2uint64_t(const char *s) {
+    uint64_t n = 0;
+    char c;
+    for(c = *s; c >= '0' && c <= '9' ; c = *(++s)) {
+        n *= 10;
+        n += c - '0';
+    }
+    return n;
+}
+
 static inline unsigned long str2ul(const char *s) {
     unsigned long n = 0;
     char c;
@@ -95,12 +128,24 @@ static inline unsigned long long str2ull(const char *s) {
 #undef strcmp
 #endif
 #define strcmp(a, b) strsame(a, b)
+#endif // NETDATA_STRCMP_OVERRIDE
+
 static inline int strsame(const char *a, const char *b) {
     if(unlikely(a == b)) return 0;
     while(*a && *a == *b) { a++; b++; }
     return *a - *b;
 }
-#endif // NETDATA_STRSAME
+
+static inline char *strncpyz(char *dst, const char *src, size_t n) {
+    char *p = dst;
+
+    while (*src && n--)
+        *dst++ = *src++;
+
+    *dst = '\0';
+
+    return p;
+}
 
 static inline int read_single_number_file(const char *filename, unsigned long long *result) {
     char buffer[30 + 1];

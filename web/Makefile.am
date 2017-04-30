@@ -11,6 +11,7 @@ dist_web_DATA = \
 	dashboard.html \
 	dashboard.js \
 	dashboard_info.js \
+	dashboard_info_custom_example.js \
 	dashboard.css \
 	dashboard.slate.css \
 	favicon.ico \
@@ -44,7 +45,7 @@ dist_weblib_DATA = \
 	lib/d3-3.5.17.min.js \
 	lib/dygraph-combined-dd74404.js \
 	lib/dygraph-smooth-plotter-dd74404.js \
-	lib/gauge-d5260c3.min.js \
+	lib/gauge-1.3.2.min.js \
 	lib/jquery-2.2.4.min.js \
 	lib/jquery.easypiechart-97b5824.min.js \
 	lib/perfect-scrollbar-0.6.15.min.js \

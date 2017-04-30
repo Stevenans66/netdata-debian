@@ -25,6 +25,7 @@ stamp-h1
 
 netdata
 apps.plugin
+freeipmi.plugin
 netdata.spec
 
 *.tar.*
@@ -37,6 +38,7 @@ netdata-coverity-analysis.tgz
 
 .cproject
 .idea/
+.vscode/
 .project
 README
 TODO.md
