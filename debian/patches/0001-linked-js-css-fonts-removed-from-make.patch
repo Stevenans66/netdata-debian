@@ -7,11 +7,9 @@ Subject: linked js/css/fonts removed from make
  web/Makefile.am      | 35 -----------------------------------
  2 files changed, 77 deletions(-)
 
-diff --git a/python.d/Makefile.am b/python.d/Makefile.am
-index 883f06c..a163fe7 100644
 --- a/python.d/Makefile.am
 +++ b/python.d/Makefile.am
-@@ -53,45 +53,3 @@ dist_pythonmodules_DATA = \
+@@ -55,45 +55,3 @@
      python_modules/msg.py \
      python_modules/lm_sensors.py \
      $(NULL)
@@ -57,8 +55,6 @@ index 883f06c..a163fe7 100644
 -    python_modules/pyyaml3/serializer.py \
 -    python_modules/pyyaml3/tokens.py \
 -    $(NULL)
-diff --git a/web/Makefile.am b/web/Makefile.am
-index 396cf0b..e14cc57 100644
 --- a/web/Makefile.am
 +++ b/web/Makefile.am
 @@ -4,10 +4,6 @@
@@ -72,7 +68,7 @@ index 396cf0b..e14cc57 100644
  	dashboard.html \
  	dashboard.js \
  	dashboard_info.js \
-@@ -25,15 +21,6 @@ dist_web_DATA = \
+@@ -26,15 +22,6 @@
  	version.txt \
  	$(NULL)
  
@@ -88,7 +84,7 @@ index 396cf0b..e14cc57 100644
  weblibdir=$(webdir)/lib
  dist_weblib_DATA = \
  	lib/bootstrap-3.3.7.min.js \
-@@ -62,23 +49,11 @@ dist_webcss_DATA = \
+@@ -63,23 +50,11 @@
  	css/bootstrap-theme-3.3.7.min.css \
  	css/bootstrap-slate-flat-3.3.7.css \
  	css/bootstrap-toggle-2.2.2.min.css \
@@ -112,7 +108,7 @@ index 396cf0b..e14cc57 100644
  	$(NULL)
  
  webimagesdir=$(webdir)/images
-@@ -105,16 +80,6 @@ dist_webimages_DATA = \
+@@ -106,16 +81,6 @@
  	images/seo-performance-multi-size.icns \
  	$(NULL)
  
