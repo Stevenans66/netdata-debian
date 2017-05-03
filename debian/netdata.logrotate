@@ -1,7 +1,7 @@
 /var/log/netdata/*log {
 	compress
 	create 0640 netdata adm
-	daily
+	weekly
 	delaycompress
 	missingok
 	notifempty

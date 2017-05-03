@@ -6,6 +6,9 @@ netdata (1.6.0+dfsg-1) UNRELEASED; urgency=medium
   [ Lennart Weller ]
   * Make all of /var writeable avoiding any other MTA problems
   * Add CAP_SETUID permission for the service
+  * Change logrotate to weekly (Closes: #857305)
+    We do the weekly logrotate for now as SIGHUP is not working correctly.
+    See https://github.com/firehol/netdata/issues/805
 
  -- Federico Ceratto <federico@debian.org>  Sun, 30 Apr 2017 17:10:00 +0100
 
