@@ -1,16 +1,16 @@
-netdata (1.6.0+dfsg-1) UNRELEASED; urgency=medium
+netdata (1.6.0+dfsg-1) unstable; urgency=medium
 
   [ Federico Ceratto ]
-  * New upstream release
+  * New upstream release (Closes: #858757)
 
   [ Lennart Weller ]
-  * Make all of /var writeable avoiding any other MTA problems
-  * Add CAP_SETUID permission for the service
+  * Make all of /var writeable avoiding any other MTA problems (Closes: #856502)
+  * Add CAP_SETUID permission for the service (Closes: #856500)
   * Change logrotate to weekly (Closes: #857305)
     We do the weekly logrotate for now as SIGHUP is not working correctly.
     See https://github.com/firehol/netdata/issues/805
 
- -- Federico Ceratto <federico@debian.org>  Sun, 30 Apr 2017 17:10:00 +0100
+ -- Federico Ceratto <federico@debian.org>  Wed, 03 May 2017 14:21:50 +0100
 
 netdata (1.5.0+dfsg-4) unstable; urgency=medium
 
