@@ -5,8 +5,7 @@ Description=netdata - Real-time performance monitoring
 Documentation=man:netdata
 Documentation=file:///usr/share/doc/netdata/html/index.html
 Documentation=https://github.com/firehol/netdata
-After=network.target httpd.service squid.service nfs-server.service mysqld.service named.service postfix.service
-Wants=network-online.target
+After=network-online.target httpd.service squid.service nfs-server.service mysqld.service named.service postfix.service
 ConditionPathExists=/etc/netdata/netdata.conf
 
 [Service]
