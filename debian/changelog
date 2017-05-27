@@ -1,10 +1,11 @@
-netdata (1.6.0+dfsg-2) UNRELEASED; urgency=medium
+netdata (1.6.0+dfsg-2) unstable; urgency=medium
 
+  [ Lennart Weller ]
   * Change logrotate to only re-open logfiles
   * Change pidfile to existing location for sysvinit (Closes: #861713)
   * Change After network to After network-online (Closes: #862455)
 
- -- Lennart Weller <lhw@ring0.de>  Wed, 24 May 2017 12:23:48 +0200
+ -- Federico Ceratto <federico@debian.org>  Sat, 27 May 2017 12:40:39 +0100
 
 netdata (1.6.0+dfsg-1) unstable; urgency=medium
 
