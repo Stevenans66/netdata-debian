@@ -1,3 +1,9 @@
+netdata (1.6.0+dfsg-3) unstable; urgency=medium
+
+  * Add fping Recommends and CAP_NET_RAW capability (Closes: #864370)
+
+ -- Federico Ceratto <federico@debian.org>  Sat, 15 Jul 2017 19:46:27 +0100
+
 netdata (1.6.0+dfsg-2) unstable; urgency=medium
 
   [ Lennart Weller ]
