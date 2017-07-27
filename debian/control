@@ -11,10 +11,11 @@ Build-Depends: debhelper (>= 9),
                pkg-config,
                uuid-dev,
                zlib1g-dev
-Standards-Version: 3.9.8
+Standards-Version: 4.0.0
 Homepage: https://github.com/firehol/netdata
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/netdata.git
 Vcs-Browser: https://anonscm.debian.org/git/collab-maint/netdata.git
+Testsuite: autopkgtest
 
 Package: netdata
 Architecture: any
