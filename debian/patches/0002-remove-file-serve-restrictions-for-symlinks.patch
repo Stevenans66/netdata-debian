@@ -6,9 +6,11 @@ Subject: remove file serve restrictions for symlinks
  src/web_client.c | 24 ++++++++++++------------
  1 file changed, 12 insertions(+), 12 deletions(-)
 
+diff --git a/src/web_client.c b/src/web_client.c
+index 7da0807..4e1e8fb 100644
 --- a/src/web_client.c
 +++ b/src/web_client.c
-@@ -327,8 +327,8 @@
+@@ -294,8 +294,8 @@ int mysendfile(struct web_client *w, char *filename) {
      snprintfz(webfilename, FILENAME_MAX, "%s/%s", netdata_configured_web_dir, filename);
  
      // check if the file exists
@@ -19,7 +21,7 @@ Subject: remove file serve restrictions for symlinks
          debug(D_WEB_CLIENT_ACCESS, "%llu: File '%s' is not found.", w->id, webfilename);
          w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "File does not exist, or is not accessible: ");
-@@ -337,8 +337,8 @@
+@@ -304,8 +304,8 @@ int mysendfile(struct web_client *w, char *filename) {
      }
  
      // check if the file is owned by expected user
@@ -30,7 +32,7 @@ Subject: remove file serve restrictions for symlinks
          w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
          buffer_strcat_htmlescape(w->response.data, webfilename);
-@@ -346,20 +346,20 @@
+@@ -313,20 +313,20 @@ int mysendfile(struct web_client *w, char *filename) {
      }
  
      // check if the file is owned by expected group
@@ -55,7 +57,7 @@ Subject: remove file serve restrictions for symlinks
          error("%llu: File '%s' is not a regular file. Access Denied.", w->id, webfilename);
          w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
-@@ -413,17 +413,17 @@
+@@ -380,17 +380,17 @@ int mysendfile(struct web_client *w, char *filename) {
      else if(strstr(filename, ".icns") != NULL)  w->response.data->contenttype = CT_IMAGE_ICNS;
      else w->response.data->contenttype = CT_APPLICATION_OCTET_STREAM;
  

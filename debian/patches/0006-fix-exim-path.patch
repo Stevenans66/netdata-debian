@@ -16,5 +16,3 @@ index 07d72c5..dd2663d 100644
  local:
 -  command: 'exim -bpc'
 +  command: '/usr/sbin/exim4 -bpc'
--- 
-2.11.0

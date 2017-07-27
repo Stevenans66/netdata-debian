@@ -23,16 +23,16 @@
 . /lib/lsb/init-functions
 
 NAME=netdata
+PIDFILE=/var/run/netdata.pid
 DAEMON=/usr/sbin/$NAME
 DAEMON_USER=$NAME
-DAEMON_ARGS=""
+DAEMON_ARGS="-P $PIDFILE"
 
 # Exit if executable is not installed
 [ -x "$DAEMON" ] || exit 0
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="the netdata daemon"
-PIDFILE=/var/run/netdata.pid
 CONF_FNAME=/etc/netdata/netdata.conf
 
 case "$1" in
@@ -47,7 +47,7 @@ case "$1" in
 	if start-stop-daemon --stop --signal 0 --quiet --pidfile $PIDFILE --exec $DAEMON; then
 		log_action_end_msg 0 "already running"
 	else
-		if start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- $DEFAULT_ARGS
+		if start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS
 		then
 			log_action_end_msg 0
 		else
@@ -75,8 +75,6 @@ case "$1" in
 	fi
 	;;
   reload)
-	echo "Not implemented"
-	exit 1
 	log_action_begin_msg "Reloading $DESC configuration"
 	pid=`cat $PIDFILE 2>/dev/null` || true
 	if test ! -f $PIDFILE -o -z "$pid"; then
@@ -84,7 +82,7 @@ case "$1" in
 		exit 1
 	fi
 
-	if start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --exec $DAEMON
+	if start-stop-daemon --stop --signal HUP --quiet --pidfile $PIDFILE --exec $DAEMON
 	then
 		log_action_end_msg 0
 	elif kill -0 $pid 2>/dev/null; then

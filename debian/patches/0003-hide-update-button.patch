@@ -6,9 +6,11 @@ Subject: hide update button
  web/index.html | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/web/index.html b/web/index.html
+index be944e3..7bbae2f 100644
 --- a/web/index.html
 +++ b/web/index.html
-@@ -2959,7 +2959,7 @@
+@@ -3025,7 +3025,7 @@
                  <ul class="nav navbar-nav">
                      <li><a href="#" class="btn" data-toggle="modal" data-target="#alarmsModal" title="alarms"><i class="fa fa-bell"></i>&nbsp;<span class="hidden-sm">Alarms&nbsp;</span><span id="alarms_count_badge" class="badge"></span></a></li>
                      <li><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal" title="dashboard settings"><i class="fa fa-sliders"></i>&nbsp;<span class="hidden-sm">Settings</span></a></li>

@@ -3,12 +3,14 @@ Date: Sat, 28 Jan 2017 18:34:35 +0100
 Subject: use system python-yaml library
 
 ---
- plugins.d/python.d.plugin | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ plugins.d/python.d.plugin | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
+diff --git a/plugins.d/python.d.plugin b/plugins.d/python.d.plugin
+index 03c156f..af200d0 100755
 --- a/plugins.d/python.d.plugin
 +++ b/plugins.d/python.d.plugin
-@@ -55,15 +55,8 @@
+@@ -58,15 +58,8 @@ except (AssertionError, ImportError):
          msg.info('Using python v2')
      except ImportError:
          msg.fatal('Cannot start. No importlib.machinery on python3 or lack of imp on python2')
