@@ -5,7 +5,7 @@
 #define UPDATE_EVERY_MAX 3600
 
 #define RRD_DEFAULT_HISTORY_ENTRIES 3600
-#define RRD_HISTORY_ENTRIES_MAX (86400*10)
+#define RRD_HISTORY_ENTRIES_MAX (86400*365)
 
 extern int default_rrd_update_every;
 extern int default_rrd_history_entries;
@@ -42,13 +42,15 @@ typedef enum rrd_memory_mode {
     RRD_MEMORY_MODE_NONE = 0,
     RRD_MEMORY_MODE_RAM  = 1,
     RRD_MEMORY_MODE_MAP  = 2,
-    RRD_MEMORY_MODE_SAVE = 3
+    RRD_MEMORY_MODE_SAVE = 3,
+    RRD_MEMORY_MODE_ALLOC = 4
 } RRD_MEMORY_MODE;
 
 #define RRD_MEMORY_MODE_NONE_NAME "none"
 #define RRD_MEMORY_MODE_RAM_NAME "ram"
 #define RRD_MEMORY_MODE_MAP_NAME "map"
 #define RRD_MEMORY_MODE_SAVE_NAME "save"
+#define RRD_MEMORY_MODE_ALLOC_NAME "alloc"
 
 extern RRD_MEMORY_MODE default_rrd_memory_mode;
 
@@ -101,9 +103,15 @@ typedef enum rrddim_flags {
     RRDDIM_FLAG_DONT_DETECT_RESETS_OR_OVERFLOWS = 1 << 1   // do not offer RESET or OVERFLOW info to callers
 } RRDDIM_FLAGS;
 
+#ifdef HAVE_C___ATOMIC
+#define rrddim_flag_check(rd, flag) (__atomic_load_n(&((rd)->flags), __ATOMIC_SEQ_CST) & flag)
+#define rrddim_flag_set(rd, flag)   __atomic_or_fetch(&((rd)->flags), flag, __ATOMIC_SEQ_CST)
+#define rrddim_flag_clear(rd, flag) __atomic_and_fetch(&((rd)->flags), ~flag, __ATOMIC_SEQ_CST)
+#else
 #define rrddim_flag_check(rd, flag) ((rd)->flags & flag)
 #define rrddim_flag_set(rd, flag)   (rd)->flags |= flag
 #define rrddim_flag_clear(rd, flag) (rd)->flags &= ~flag
+#endif
 
 
 // ----------------------------------------------------------------------------
@@ -210,16 +218,28 @@ typedef struct rrddim RRDDIM;
 // and may lead to missing information.
 
 typedef enum rrdset_flags {
-    RRDSET_FLAG_ENABLED  = 1 << 0, // enables or disables a chart
-    RRDSET_FLAG_DETAIL   = 1 << 1, // if set, the data set should be considered as a detail of another
-                                   // (the master data set should be the one that has the same family and is not detail)
-    RRDSET_FLAG_DEBUG    = 1 << 2, // enables or disables debugging for a chart
-    RRDSET_FLAG_OBSOLETE = 1 << 3  // this is marked by the collector/module as obsolete
+    RRDSET_FLAG_ENABLED          = 1 << 0, // enables or disables a chart
+    RRDSET_FLAG_DETAIL           = 1 << 1, // if set, the data set should be considered as a detail of another
+                                         // (the master data set should be the one that has the same family and is not detail)
+    RRDSET_FLAG_DEBUG            = 1 << 2, // enables or disables debugging for a chart
+    RRDSET_FLAG_OBSOLETE         = 1 << 3, // this is marked by the collector/module as obsolete
+    RRDSET_FLAG_BACKEND_SEND     = 1 << 4, // if set, this chart should be sent to backends
+    RRDSET_FLAG_BACKEND_IGNORE   = 1 << 5, // if set, this chart should not be sent to backends
+    RRDSET_FLAG_EXPOSED_UPSTREAM = 1 << 6, // if set, we have sent this chart to netdata master (streaming)
+    RRDSET_FLAG_STORE_FIRST      = 1 << 7, // if set, do not eliminate the first collection during interpolation
+    RRDSET_FLAG_HETEROGENEOUS    = 1 << 8, // if set, the chart is not homogeneous (dimensions in it have multiple algorithms, multipliers or dividers)
+    RRDSET_FLAG_HOMEGENEOUS_CHECK= 1 << 9  // if set, the chart should be checked to determine if the dimensions as homogeneous
 } RRDSET_FLAGS;
 
+#ifdef HAVE_C___ATOMIC
+#define rrdset_flag_check(st, flag) (__atomic_load_n(&((st)->flags), __ATOMIC_SEQ_CST) & flag)
+#define rrdset_flag_set(st, flag)   __atomic_or_fetch(&((st)->flags), flag, __ATOMIC_SEQ_CST)
+#define rrdset_flag_clear(st, flag) __atomic_and_fetch(&((st)->flags), ~flag, __ATOMIC_SEQ_CST)
+#else
 #define rrdset_flag_check(st, flag) ((st)->flags & flag)
 #define rrdset_flag_set(st, flag)   (st)->flags |= flag
 #define rrdset_flag_clear(st, flag) (st)->flags &= ~flag
+#endif
 
 struct rrdset {
     // ------------------------------------------------------------------------
@@ -279,7 +299,8 @@ struct rrdset {
     size_t counter_done;                            // the number of times rrdset_done() has been called
 
     time_t last_accessed_time;                      // the last time this RRDSET has been accessed
-    size_t unused[9];
+    time_t upstream_resync_time;                    // the timestamp up to which we should resync clock upstream
+    size_t unused[8];
 
     uint32_t hash;                                  // a simple hash on the id, to speed up searching
                                                     // we first compare hashes, and only if the hashes are equal we do string comparisons
@@ -347,14 +368,28 @@ typedef struct rrdset RRDSET;
 // and may lead to missing information.
 
 typedef enum rrdhost_flags {
-    RRDHOST_ORPHAN                 = 1 << 0, // this host is orphan
-    RRDHOST_DELETE_OBSOLETE_FILES  = 1 << 1, // delete files of obsolete charts
-    RRDHOST_DELETE_ORPHAN_FILES    = 1 << 2  // delete the entire host when orphan
+    RRDHOST_ORPHAN                 = 1 << 0, // this host is orphan (not receiving data)
+    RRDHOST_DELETE_OBSOLETE_CHARTS = 1 << 1, // delete files of obsolete charts
+    RRDHOST_DELETE_ORPHAN_HOST     = 1 << 2  // delete the entire host when orphan
 } RRDHOST_FLAGS;
 
+#ifdef HAVE_C___ATOMIC
+#define rrdhost_flag_check(host, flag) (__atomic_load_n(&((host)->flags), __ATOMIC_SEQ_CST) & flag)
+#define rrdhost_flag_set(host, flag)   __atomic_or_fetch(&((host)->flags), flag, __ATOMIC_SEQ_CST)
+#define rrdhost_flag_clear(host, flag) __atomic_and_fetch(&((host)->flags), ~flag, __ATOMIC_SEQ_CST)
+#else
 #define rrdhost_flag_check(host, flag) ((host)->flags & flag)
 #define rrdhost_flag_set(host, flag)   (host)->flags |= flag
 #define rrdhost_flag_clear(host, flag) (host)->flags &= ~flag
+#endif
+
+#ifdef NETDATA_INTERNAL_CHECKS
+#define rrdset_debug(st, fmt, args...) do { if(unlikely(debug_flags & D_RRD_STATS && rrdset_flag_check(st, RRDSET_FLAG_DEBUG))) \
+            debug_int(__FILE__, __FUNCTION__, __LINE__, "%s: " fmt, st->name, ##args); } while(0)
+#else
+#define rrdset_debug(st, fmt, args...) debug_dummy()
+#endif
+
 
 // ----------------------------------------------------------------------------
 // RRD HOST
@@ -368,10 +403,13 @@ struct rrdhost {
     char *hostname;                                 // the hostname of this host
     uint32_t hash_hostname;                         // the hostname hash
 
+    char *registry_hostname;                        // the registry hostname for this host
+
     char machine_guid[GUID_LEN + 1];                // the unique ID of this host
     uint32_t hash_machine_guid;                     // the hash of the unique ID
 
-    char *os;                                       // the O/S type of the host
+    const char *os;                                 // the O/S type of the host
+    const char *tags;                               // tags for this host
 
     uint32_t flags;                                 // flags about this RRDHOST
 
@@ -488,8 +526,10 @@ extern RRDHOST *rrdhost_find_by_guid(const char *guid, uint32_t hash);
 
 extern RRDHOST *rrdhost_find_or_create(
         const char *hostname
+        , const char *registry_hostname
         , const char *guid
         , const char *os
+        , const char *tags
         , int update_every
         , long history
         , RRD_MEMORY_MODE mode
@@ -528,7 +568,7 @@ extern void __rrd_check_wrlock(const char *file, const char *function, const uns
 
 extern void rrdset_set_name(RRDSET *st, const char *name);
 
-extern RRDSET *rrdset_create(RRDHOST *host
+extern RRDSET *rrdset_create_custom(RRDHOST *host
                              , const char *type
                              , const char *id
                              , const char *name
@@ -538,17 +578,26 @@ extern RRDSET *rrdset_create(RRDHOST *host
                              , const char *units
                              , long priority
                              , int update_every
-                             , RRDSET_TYPE chart_type);
+                             , RRDSET_TYPE chart_type
+                             , RRD_MEMORY_MODE memory_mode
+                             , long history_entries);
 
-#define rrdset_create_localhost(type, id, name, family, context, title, units, priority, update_every, chart_type) rrdset_create(localhost, type, id, name, family, context, title, units, priority, update_every, chart_type)
+#define rrdset_create(host, type, id, name, family, context, title, units, priority, update_every, chart_type) \
+    rrdset_create_custom(host, type, id, name, family, context, title, units, priority, update_every, chart_type, (host)->rrd_memory_mode, (host)->rrd_history_entries)
+
+#define rrdset_create_localhost(type, id, name, family, context, title, units, priority, update_every, chart_type) \
+    rrdset_create(localhost, type, id, name, family, context, title, units, priority, update_every, chart_type)
 
 extern void rrdhost_free_all(void);
 extern void rrdhost_save_all(void);
+extern void rrdhost_cleanup_all(void);
 
-extern void rrdhost_cleanup_orphan(RRDHOST *protected);
+extern void rrdhost_cleanup_orphan_hosts(RRDHOST *protected);
 extern void rrdhost_free(RRDHOST *host);
 extern void rrdhost_save(RRDHOST *host);
 extern void rrdhost_delete(RRDHOST *host);
+
+extern void rrdset_update_heterogeneous_flag(RRDSET *st);
 
 extern RRDSET *rrdset_find(RRDHOST *host, const char *id);
 #define rrdset_find_localhost(id) rrdset_find(localhost, id)
@@ -565,8 +614,12 @@ extern void rrdset_next_usec(RRDSET *st, usec_t microseconds);
 
 extern void rrdset_done(RRDSET *st);
 
+extern void rrdset_is_obsolete(RRDSET *st);
+extern void rrdset_isnot_obsolete(RRDSET *st);
+
 // checks if the RRDSET should be offered to viewers
-#define rrdset_is_available_for_viewers(st) (rrdset_flag_check(st, RRDSET_FLAG_ENABLED) && !rrdset_flag_check(st, RRDSET_FLAG_OBSOLETE) && (st)->dimensions)
+#define rrdset_is_available_for_viewers(st) (rrdset_flag_check(st, RRDSET_FLAG_ENABLED) && !rrdset_flag_check(st, RRDSET_FLAG_OBSOLETE) && (st)->dimensions && (st)->rrd_memory_mode != RRD_MEMORY_MODE_NONE)
+#define rrdset_is_available_for_backends(st) (rrdset_flag_check(st, RRDSET_FLAG_ENABLED) && !rrdset_flag_check(st, RRDSET_FLAG_OBSOLETE) && (st)->dimensions)
 
 // get the total duration in seconds of the round robin database
 #define rrdset_duration(st) ((time_t)( (((st)->counter >= ((unsigned long)(st)->entries))?(unsigned long)(st)->entries:(st)->counter) * (st)->update_every ))
@@ -604,9 +657,14 @@ extern void rrdset_done(RRDSET *st);
 // ----------------------------------------------------------------------------
 // RRD DIMENSION functions
 
-extern RRDDIM *rrddim_add(RRDSET *st, const char *id, const char *name, collected_number multiplier, collected_number divisor, RRD_ALGORITHM algorithm);
+extern RRDDIM *rrddim_add_custom(RRDSET *st, const char *id, const char *name, collected_number multiplier, collected_number divisor, RRD_ALGORITHM algorithm, RRD_MEMORY_MODE memory_mode);
+#define rrddim_add(st, id, name, multiplier, divisor, algorithm) rrddim_add_custom(st, id, name, multiplier, divisor, algorithm, (st)->rrd_memory_mode)
 
-extern void rrddim_set_name(RRDSET *st, RRDDIM *rd, const char *name);
+extern int rrddim_set_name(RRDSET *st, RRDDIM *rd, const char *name);
+extern int rrddim_set_algorithm(RRDSET *st, RRDDIM *rd, RRD_ALGORITHM algorithm);
+extern int rrddim_set_multiplier(RRDSET *st, RRDDIM *rd, collected_number multiplier);
+extern int rrddim_set_divisor(RRDSET *st, RRDDIM *rd, collected_number divisor);
+
 extern RRDDIM *rrddim_find(RRDSET *st, const char *id);
 
 extern int rrddim_hide(RRDSET *st, const char *id);
@@ -647,7 +705,7 @@ extern void rrdset_reset(RRDSET *st);
 extern void rrdset_save(RRDSET *st);
 extern void rrdset_delete(RRDSET *st);
 
-extern void rrdhost_cleanup_obsolete(RRDHOST *host);
+extern void rrdhost_cleanup_obsolete_charts(RRDHOST *host);
 
 #endif /* NETDATA_RRD_INTERNALS */
 

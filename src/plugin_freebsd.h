@@ -3,6 +3,12 @@
 
 #include <sys/sysctl.h>
 
+#define KILO_FACTOR 1024
+#define MEGA_FACTOR 1048576     // 1024 * 1024
+#define GIGA_FACTOR 1073741824  // 1024 * 1024 * 1024
+
+#define MAX_INT_DIGITS 10 // maximum number of digits for int
+
 void *freebsd_main(void *ptr);
 
 extern int freebsd_plugin_init();
@@ -35,6 +41,8 @@ extern int do_net_inet6_icmp6_stats(int update_every, usec_t dt);
 extern int do_getifaddrs(int update_every, usec_t dt);
 extern int do_getmntinfo(int update_every, usec_t dt);
 extern int do_kern_devstat(int update_every, usec_t dt);
+extern int do_kstat_zfs_misc_arcstats(int update_every, usec_t dt);
+extern int do_ipfw(int update_every, usec_t dt);
 
 #define GETSYSCTL_MIB(name, mib) getsysctl_mib(name, mib, sizeof(mib)/sizeof(int))
 

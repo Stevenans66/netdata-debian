@@ -34,8 +34,7 @@
 
 #define MAX_COMPARE_NAME 100
 #define MAX_NAME 100
-#define MAX_CMDLINE 1024
-
+#define MAX_CMDLINE 16384
 
 // ----------------------------------------------------------------------------
 // the rates we are going to send to netdata will have this detail a value of:
@@ -109,11 +108,12 @@ static size_t
 // metric.
 
 // the total system time, as reported by /proc/stat
+#if (ALL_PIDS_ARE_READ_INSTANTLY == 0)
 static kernel_uint_t
         global_utime = 0,
         global_stime = 0,
         global_gtime = 0;
-
+#endif
 
 // the normalization ratios, as calculated by normalize_utilization()
 double  utime_fix_ratio = 1.0,
@@ -126,7 +126,6 @@ double  utime_fix_ratio = 1.0,
         cgtime_fix_ratio = 1.0,
         cminflt_fix_ratio = 1.0,
         cmajflt_fix_ratio = 1.0;
-
 
 // ----------------------------------------------------------------------------
 // target
@@ -223,7 +222,7 @@ size_t
 struct pid_stat {
     int32_t pid;
     char comm[MAX_COMPARE_NAME + 1];
-    char cmdline[MAX_CMDLINE + 1];
+    char *cmdline;
 
     uint32_t log_thrown;
 
@@ -438,7 +437,7 @@ static struct target *get_users_target(uid_t uid) {
     w->idhash = simple_hash(w->id);
 
     struct passwd *pw = getpwuid(uid);
-    if(!pw)
+    if(!pw || !pw->pw_name || !*pw->pw_name)
         snprintfz(w->name, MAX_NAME, "%u", uid);
     else
         snprintfz(w->name, MAX_NAME, "%s", pw->pw_name);
@@ -471,7 +470,7 @@ struct target *get_groups_target(gid_t gid)
     w->idhash = simple_hash(w->id);
 
     struct group *gr = getgrgid(gid);
-    if(!gr)
+    if(!gr || !gr->gr_name || !*gr->gr_name)
         snprintfz(w->name, MAX_NAME, "%u", gid);
     else
         snprintfz(w->name, MAX_NAME, "%s", gr->gr_name);
@@ -698,6 +697,7 @@ static inline void del_pid_entry(pid_t pid) {
     freez(p->statm_filename);
     freez(p->io_filename);
     freez(p->cmdline_filename);
+    freez(p->cmdline);
     freez(p);
 
     all_pids[pid] = NULL;
@@ -768,7 +768,7 @@ static inline void assign_target_to_pid(struct pid_stat *p) {
         if(unlikely(( (!w->starts_with && !w->ends_with && w->comparehash == hash && !strcmp(w->compare, p->comm))
                       || (w->starts_with && !w->ends_with && !strncmp(w->compare, p->comm, w->comparelen))
                       || (!w->starts_with && w->ends_with && pclen >= w->comparelen && !strcmp(w->compare, &p->comm[pclen - w->comparelen]))
-                      || (proc_pid_cmdline_is_needed && w->starts_with && w->ends_with && strstr(p->cmdline, w->compare))
+                      || (proc_pid_cmdline_is_needed && w->starts_with && w->ends_with && p->cmdline && strstr(p->cmdline, w->compare))
                     ))) {
 
             if(w->target) p->target = w->target;
@@ -787,6 +787,7 @@ static inline void assign_target_to_pid(struct pid_stat *p) {
 // update pids from proc
 
 static inline int read_proc_pid_cmdline(struct pid_stat *p) {
+    static char cmdline[MAX_CMDLINE + 1];
 
 #ifdef __FreeBSD__
     size_t i, bytes = MAX_CMDLINE;
@@ -796,7 +797,7 @@ static inline int read_proc_pid_cmdline(struct pid_stat *p) {
     mib[1] = KERN_PROC;
     mib[2] = KERN_PROC_ARGS;
     mib[3] = p->pid;
-    if (unlikely(sysctl(mib, 4, p->cmdline, &bytes, NULL, 0)))
+    if (unlikely(sysctl(mib, 4, cmdline, &bytes, NULL, 0)))
         goto cleanup;
 #else
     if(unlikely(!p->cmdline_filename)) {
@@ -808,15 +809,17 @@ static inline int read_proc_pid_cmdline(struct pid_stat *p) {
     int fd = open(p->cmdline_filename, O_RDONLY, 0666);
     if(unlikely(fd == -1)) goto cleanup;
 
-    ssize_t i, bytes = read(fd, p->cmdline, MAX_CMDLINE);
+    ssize_t i, bytes = read(fd, cmdline, MAX_CMDLINE);
     close(fd);
 
     if(unlikely(bytes < 0)) goto cleanup;
 #endif
 
-    p->cmdline[bytes] = '\0';
+    cmdline[bytes] = '\0';
     for(i = 0; i < bytes ; i++)
-        if(unlikely(!p->cmdline[i])) p->cmdline[i] = ' ';
+        if(unlikely(!cmdline[i])) cmdline[i] = ' ';
+
+    p->cmdline = strdupz(cmdline);
 
     if(unlikely(debug))
         fprintf(stderr, "Read file '%s' contents: %s\n", p->cmdline_filename, p->cmdline);
@@ -825,7 +828,7 @@ static inline int read_proc_pid_cmdline(struct pid_stat *p) {
 
 cleanup:
     // copy the command to the command line
-    strncpyz(p->cmdline, p->comm, MAX_CMDLINE);
+    p->cmdline = strdupz(p->comm);
     return 0;
 }
 
@@ -1157,24 +1160,13 @@ cleanup:
 #endif
 }
 
+#if (ALL_PIDS_ARE_READ_INSTANTLY == 0)
 static inline int read_proc_stat() {
-#ifdef __FreeBSD__
-    long cp_time[CPUSTATES];
-    static kernel_uint_t utime_raw = 0, stime_raw = 0, ntime_raw = 0;
-
-    if (unlikely(CPUSTATES != 5)) {
-        error("FREEBSD: There are %d CPU states (5 was expected)", CPUSTATES);
-        goto cleanup;
-    }
-    if (unlikely(GETSYSCTL_BY_NAME("kern.cp_time", cp_time))) goto cleanup;
-#else
     static char filename[FILENAME_MAX + 1] = "";
     static procfile *ff = NULL;
     static kernel_uint_t utime_raw = 0, stime_raw = 0, gtime_raw = 0, gntime_raw = 0, ntime_raw = 0;
-#endif
     static usec_t collected_usec = 0, last_collected_usec = 0;
 
-#ifndef __FreeBSD__
     if(unlikely(!ff)) {
         snprintfz(filename, FILENAME_MAX, "%s/proc/stat", netdata_configured_host_prefix);
         ff = procfile_open(filename, " \t:", PROCFILE_FLAG_DEFAULT);
@@ -1183,7 +1175,6 @@ static inline int read_proc_stat() {
 
     ff = procfile_readall(ff);
     if(unlikely(!ff)) goto cleanup;
-#endif
 
     last_collected_usec = collected_usec;
     collected_usec = now_monotonic_usec();
@@ -1193,25 +1184,13 @@ static inline int read_proc_stat() {
     // temporary - it is added global_ntime;
     kernel_uint_t global_ntime = 0;
 
-#ifdef __FreeBSD__
-    incremental_rate(global_utime, utime_raw, cp_time[0], collected_usec, last_collected_usec);
-    incremental_rate(global_ntime, ntime_raw, cp_time[1], collected_usec, last_collected_usec);
-    incremental_rate(global_stime, stime_raw, cp_time[2], collected_usec, last_collected_usec);
-#else
     incremental_rate(global_utime, utime_raw, str2kernel_uint_t(procfile_lineword(ff, 0,  1)), collected_usec, last_collected_usec);
     incremental_rate(global_ntime, ntime_raw, str2kernel_uint_t(procfile_lineword(ff, 0,  2)), collected_usec, last_collected_usec);
     incremental_rate(global_stime, stime_raw, str2kernel_uint_t(procfile_lineword(ff, 0,  3)), collected_usec, last_collected_usec);
     incremental_rate(global_gtime, gtime_raw, str2kernel_uint_t(procfile_lineword(ff, 0, 10)), collected_usec, last_collected_usec);
-#endif
 
     global_utime += global_ntime;
 
-#ifdef __FreeBSD__
-    if(enable_guest_charts) {
-        enable_guest_charts = 0;
-        info("Guest charts aren't supported by FreeBSD");
-    }
-#else
     if(enable_guest_charts) {
         // temporary - it is added global_ntime;
         kernel_uint_t global_gntime = 0;
@@ -1224,7 +1203,6 @@ static inline int read_proc_stat() {
         // remove guest time from user time
         global_utime -= (global_utime > global_gtime) ? global_gtime : global_utime;
     }
-#endif
 
     if(unlikely(global_iterations_counter == 1)) {
         global_utime = 0;
@@ -1240,7 +1218,11 @@ cleanup:
     global_gtime = 0;
     return 0;
 }
-
+#else
+static inline int read_proc_stat() {
+    return 0;
+}
+#endif
 
 // ----------------------------------------------------------------------------
 
@@ -1751,7 +1733,6 @@ static inline int print_process_and_parents(struct pid_stat *p, usec_t time) {
 }
 
 static inline void print_process_tree(struct pid_stat *p, char *msg) {
-    log_date(stderr);
     fprintf(stderr, "%s: process %s (%d, %s) with parents:\n", msg, p->comm, p->pid, p->updated?"running":"exited");
     print_process_and_parents(p, p->stat_collected_usec);
 }
@@ -1860,7 +1841,6 @@ static inline void process_exited_processes() {
             continue;
 
         if(unlikely(debug)) {
-            log_date(stderr);
             fprintf(stderr, "Absorb %s (%d %s total resources: utime=" KERNEL_UINT_FORMAT " stime=" KERNEL_UINT_FORMAT " gtime=" KERNEL_UINT_FORMAT " minflt=" KERNEL_UINT_FORMAT " majflt=" KERNEL_UINT_FORMAT ")\n"
                 , p->comm
                 , p->pid
@@ -2620,14 +2600,13 @@ static inline void send_END(void) {
     fprintf(stdout, "END\n");
 }
 
-static usec_t send_resource_usage_to_netdata() {
+void send_resource_usage_to_netdata(usec_t dt) {
     static struct timeval last = { 0, 0 };
     static struct rusage me_last;
 
     struct timeval now;
     struct rusage me;
 
-    usec_t usec;
     usec_t cpuuser;
     usec_t cpusyst;
 
@@ -2635,10 +2614,6 @@ static usec_t send_resource_usage_to_netdata() {
         now_monotonic_timeval(&last);
         getrusage(RUSAGE_SELF, &me_last);
 
-        // the first time, give a zero to allow
-        // netdata calibrate to the current time
-        // usec = update_every * USEC_PER_SEC;
-        usec = 0ULL;
         cpuuser = 0;
         cpusyst = 0;
     }
@@ -2646,7 +2621,6 @@ static usec_t send_resource_usage_to_netdata() {
         now_monotonic_timeval(&now);
         getrusage(RUSAGE_SELF, &me);
 
-        usec = dt_usec(&now, &last);
         cpuuser = me.ru_utime.tv_sec * USEC_PER_SEC + me.ru_utime.tv_usec;
         cpusyst = me.ru_stime.tv_sec * USEC_PER_SEC + me.ru_stime.tv_usec;
 
@@ -2658,38 +2632,45 @@ static usec_t send_resource_usage_to_netdata() {
     if(unlikely(!created_charts)) {
         created_charts = 1;
 
-        fprintf(stdout
-                , "CHART netdata.apps_cpu '' 'Apps Plugin CPU' 'milliseconds/s' apps.plugin netdata.apps_cpu stacked 140000 %1$d\n"
-                        "DIMENSION user '' incremental 1 1000\n"
-                        "DIMENSION system '' incremental 1 1000\n"
-                        "CHART netdata.apps_sizes '' 'Apps Plugin Files' 'files/s' apps.plugin netdata.apps_sizes line 140001 %1$d\n"
-                        "DIMENSION calls '' incremental 1 1\n"
-                        "DIMENSION files '' incremental 1 1\n"
-                        "DIMENSION pids '' absolute 1 1\n"
-                        "DIMENSION fds '' absolute 1 1\n"
-                        "DIMENSION targets '' absolute 1 1\n"
-                        "DIMENSION new_pids 'new pids' incremental 1 1\n"
-                        "CHART netdata.apps_fix '' 'Apps Plugin Normalization Ratios' 'percentage' apps.plugin netdata.apps_fix line 140002 %1$d\n"
-                        "DIMENSION utime '' absolute 1 %2$llu\n"
-                        "DIMENSION stime '' absolute 1 %2$llu\n"
-                        "DIMENSION gtime '' absolute 1 %2$llu\n"
-                        "DIMENSION minflt '' absolute 1 %2$llu\n"
-                        "DIMENSION majflt '' absolute 1 %2$llu\n"
+        fprintf(stdout,
+                "CHART netdata.apps_cpu '' 'Apps Plugin CPU' 'milliseconds/s' apps.plugin netdata.apps_cpu stacked 140000 %1$d\n"
+                "DIMENSION user '' incremental 1 1000\n"
+                "DIMENSION system '' incremental 1 1000\n"
+                "CHART netdata.apps_sizes '' 'Apps Plugin Files' 'files/s' apps.plugin netdata.apps_sizes line 140001 %1$d\n"
+                "DIMENSION calls '' incremental 1 1\n"
+                "DIMENSION files '' incremental 1 1\n"
+                "DIMENSION pids '' absolute 1 1\n"
+                "DIMENSION fds '' absolute 1 1\n"
+                "DIMENSION targets '' absolute 1 1\n"
+                "DIMENSION new_pids 'new pids' incremental 1 1\n"
+                , update_every
+        );
+
+#if (ALL_PIDS_ARE_READ_INSTANTLY == 0)
+        fprintf(stdout,
+                "CHART netdata.apps_fix '' 'Apps Plugin Normalization Ratios' 'percentage' apps.plugin netdata.apps_fix line 140002 %1$d\n"
+                "DIMENSION utime '' absolute 1 %2$llu\n"
+                "DIMENSION stime '' absolute 1 %2$llu\n"
+                "DIMENSION gtime '' absolute 1 %2$llu\n"
+                "DIMENSION minflt '' absolute 1 %2$llu\n"
+                "DIMENSION majflt '' absolute 1 %2$llu\n"
                 , update_every
                 , RATES_DETAIL
         );
 
         if(include_exited_childs)
-            fprintf(stdout
-                    , "CHART netdata.apps_children_fix '' 'Apps Plugin Exited Children Normalization Ratios' 'percentage' apps.plugin netdata.apps_children_fix line 140003 %1$d\n"
-                            "DIMENSION cutime '' absolute 1 %2$llu\n"
-                            "DIMENSION cstime '' absolute 1 %2$llu\n"
-                            "DIMENSION cgtime '' absolute 1 %2$llu\n"
-                            "DIMENSION cminflt '' absolute 1 %2$llu\n"
-                            "DIMENSION cmajflt '' absolute 1 %2$llu\n"
+            fprintf(stdout,
+                    "CHART netdata.apps_children_fix '' 'Apps Plugin Exited Children Normalization Ratios' 'percentage' apps.plugin netdata.apps_children_fix line 140003 %1$d\n"
+                    "DIMENSION cutime '' absolute 1 %2$llu\n"
+                    "DIMENSION cstime '' absolute 1 %2$llu\n"
+                    "DIMENSION cgtime '' absolute 1 %2$llu\n"
+                    "DIMENSION cminflt '' absolute 1 %2$llu\n"
+                    "DIMENSION cmajflt '' absolute 1 %2$llu\n"
                     , update_every
                     , RATES_DETAIL
             );
+#endif
+
     }
 
     fprintf(stdout,
@@ -2705,30 +2686,34 @@ static usec_t send_resource_usage_to_netdata() {
         "SET targets = %zu\n"
         "SET new_pids = %zu\n"
         "END\n"
-        "BEGIN netdata.apps_fix %llu\n"
-        "SET utime = %u\n"
-        "SET stime = %u\n"
-        "SET gtime = %u\n"
-        "SET minflt = %u\n"
-        "SET majflt = %u\n"
-        "END\n"
-        , usec
+        , dt
         , cpuuser
         , cpusyst
-        , usec
+        , dt
         , calls_counter
         , file_counter
         , all_pids_count
         , all_files_len
         , apps_groups_targets_count
         , targets_assignment_counter
-        , usec
-        , (unsigned int)(utime_fix_ratio   * 100 * RATES_DETAIL)
-        , (unsigned int)(stime_fix_ratio   * 100 * RATES_DETAIL)
-        , (unsigned int)(gtime_fix_ratio   * 100 * RATES_DETAIL)
-        , (unsigned int)(minflt_fix_ratio  * 100 * RATES_DETAIL)
-        , (unsigned int)(majflt_fix_ratio  * 100 * RATES_DETAIL)
         );
+
+#if (ALL_PIDS_ARE_READ_INSTANTLY == 0)
+    fprintf(stdout,
+            "BEGIN netdata.apps_fix %llu\n"
+            "SET utime = %u\n"
+            "SET stime = %u\n"
+            "SET gtime = %u\n"
+            "SET minflt = %u\n"
+            "SET majflt = %u\n"
+            "END\n"
+            , dt
+            , (unsigned int)(utime_fix_ratio   * 100 * RATES_DETAIL)
+            , (unsigned int)(stime_fix_ratio   * 100 * RATES_DETAIL)
+            , (unsigned int)(gtime_fix_ratio   * 100 * RATES_DETAIL)
+            , (unsigned int)(minflt_fix_ratio  * 100 * RATES_DETAIL)
+            , (unsigned int)(majflt_fix_ratio  * 100 * RATES_DETAIL)
+    );
 
     if(include_exited_childs)
         fprintf(stdout,
@@ -2739,17 +2724,17 @@ static usec_t send_resource_usage_to_netdata() {
             "SET cminflt = %u\n"
             "SET cmajflt = %u\n"
             "END\n"
-            , usec
+            , dt
             , (unsigned int)(cutime_fix_ratio  * 100 * RATES_DETAIL)
             , (unsigned int)(cstime_fix_ratio  * 100 * RATES_DETAIL)
             , (unsigned int)(cgtime_fix_ratio  * 100 * RATES_DETAIL)
             , (unsigned int)(cminflt_fix_ratio * 100 * RATES_DETAIL)
             , (unsigned int)(cmajflt_fix_ratio * 100 * RATES_DETAIL)
             );
-
-    return usec;
+#endif
 }
 
+#if (ALL_PIDS_ARE_READ_INSTANTLY == 0)
 static void normalize_utilization(struct target *root) {
     struct target *w;
 
@@ -2895,25 +2880,30 @@ static void normalize_utilization(struct target *root) {
             );
     }
 }
+#else // ALL_PIDS_ARE_READ_INSTANTLY == 1
+static void normalize_utilization(struct target *root) {
+    (void)root;
+}
+#endif // ALL_PIDS_ARE_READ_INSTANTLY
 
-static void send_collected_data_to_netdata(struct target *root, const char *type, usec_t usec) {
+static void send_collected_data_to_netdata(struct target *root, const char *type, usec_t dt) {
     struct target *w;
 
-    send_BEGIN(type, "cpu", usec);
+    send_BEGIN(type, "cpu", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, (kernel_uint_t)(w->utime * utime_fix_ratio) + (kernel_uint_t)(w->stime * stime_fix_ratio) + (kernel_uint_t)(w->gtime * gtime_fix_ratio) + (include_exited_childs?((kernel_uint_t)(w->cutime * cutime_fix_ratio) + (kernel_uint_t)(w->cstime * cstime_fix_ratio) + (kernel_uint_t)(w->cgtime * cgtime_fix_ratio)):0ULL));
     }
     send_END();
 
-    send_BEGIN(type, "cpu_user", usec);
+    send_BEGIN(type, "cpu_user", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, (kernel_uint_t)(w->utime * utime_fix_ratio) + (include_exited_childs?((kernel_uint_t)(w->cutime * cutime_fix_ratio)):0ULL));
     }
     send_END();
 
-    send_BEGIN(type, "cpu_system", usec);
+    send_BEGIN(type, "cpu_system", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, (kernel_uint_t)(w->stime * stime_fix_ratio) + (include_exited_childs?((kernel_uint_t)(w->cstime * cstime_fix_ratio)):0ULL));
@@ -2921,7 +2911,7 @@ static void send_collected_data_to_netdata(struct target *root, const char *type
     send_END();
 
     if(show_guest_time) {
-        send_BEGIN(type, "cpu_guest", usec);
+        send_BEGIN(type, "cpu_guest", dt);
         for (w = root; w ; w = w->next) {
             if(unlikely(w->exposed))
                 send_SET(w->name, (kernel_uint_t)(w->gtime * gtime_fix_ratio) + (include_exited_childs?((kernel_uint_t)(w->cgtime * cgtime_fix_ratio)):0ULL));
@@ -2929,42 +2919,42 @@ static void send_collected_data_to_netdata(struct target *root, const char *type
         send_END();
     }
 
-    send_BEGIN(type, "threads", usec);
+    send_BEGIN(type, "threads", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->num_threads);
     }
     send_END();
 
-    send_BEGIN(type, "processes", usec);
+    send_BEGIN(type, "processes", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->processes);
     }
     send_END();
 
-    send_BEGIN(type, "mem", usec);
+    send_BEGIN(type, "mem", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, (w->statm_resident > w->statm_share)?(w->statm_resident - w->statm_share):0ULL);
     }
     send_END();
 
-    send_BEGIN(type, "vmem", usec);
+    send_BEGIN(type, "vmem", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->statm_size);
     }
     send_END();
 
-    send_BEGIN(type, "minor_faults", usec);
+    send_BEGIN(type, "minor_faults", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, (kernel_uint_t)(w->minflt * minflt_fix_ratio) + (include_exited_childs?((kernel_uint_t)(w->cminflt * cminflt_fix_ratio)):0ULL));
     }
     send_END();
 
-    send_BEGIN(type, "major_faults", usec);
+    send_BEGIN(type, "major_faults", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, (kernel_uint_t)(w->majflt * majflt_fix_ratio) + (include_exited_childs?((kernel_uint_t)(w->cmajflt * cmajflt_fix_ratio)):0ULL));
@@ -2972,14 +2962,14 @@ static void send_collected_data_to_netdata(struct target *root, const char *type
     send_END();
 
 #ifndef __FreeBSD__
-    send_BEGIN(type, "lreads", usec);
+    send_BEGIN(type, "lreads", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->io_logical_bytes_read);
     }
     send_END();
 
-    send_BEGIN(type, "lwrites", usec);
+    send_BEGIN(type, "lwrites", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->io_logical_bytes_written);
@@ -2987,14 +2977,14 @@ static void send_collected_data_to_netdata(struct target *root, const char *type
     send_END();
 #endif
 
-    send_BEGIN(type, "preads", usec);
+    send_BEGIN(type, "preads", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->io_storage_bytes_read);
     }
     send_END();
 
-    send_BEGIN(type, "pwrites", usec);
+    send_BEGIN(type, "pwrites", dt);
     for (w = root; w ; w = w->next) {
         if(unlikely(w->exposed))
             send_SET(w->name, w->io_storage_bytes_written);
@@ -3002,21 +2992,21 @@ static void send_collected_data_to_netdata(struct target *root, const char *type
     send_END();
 
     if(enable_file_charts) {
-        send_BEGIN(type, "files", usec);
+        send_BEGIN(type, "files", dt);
         for (w = root; w; w = w->next) {
             if (unlikely(w->exposed))
                 send_SET(w->name, w->openfiles);
         }
         send_END();
 
-        send_BEGIN(type, "sockets", usec);
+        send_BEGIN(type, "sockets", dt);
         for (w = root; w; w = w->next) {
             if (unlikely(w->exposed))
                 send_SET(w->name, w->opensockets);
         }
         send_END();
 
-        send_BEGIN(type, "pipes", usec);
+        send_BEGIN(type, "pipes", dt);
         for (w = root; w; w = w->next) {
             if (unlikely(w->exposed))
                 send_SET(w->name, w->openpipes);
@@ -3472,8 +3462,9 @@ int main(int argc, char **argv) {
         static int profiling_count=0;
         profiling_count++;
         if(unlikely(profiling_count > 1000)) exit(0);
+        usec_t dt = update_every * USEC_PER_SEC;
 #else
-        heartbeat_next(&hb, step);
+        usec_t dt = heartbeat_next(&hb, step);
 #endif
 
         if(!collect_data_for_all_processes()) {
@@ -3485,7 +3476,7 @@ int main(int argc, char **argv) {
         calculate_netdata_statistics();
         normalize_utilization(apps_groups_root_target);
 
-        usec_t dt = send_resource_usage_to_netdata();
+        send_resource_usage_to_netdata(dt);
 
         // this is smart enough to show only newly added apps, when needed
         send_charts_updates_to_netdata(apps_groups_root_target, "apps", "Apps");

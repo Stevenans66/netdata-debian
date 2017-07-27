@@ -73,8 +73,9 @@ void create_needed_dir(const char *dir, uid_t uid, gid_t gid)
         error("Cannot create directory '%s'", dir);
 }
 
-int become_user(const char *username, int pid_fd)
-{
+int become_user(const char *username, int pid_fd) {
+    int am_i_root = (getuid() == 0)?1:0;
+
     struct passwd *pw = getpwnam(username);
     if(!pw) {
         error("User %s is not present.", username);
@@ -94,12 +95,12 @@ int become_user(const char *username, int pid_fd)
 
     int ngroups = (int)sysconf(_SC_NGROUPS_MAX);
     gid_t *supplementary_groups = NULL;
-    if(ngroups) {
+    if(ngroups > 0) {
         supplementary_groups = mallocz(sizeof(gid_t) * ngroups);
         if(getgrouplist(username, gid, supplementary_groups, &ngroups) == -1) {
-            error("Cannot get supplementary groups of user '%s'.", username);
-            freez(supplementary_groups);
-            supplementary_groups = NULL;
+            if(am_i_root)
+                error("Cannot get supplementary groups of user '%s'.", username);
+
             ngroups = 0;
         }
     }
@@ -109,13 +110,16 @@ int become_user(const char *username, int pid_fd)
     chown_open_file(stdaccess_fd, uid, gid);
     chown_open_file(pid_fd, uid, gid);
 
-    if(supplementary_groups && ngroups) {
-        if(setgroups(ngroups, supplementary_groups) == -1)
-            error("Cannot set supplementary groups for user '%s'", username);
-
-        freez(supplementary_groups);
+    if(supplementary_groups && ngroups > 0) {
+        if(setgroups((size_t)ngroups, supplementary_groups) == -1) {
+            if(am_i_root)
+                error("Cannot set supplementary groups for user '%s'", username);
+        }
         ngroups = 0;
     }
+
+    if(supplementary_groups)
+        freez(supplementary_groups);
 
 #ifdef __APPLE__
     if(setregid(gid, gid) != 0) {
@@ -155,22 +159,42 @@ int become_user(const char *username, int pid_fd)
     return(0);
 }
 
+#ifndef OOM_SCORE_ADJ_MAX
+#define OOM_SCORE_ADJ_MAX 1000
+#endif
+#ifndef OOM_SCORE_ADJ_MIN
+#define OOM_SCORE_ADJ_MIN -1000
+#endif
+
 static void oom_score_adj(void) {
-    int score = (int)config_get_number(CONFIG_SECTION_GLOBAL, "OOM score", 1000);
+    char buf[10 + 1];
+    snprintfz(buf, 10, "%d", OOM_SCORE_ADJ_MAX);
+
+    // check the environment
+    char *s = getenv("OOMScoreAdjust");
+    if(!s || !*s) s = buf;
+
+    // check netdata.conf configuration
+    s = config_get(CONFIG_SECTION_GLOBAL, "OOM score", s);
+    if(!s || !*s) s = buf;
+
+    if(!isdigit(*s) && *s != '-' && *s != '+') {
+        info("Out-Of-Memory score not changed due to setting: '%s'", s);
+        return;
+    }
 
     int done = 0;
     int fd = open("/proc/self/oom_score_adj", O_WRONLY);
     if(fd != -1) {
-        char buf[10 + 1];
-        ssize_t len = snprintfz(buf, 10, "%d", score);
+        ssize_t len = strlen(s);
         if(len > 0 && write(fd, buf, (size_t)len) == len) done = 1;
         close(fd);
     }
 
     if(!done)
-        error("Cannot adjust my Out-Of-Memory score to %d.", score);
+        error("Cannot adjust my Out-Of-Memory score to '%s'.", s);
     else
-        debug(D_SYSTEM, "Adjusted my Out-Of-Memory score to %d.", score);
+        info("Adjusted my Out-Of-Memory score to '%s'.", s);
 }
 
 static void process_nice_level(void) {

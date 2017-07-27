@@ -40,6 +40,7 @@
 #include <strings.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -201,12 +202,14 @@
 #define NETDATA_OS_TYPE "linux"
 #endif /* __FreeBSD__, __APPLE__*/
 
+#include "statistical.h"
 #include "socket.h"
 #include "eval.h"
 #include "health.h"
 #include "rrd.h"
 #include "plugin_tc.h"
 #include "plugins_d.h"
+#include "statsd.h"
 #include "rrd2json.h"
 #include "rrd2json_api_old.h"
 #include "web_client.h"
@@ -217,6 +220,7 @@
 #include "unit_test.h"
 #include "ipc.h"
 #include "backends.h"
+#include "backend_prometheus.h"
 #include "inlined.h"
 #include "adaptive_resortable_list.h"
 #include "rrdpush.h"
@@ -238,7 +242,8 @@ extern void netdata_fix_chart_name(char *s);
 
 extern void strreverse(char* begin, char* end);
 extern char *mystrsep(char **ptr, char *s);
-extern char *trim(char *s);
+extern char *trim(char *s); // remove leading and trailing spaces; may return NULL
+extern char *trim_all(char *buffer); // like trim(), but also remove duplicate spaces inside the string; may return NULL
 
 extern int  vsnprintfz(char *dst, size_t n, const char *fmt, va_list args);
 extern int  snprintfz(char *dst, size_t n, const char *fmt, ...) PRINTFLIKE(3, 4);
@@ -265,9 +270,10 @@ extern void freez(void *ptr);
 #endif
 
 extern void json_escape_string(char *dst, const char *src, size_t size);
+extern void json_fix_string(char *s);
 
 extern void *mymmap(const char *filename, size_t size, int flags, int ksm);
-extern int savememory(const char *filename, void *mem, size_t size);
+extern int memory_file_save(const char *filename, void *mem, size_t size);
 
 extern int fd_is_valid(int fd);
 
@@ -288,6 +294,8 @@ extern pid_t get_system_pid_max(void);
 /* Number of ticks per second */
 extern unsigned int hz;
 extern void get_system_HZ(void);
+
+extern int recursively_delete_dir(const char *path, const char *reason);
 
 extern volatile sig_atomic_t netdata_exit;
 extern const char *os_type;

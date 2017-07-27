@@ -228,6 +228,16 @@ It produces one stacked chart per CPU, showing the percentage of time spent in
 each state.
 
 ---
+# dns_query_time
+
+This module provides dns query time statistics.
+
+**Requirement:**
+* `python-dnspython` package
+
+It produces one aggregate chart or one chart per dns server, showing the query time.
+
+---
 
 # dovecot
 
@@ -471,6 +481,44 @@ To do this, create a link from the sites-enabled directory to the status file in
 
 and restart/reload your FREERADIUS server.
 
+---
+
+# go_expvar
+
+---
+
+The `go_expvar` module can monitor any Go application that exposes its metrics with the use of `expvar` package from the Go standard library.
+
+`go_expvar` produces charts for Go runtime memory statistics and optionally any number of custom charts. Please see the [wiki page](https://github.com/firehol/netdata/wiki/Monitoring-Go-Applications) for more info.
+
+For the memory statistics, it produces the following charts:
+
+1. **Heap allocations** in kB
+ * alloc: size of objects allocated on the heap
+ * inuse: size of allocated heap spans 
+ 
+2. **Stack allocations** in kB
+ * inuse: size of allocated stack spans
+ 
+3. **MSpan allocations** in kB
+ * inuse: size of allocated mspan structures
+ 
+4. **MCache allocations** in kB
+ * inuse: size of allocated mcache structures
+ 
+5. **Virtual memory** in kB
+ * sys: size of reserved virtual address space
+ 
+6. **Live objects**
+ * live: number of live objects in memory
+ 
+7. **GC pauses average** in ns
+ * avg: average duration of all GC stop-the-world pauses
+ 
+### configuration
+ 
+Please see the [wiki page](https://github.com/firehol/netdata/wiki/Monitoring-Go-Applications#using-netdata-go_expvar-module) for detailed info about module configuration.
+ 
 ---
 
 # haproxy
@@ -1198,6 +1246,60 @@ When no configuration file is found, module tries to connect to TCP/IP socket: `
 
 ---
 
+# rabbitmq
+
+Module monitor rabbitmq performance and health metrics.
+
+Following charts are drawn:
+
+1. **Queued Messages**
+ * ready
+ * unacknowledged
+
+2. **Message Rates**
+ * ack
+ * redelivered
+ * deliver
+ * publish
+
+3. **Global Counts**
+ * channels
+ * consumers
+ * connections
+ * queues
+ * exchanges
+
+4. **File Descriptors**
+ * used descriptors
+
+5. **Socket Descriptors**
+ * used descriptors
+
+6. **Erlang processes**
+ * used processes
+
+7. **Memory**
+ * free memory in megabytes
+
+8. **Disk Space**
+ * free disk space in gigabytes
+
+### configuration
+
+```yaml
+socket:
+  name     : 'local'
+    host     : '127.0.0.1'
+    port     :  15672
+    user     : 'guest'
+    pass     : 'guest'
+
+```
+
+When no configuration file is found, module tries to connect to: `localhost:15672`.
+
+---
+
 # redis
 
 Get INFO data from redis instance.
@@ -1241,6 +1343,68 @@ When no configuration file is found, module tries to connect to TCP/IP socket: `
 
 ---
 
+# samba
+
+Performance metrics of Samba file sharing.
+
+It produces the following charts:
+
+1. **Syscall R/Ws** in kilobytes/s
+ * sendfile
+ * recvfle
+
+2. **Smb2 R/Ws** in kilobytes/s
+ * readout
+ * writein
+ * readin
+ * writeout
+
+3. **Smb2 Create/Close** in operations/s
+ * create
+ * close
+
+4. **Smb2 Info** in operations/s
+ * getinfo
+ * setinfo
+
+5. **Smb2 Find** in operations/s
+ * find
+
+6. **Smb2 Notify** in operations/s
+ * notify
+
+7. **Smb2 Lesser Ops** as counters
+ * tcon
+ * negprot
+ * tdis
+ * cancel
+ * logoff
+ * flush
+ * lock
+ * keepalive
+ * break
+ * sessetup
+
+### configuration
+
+Requires that smbd has been compiled with profiling enabled.  Also required
+that `smbd` was started either with the `-P 1` option or inside `smb.conf`
+using `smbd profiling level`.
+
+This plugin uses `smbstatus -P` which can only be executed by root.  It uses
+sudo and assumes that it is configured such that the `netdata` user can
+execute smbstatus as root without password.
+
+For example:
+
+    netdata ALL=(ALL)       NOPASSWD: /usr/bin/smbstatus -P
+
+```yaml
+update_every : 5 # update frequency
+```
+
+---
+
 # sensors
 
 System sensors information.
@@ -1250,6 +1414,12 @@ Charts are created dynamically.
 ### configuration
 
 For detailed configuration information please read [`sensors.conf`](https://github.com/firehol/netdata/blob/master/conf.d/python.d/sensors.conf) file.
+
+### possible issues
+
+There have been reports from users that on certain servers, ACPI ring buffer errors are printed by the kernel (`dmesg`) when ACPI sensors are being accessed.
+We are tracking such cases in issue [#827](https://github.com/firehol/netdata/issues/827).
+Please join this discussion for help.
 
 ---
 

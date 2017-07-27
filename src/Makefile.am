@@ -44,6 +44,8 @@ netdata_SOURCES = \
 	appconfig.h \
 	avl.c \
 	avl.h \
+	backend_prometheus.c \
+	backend_prometheus.h \
 	backends.c \
 	backends.h \
 	clocks.c \
@@ -119,6 +121,10 @@ netdata_SOURCES = \
 	simple_pattern.h \
 	socket.c \
 	socket.h \
+	statistical.c \
+	statistical.h \
+	statsd.c \
+	statsd.h \
 	storage_number.c \
 	storage_number.h \
 	sys_devices_system_edac_mc.c \
@@ -146,6 +152,13 @@ netdata_SOURCES += \
 	plugin_freebsd.c \
 	plugin_freebsd.h \
 	freebsd_sysctl.c \
+	freebsd_getmntinfo.c \
+	freebsd_getifaddrs.c \
+	freebsd_devstat.c \
+	zfs_common.c \
+	zfs_common.h \
+	freebsd_kstat_zfs.c \
+	freebsd_ipfw.c \
 	$(NULL)
 else
 if MACOS
@@ -178,6 +191,9 @@ netdata_SOURCES += \
 	proc_net_softnet_stat.c \
 	proc_net_stat_conntrack.c \
 	proc_net_stat_synproxy.c \
+	zfs_common.c \
+    zfs_common.h \
+	proc_spl_kstat_zfs.c \
 	proc_stat.c \
 	proc_sys_kernel_random_entropy_avail.c \
 	proc_vmstat.c \
