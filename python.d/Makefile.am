@@ -18,12 +18,14 @@ dist_python_DATA = \
     bind_rndc.chart.py \
     cpufreq.chart.py \
     cpuidle.chart.py \
+    dns_query_time.chart.py \
     dovecot.chart.py \
     elasticsearch.chart.py \
     example.chart.py \
     exim.chart.py \
     fail2ban.chart.py \
     freeradius.chart.py \
+    go_expvar.chart.py \
     haproxy.chart.py \
     hddtemp.chart.py \
     ipfs.chart.py \
@@ -38,8 +40,10 @@ dist_python_DATA = \
     phpfpm.chart.py \
     postfix.chart.py \
     postgres.chart.py \
+    rabbitmq.chart.py \
     redis.chart.py \
     retroshare.chart.py \
+    samba.chart.py \
     sensors.chart.py \
     squid.chart.py \
     smartd_log.chart.py \

@@ -2,7 +2,7 @@
 
 # netdata
 # real-time performance and health monitoring, done right!
-# (C) 2016 Costa Tsaousis <costa@tsaousis.gr>
+# (C) 2017 Costa Tsaousis <costa@tsaousis.gr>
 # GPL v3+
 #
 # Script to send alarm notifications for netdata
@@ -18,13 +18,14 @@
 #  - slack.com notifications by @ktsaou
 #  - discordapp.com notifications by @lowfive
 #  - pushover.net notifications by @ktsaou
-#  - pushbullet.com push notifications by Tiago Peralta @tperalta82 PR #1070
-#  - telegram.org notifications by @hashworks PR #1002
-#  - twilio.com notifications by Levi Blaney @shadycuz PR #1211
+#  - pushbullet.com push notifications by Tiago Peralta @tperalta82 #1070
+#  - telegram.org notifications by @hashworks #1002
+#  - twilio.com notifications by Levi Blaney @shadycuz #1211
 #  - kafka notifications by @ktsaou #1342
-#  - pagerduty.com notifications by Jim Cooley @jimcooley PR #1373
+#  - pagerduty.com notifications by Jim Cooley @jimcooley #1373
 #  - messagebird.com notifications by @tech_no_logical #1453
 #  - hipchat notifications by @ktsaou #1561
+#  - custom notifications by @ktsaou
 
 # -----------------------------------------------------------------------------
 # testing notifications
@@ -103,6 +104,15 @@ debug() {
     [ ${debug} -eq 1 ] && log DEBUG "${@}"
 }
 
+
+# -----------------------------------------------------------------------------
+# this is to be overwritten by the config file
+
+custom_sender() {
+    info "not sending custom notification for ${status} of '${host}.${chart}.${name}'"
+}
+
+
 # -----------------------------------------------------------------------------
 
 # check for BASH v4+ (required for associative arrays)
@@ -112,11 +122,9 @@ debug() {
 # -----------------------------------------------------------------------------
 # defaults to allow running this script by hand
 
-NETDATA_CONFIG_DIR="${NETDATA_CONFIG_DIR-/etc/netdata}"
-NETDATA_CACHE_DIR="${NETDATA_CACHE_DIR-/var/cache/netdata}"
+[ -z "${NETDATA_CONFIG_DIR}" ] && NETDATA_CONFIG_DIR="$(dirname "${0}")/../../../../etc/netdata"
+[ -z "${NETDATA_CACHE_DIR}" ] && NETDATA_CACHE_DIR="$(dirname "${0}")/../../../../var/cache/netdata"
 [ -z "${NETDATA_REGISTRY_URL}" ] && NETDATA_REGISTRY_URL="https://registry.my-netdata.io"
-[ -z "${NETDATA_HOSTNAME}" ] && NETDATA_HOSTNAME="$(hostname)"
-[ -z "${NETDATA_REGISTRY_HOSTNAME}" ] && NETDATA_REGISTRY_HOSTNAME="${NETDATA_HOSTNAME}"
 
 # -----------------------------------------------------------------------------
 # parse command line parameters
@@ -130,8 +138,8 @@ when="${6}"        # the timestamp this event occurred
 name="${7}"        # the name of the alarm, as given in netdata health.d entries
 chart="${8}"       # the name of the chart (type.id)
 family="${9}"      # the family of the chart
-status="${10}"     # the current status : REMOVED, UNITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
-old_status="${11}" # the previous status: REMOVED, UNITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
+status="${10}"     # the current status : REMOVED, UNINITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
+old_status="${11}" # the previous status: REMOVED, UNINITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
 value="${12}"      # the current value of the alarm
 old_value="${13}"  # the previous value of the alarm
 src="${14}"        # the line number and file the alarm has been configured
@@ -145,9 +153,8 @@ old_value_string="${20}"    # friendly old value (with units)
 # -----------------------------------------------------------------------------
 # find a suitable hostname to use, if netdata did not supply a hostname
 
-[ -z "${host}" ] && host="${NETDATA_HOSTNAME}"
-[ -z "${host}" ] && host="${NETDATA_REGISTRY_HOSTNAME}"
-[ -z "${host}" ] && host="$(hostname 2>/dev/null)"
+this_host=$(hostname -s 2>/dev/null)
+[ -z "${host}" ] && host="${this_host}"
 
 # -----------------------------------------------------------------------------
 # screen statuses we don't need to send a notification
@@ -192,6 +199,7 @@ SEND_EMAIL="YES"
 SEND_PUSHBULLET="YES"
 SEND_KAFKA="YES"
 SEND_PD="YES"
+SEND_CUSTOM="YES"
 
 # slack configs
 SLACK_WEBHOOK_URL=
@@ -244,6 +252,10 @@ KAFKA_SENDER_IP=
 # pagerduty.com configs
 PD_SERVICE_KEY=
 declare -A role_recipients_pd=()
+
+# custom configs
+DEFAULT_RECIPIENT_CUSTOM=
+declare -A role_recipients_custom=()
 
 # email configs
 DEFAULT_RECIPIENT_EMAIL="root"
@@ -308,6 +320,7 @@ declare -A arr_hipchat=()
 declare -A arr_telegram=()
 declare -A arr_pd=()
 declare -A arr_email=()
+declare -A arr_custom=()
 
 # netdata may call us with multiple roles, and roles may have multiple but
 # overlapping recipients - so, here we find the unique recipients.
@@ -396,6 +409,15 @@ do
     do
         [ "${r}" != "disabled" ] && filter_recipient_by_criticality pd "${r}" && arr_pd[${r/|*/}]="1"
     done
+
+    # custom
+    a="${role_recipients_custom[${x}]}"
+    [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_CUSTOM}"
+    for r in ${a//,/ }
+    do
+        [ "${r}" != "disabled" ] && filter_recipient_by_criticality custom "${r}" && arr_custom[${r/|*/}]="1"
+    done
+
 done
 
 # build the list of slack recipients (channels)
@@ -433,6 +455,10 @@ to_telegram="${!arr_telegram[*]}"
 # build the list of pagerduty recipients (service keys)
 to_pd="${!arr_pd[*]}"
 [ -z "${to_pd}" ] && SEND_PD="NO"
+
+# build the list of custom recipients
+to_custom="${!arr_custom[*]}"
+[ -z "${to_custom}" ] && SEND_CUSTOM="NO"
 
 # build the list of email recipients (email addresses)
 to_email=
@@ -492,7 +518,7 @@ fi
 if [ \( \
            "${SEND_PUSHOVER}"    = "YES" \
         -o "${SEND_SLACK}"       = "YES" \
-        -o "${SEND_DISCORD}"       = "YES" \
+        -o "${SEND_DISCORD}"     = "YES" \
         -o "${SEND_HIPCHAT}"     = "YES" \
         -o "${SEND_TWILIO}"      = "YES" \
         -o "${SEND_MESSAGEBIRD}" = "YES" \
@@ -530,13 +556,14 @@ if [   "${SEND_EMAIL}"          != "YES" \
     -a "${SEND_PUSHOVER}"       != "YES" \
     -a "${SEND_TELEGRAM}"       != "YES" \
     -a "${SEND_SLACK}"          != "YES" \
-    -a "${SEND_DISCORD}"          != "YES" \
+    -a "${SEND_DISCORD}"        != "YES" \
     -a "${SEND_TWILIO}"         != "YES" \
     -a "${SEND_HIPCHAT}"        != "YES" \
     -a "${SEND_MESSAGEBIRD}"    != "YES" \
     -a "${SEND_PUSHBULLET}"     != "YES" \
     -a "${SEND_KAFKA}"          != "YES" \
     -a "${SEND_PD}"             != "YES" \
+    -a "${SEND_CUSTOM}"         != "YES" \
     ]
     then
     fatal "All notification methods are disabled. Not sending notification for host '${host}', chart '${chart}' to '${roles}' for '${name}' = '${value}' for status '${status}'."
@@ -939,9 +966,16 @@ send_messagebird() {
 # telegram sender
 
 send_telegram() {
-    local bottoken="${1}" chatids="${2}" message="${3}" httpcode sent=0 chatid disableNotification=""
+    local bottoken="${1}" chatids="${2}" message="${3}" httpcode sent=0 chatid emoji disableNotification=""
 
     if [ "${status}" = "CLEAR" ]; then disableNotification="--data-urlencode disable_notification=true"; fi
+    
+    case "${status}" in
+        WARNING)  emoji="⚠️" ;;
+        CRITICAL) emoji="🔴" ;;
+        CLEAR)    emoji="✅" ;;
+        *)        emoji="⚪️" ;;
+    esac
 
     if [ "${SEND_TELEGRAM}" = "YES" -a ! -z "${bottoken}" -a ! -z "${chatids}" -a ! -z "${message}" ];
     then
@@ -951,7 +985,7 @@ send_telegram() {
             httpcode=$(${curl} --write-out %{http_code} --silent --output /dev/null ${disableNotification} \
                 --data-urlencode "parse_mode=HTML" \
                 --data-urlencode "disable_web_page_preview=true" \
-                --data-urlencode "text=${message}" \
+                --data-urlencode "text=${emoji} ${message}" \
                 "https://api.telegram.org/bot${bottoken}/sendMessage?chat_id=${chatid}")
 
             if [ "${httpcode}" == "200" ]
@@ -1040,7 +1074,7 @@ EOF
 # discord sender
 
 send_discord() {
-    local webhook="${1}/slack" channels="${2}" httpcode sent=0 channel color payload
+    local webhook="${1}/slack" channels="${2}" httpcode sent=0 channel color payload username
 
     [ "${SEND_DISCORD}" != "YES" ] && return 1
 
@@ -1053,10 +1087,13 @@ send_discord() {
 
     for channel in ${channels}
     do
+        username="netdata on ${host}"
+        [ ${#username} -gt 32 ] && username="${username:0:29}..."
+
         payload="$(cat <<EOF
         {
             "channel": "#${channel}",
-            "username": "netdata on ${host}",
+            "username": "${username}",
             "text": "${host} ${status_message}, \`${chart}\` (_${family}_), *${alarm}*",
             "icon_url": "${images_base_url}/images/seo-performance-128.png",
             "attachments": [
@@ -1101,7 +1138,7 @@ EOF
 # prepare the content of the notification
 
 # the url to send the user on click
-urlencode "${NETDATA_REGISTRY_HOSTNAME}" >/dev/null; url_host="${REPLY}"
+urlencode "${host}" >/dev/null; url_host="${REPLY}"
 urlencode "${chart}" >/dev/null; url_chart="${REPLY}"
 urlencode "${family}" >/dev/null; url_family="${REPLY}"
 urlencode "${name}" >/dev/null; url_name="${REPLY}"
@@ -1282,6 +1319,24 @@ SENT_PD=$?
 
 
 # -----------------------------------------------------------------------------
+# send the custom message
+
+send_custom() {
+    # is it enabled?
+    [ "${SEND_CUSTOM}" != "YES" ] && return 1
+
+    # do we have any sender?
+    [ -z "${1}" ] && return 1
+
+    # call the custom_sender function
+    custom_sender "${@}"
+}
+
+send_custom "${to_custom}"
+SENT_CUSTOM=$?
+
+
+# -----------------------------------------------------------------------------
 # send hipchat message
 
 send_hipchat "${HIPCHAT_AUTH_TOKEN}" "${to_hipchat}" " \
@@ -1295,17 +1350,40 @@ ${host} ${status_message}<br/> \
 
 SENT_HIPCHAT=$?
 
+
 # -----------------------------------------------------------------------------
 # send the email
 
 send_email <<EOF
 To: ${to_email}
 Subject: ${host} ${status_message} - ${name//_/ } - ${chart}
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="multipart-boundary"
+
+This is a MIME-encoded multipart message
+
+--multipart-boundary
+Content-Type: text/plain
+
+${host} ${status_message}
+
+${alarm} ${info}
+${raised_for}
+
+Chart   : ${chart}
+Family  : ${family}
+Severity: ${severity}
+URL     : ${goto_url}
+Source  : ${src}
+Date    : ${date}
+Notification generated on ${this_host}
+
+--multipart-boundary
 Content-Type: text/html
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; padding: 0;">
-<body style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 14px; width: 100% !important; min-height: 100%; line-height: 1.6; background: #f6f6f6; margin:0; padding: 0;">
+<html xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; padding: 0;">
+<body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; width: 100% !important; min-height: 100%; line-height: 1.6; background: #f6f6f6; margin:0; padding: 0;">
 <table>
     <tbody>
     <tr>
@@ -1316,12 +1394,12 @@ Content-Type: text/html
                     <tbody>
                     <tr>
                         <td bgcolor="#eee" style="padding: 5px 20px 5px 20px; background-color: #eee;">
-                            <div style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 20px; color: #777; font-weight: bold;">netdata notification</div>
+                            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 20px; color: #777; font-weight: bold;">netdata notification</div>
                         </td>
                     </tr>
                     <tr>
                         <td bgcolor="${color}" style="font-size: 16px; vertical-align: top; font-weight: 400; text-align: center; margin: 0; padding: 10px; color: #ffffff; background: ${color} !important; border: 1px solid ${color}; border-top-color: ${color};" align="center" valign="top">
-                            <h1 style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-weight: 400; margin: 0;">${host} ${status_message}</h1>
+                            <h1 style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; margin: 0;">${host} ${status_message}</h1>
                         </td>
                     </tr>
                     <tr>
@@ -1330,46 +1408,46 @@ Content-Type: text/html
                                 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:700px">
                                     <tbody>
                                     <tr>
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding:0 0 20px;" align="left" valign="top">
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding:0 0 20px;" align="left" valign="top">
                                             <span>${chart}</span>
                                             <span style="display: block; color: #666666; font-size: 12px; font-weight: 300; line-height: 1; text-transform: uppercase;">Chart</span>
                                         </td>
                                     </tr>
                                     <tr style="margin: 0; padding: 0;">
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top">
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top">
                                             <span><b>${alarm}</b>${info_html}</span>
                                             <span style="display: block; color: #666666; font-size: 12px; font-weight: 300; line-height: 1; text-transform: uppercase;">Alarm</span>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top">
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top">
                                             <span>${family}</span>
                                             <span style="display: block; color: #666666; font-size: 12px; font-weight: 300; line-height: 1; text-transform: uppercase;">Family</span>
                                         </td>
                                     </tr>
                                     <tr style="margin: 0; padding: 0;">
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top">
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top">
                                             <span>${severity}</span>
                                             <span style="display: block; color: #666666; font-size: 12px; font-weight: 300; line-height: 1; text-transform: uppercase;">Severity</span>
                                         </td>
                                     </tr>
                                     <tr style="margin: 0; padding: 0;">
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top"><span>${date}</span>
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;" align="left" valign="top"><span>${date}</span>
                                             <span>${raised_for_html}</span> <span style="display: block; color: #666666; font-size: 12px; font-weight: 300; line-height: 1; text-transform: uppercase;">Time</span>
                                         </td>
                                     </tr>
                                     <tr style="margin: 0; padding: 0;">
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;">
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; vertical-align: top; margin: 0; padding: 0 0 20px;">
                                             <a href="${goto_url}" style="font-size: 14px; color: #ffffff; text-decoration: none; line-height: 1.5; font-weight: bold; text-align: center; display: inline-block; text-transform: capitalize; background: #35568d; border-width: 1px; border-style: solid; border-color: #2b4c86; margin: 0; padding: 10px 15px;" target="_blank">View Netdata</a>
                                         </td>
                                     </tr>
                                     <tr style="text-align: center; margin: 0; padding: 0;">
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 11px; vertical-align: top; margin: 0; padding: 10px 0 0 0; color: #666666;" align="center" valign="bottom">The source of this alarm is line <code>${src}</code>
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; vertical-align: top; margin: 0; padding: 10px 0 0 0; color: #666666;" align="center" valign="bottom">The source of this alarm is line <code>${src}</code><br/>(alarms are configurable, edit this file to adapt the alarm to your needs)
                                         </td>
                                     </tr>
                                     <tr style="text-align: center; margin: 0; padding: 0;">
-                                        <td style="font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; font-size: 12px; vertical-align: top; margin:0; padding: 20px 0 0 0; color: #666666; border-top: 1px solid #f0f0f0;" align="center" valign="bottom">Sent by
-                                            <a href="https://mynetdata.io/" target="_blank">netdata</a>, the real-time performance monitoring.
+                                        <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; vertical-align: top; margin:0; padding: 20px 0 0 0; color: #666666; border-top: 1px solid #f0f0f0;" align="center" valign="bottom">Sent by
+                                            <a href="https://mynetdata.io/" target="_blank">netdata</a>, the real-time performance and health monitoring, on <code>${this_host}</code>.
                                         </td>
                                     </tr>
                                     </tbody>
@@ -1404,6 +1482,7 @@ if [   ${SENT_EMAIL}        -eq 0 \
     -o ${SENT_PUSHBULLET}   -eq 0 \
     -o ${SENT_KAFKA}        -eq 0 \
     -o ${SENT_PD}           -eq 0 \
+    -o ${SENT_CUSTOM}       -eq 0 \
     ]
     then
     # we did send something

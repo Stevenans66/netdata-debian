@@ -20,23 +20,20 @@
 import time
 import os
 import socket
-import select
 import threading
-import msg
 import ssl
 from subprocess import Popen, PIPE
 from sys import exc_info
-
+from glob import glob
+import re
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
-
 try:
     import urllib.request as urllib2
 except ImportError:
     import urllib2
-
 try:
     import MySQLdb
     PYMYSQL = True
@@ -46,6 +43,7 @@ except ImportError:
         PYMYSQL = True
     except ImportError:
         PYMYSQL = False
+import msg
 
 try:
     PATH = os.getenv('PATH').split(':')
@@ -175,14 +173,15 @@ class SimpleService(threading.Thread):
             # it is important to do this in a loop
             # sleep() is interruptable
             while now < next:
-                self.debug("sleeping for", str(next - now), "secs to reach frequency of", str(step), "secs, now:", str(now), " next:", str(next), " penalty:", str(penalty))
+                self.debug("sleeping for", str(next - now), "secs to reach frequency of",
+                           str(step), "secs, now:", str(now), " next:", str(next), " penalty:", str(penalty))
                 time.sleep(next - now)
                 now = float(time.time())
 
             # do the job
             try:
                 status = self._run_once()
-            except Exception as e:
+            except Exception:
                 status = False
 
             if status:
@@ -202,10 +201,12 @@ class SimpleService(threading.Thread):
                         penalty = 600
 
                     self.retries_left = self.retries
-                    self.alert("failed to collect data for " + str(self.retries) + " times - increasing penalty to " + str(penalty) + " sec and trying again")
+                    self.alert("failed to collect data for " + str(self.retries) +
+                               " times - increasing penalty to " + str(penalty) + " sec and trying again")
 
                 else:
-                    self.error("failed to collect data - " + str(self.retries_left) + " retries left - penalty: " + str(penalty) + " sec")
+                    self.error("failed to collect data - " + str(self.retries_left)
+                               + " retries left - penalty: " + str(penalty) + " sec")
 
     # --- CHART ---
 
@@ -460,10 +461,41 @@ class SimpleService(threading.Thread):
                 return next(('/'.join([p, binary]) for p in PATH
                             if os.path.isfile('/'.join([p, binary]))
                             and os.access('/'.join([p, binary]), os.X_OK)))
-            else:
-                return None
+            return None
         except StopIteration:
             return None
+
+    def _add_new_dimension(self, dimension_id, chart_name, dimension=None, algorithm='incremental',
+                           multiplier=1, divisor=1, priority=65000):
+        """
+        :param dimension_id:
+        :param chart_name:
+        :param dimension:
+        :param algorithm:
+        :param multiplier:
+        :param divisor:
+        :param priority:
+        :return:
+        """
+        if not all([dimension_id not in self._dimensions,
+                    chart_name in self.order,
+                    chart_name in self.definitions]):
+            return
+        self._dimensions.append(dimension_id)
+        dimension_list = list(map(str, [dimension_id,
+                                        dimension if dimension else dimension_id,
+                                        algorithm,
+                                        multiplier,
+                                        divisor]))
+        self.definitions[chart_name]['lines'].append(dimension_list)
+        add_to_name = self.override_name or self.name
+        job_name = ('_'.join([self.__module__, re.sub('\s+', '_', add_to_name)])
+                    if add_to_name != 'None' else self.__module__)
+        chart = 'CHART {0}.{1} '.format(job_name, chart_name)
+        options = '"" "{0}" {1} "{2}" {3} {4} '.format(*self.definitions[chart_name]['options'][1:6])
+        other = '{0} {1}\n'.format(priority, self.update_every)
+        new_dimension = "DIMENSION {0}\n".format(' '.join(dimension_list))
+        print(chart + options + other + new_dimension)
 
 
 class UrlService(SimpleService):
@@ -473,47 +505,73 @@ class UrlService(SimpleService):
         self.user = self.configuration.get('user')
         self.password = self.configuration.get('pass')
         self.ss_cert = self.configuration.get('ss_cert')
+        self.proxy = self.configuration.get('proxy')
 
-    def __add_openers(self):
-        def self_signed_cert(ss_cert):
-            if ss_cert:
-                try:
-                    ctx = ssl.create_default_context()
-                    ctx.check_hostname = False
-                    ctx.verify_mode = ssl.CERT_NONE
-                    return urllib2.build_opener(urllib2.HTTPSHandler(context=ctx))
-                except AttributeError:
-                    return None
-            else:
-                return None
+    def __add_openers(self, user=None, password=None, ss_cert=None, proxy=None, url=None):
+        user = user or self.user
+        password = password or self.password
+        ss_cert = ss_cert or self.ss_cert
+        proxy = proxy or self.proxy
 
-        self.opener = self_signed_cert(self.ss_cert) or urllib2.build_opener()
+        handlers = list()
 
-        # HTTP Basic Auth
-        if self.user and self.password:
-            url_parse = urlparse(self.url)
+        # HTTP Basic Auth handler
+        if all([user, password, isinstance(user, str), isinstance(password, str)]):
+            url = url or self.url
+            url_parse = urlparse(url)
             top_level_url = '://'.join([url_parse.scheme, url_parse.netloc])
             passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            passman.add_password(None, top_level_url, self.user, self.password)
-            self.opener.add_handler(urllib2.HTTPBasicAuthHandler(passman))
+            passman.add_password(None, top_level_url, user, password)
+            handlers.append(urllib2.HTTPBasicAuthHandler(passman))
             self.debug("Enabling HTTP basic auth")
 
-    def _get_raw_data(self, custom_url=None):
+        # HTTPS handler
+        # Self-signed certificate ignore
+        if ss_cert:
+            try:
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+            except AttributeError:
+                self.error('HTTPS self-signed certificate ignore not enabled')
+            else:
+                handlers.append(urllib2.HTTPSHandler(context=ctx))
+                self.debug("Enabling HTTP self-signed certificate ignore")
+
+        # PROXY handler
+        if proxy and isinstance(proxy, str) and not ss_cert:
+            handlers.append(urllib2.ProxyHandler(dict(http=proxy)))
+            self.debug("Enabling HTTP proxy handler (%s)" % proxy)
+
+        opener = urllib2.build_opener(*handlers)
+        return opener
+
+    def _build_opener(self, **kwargs):
+        try:
+            return self.__add_openers(**kwargs)
+        except TypeError as error:
+            self.error('build_opener() error:', str(error))
+            return None
+
+    def _get_raw_data(self, url=None, opener=None):
         """
         Get raw data from http request
         :return: str
         """
-        raw_data = None
-        f = None
+        data = None
         try:
-            f = self.opener.open(custom_url or self.url, timeout=self.update_every * 2)
-            raw_data = f.read().decode('utf-8', 'ignore')
+            opener = opener or self.opener
+            data = opener.open(url or self.url, timeout=self.update_every * 2)
+            raw_data = data.read().decode('utf-8', 'ignore')
+        except urllib2.URLError as error:
+            self.error('Url: %s. Error: %s' % (url or self.url, str(error)))
+            return None
         except Exception as error:
-            self.error('Url: %s. Error: %s' %(custom_url or self.url, str(error)))
+            self.error(str(error))
             return None
         finally:
-            if f is not None: f.close()
-
+            if data is not None:
+                data.close()
         return raw_data or None
 
     def check(self):
@@ -525,7 +583,7 @@ class UrlService(SimpleService):
             self.error('URL is not defined or type is not <str>')
             return False
 
-        self.__add_openers()
+        self.opener = self.__add_openers()
 
         try:
             data = self._get_data()
@@ -781,57 +839,69 @@ class SocketService(SimpleService):
 
 class LogService(SimpleService):
     def __init__(self, configuration=None, name=None):
-        self.log_path = ""
-        self._last_position = 0
-        # self._log_reader = None
         SimpleService.__init__(self, configuration=configuration, name=name)
+        self.log_path = self.configuration.get('path')
+        self.__glob_path = self.log_path
+        self._last_position = 0
         self.retries = 100000  # basically always retry
+        self.__re_find = dict(current=0, run=0, maximum=60)
 
     def _get_raw_data(self):
         """
         Get log lines since last poll
         :return: list
         """
-        lines = []
+        lines = list()
         try:
-            if os.path.getsize(self.log_path) < self._last_position:
+            if self.__re_find['current'] == self.__re_find['run']:
+                self._find_recent_log_file()
+            size = os.path.getsize(self.log_path)
+            if size == self._last_position:
+                self.__re_find['current'] += 1
+                return list()  # return empty list if nothing has changed
+            elif size < self._last_position:
                 self._last_position = 0  # read from beginning if file has shrunk
-            elif os.path.getsize(self.log_path) == self._last_position:
-                self.debug("Log file hasn't changed. No new data.")
-                return []  # return empty list if nothing has changed
-            with open(self.log_path, "r") as fp:
+
+            with open(self.log_path) as fp:
                 fp.seek(self._last_position)
-                for i, line in enumerate(fp):
+                for line in fp:
                     lines.append(line)
                 self._last_position = fp.tell()
-        except Exception as e:
-            self.error(str(e))
+                self.__re_find['current'] = 0
+        except (OSError, IOError) as error:
+            self.__re_find['current'] += 1
+            self.error(str(error))
 
-        if len(lines) != 0:
-            return lines
-        else:
-            self.error("No data collected.")
-            return None
+        return lines or None
+
+    def _find_recent_log_file(self):
+        """
+        :return:
+        """
+        self.__re_find['run'] = self.__re_find['maximum']
+        self.__re_find['current'] = 0
+        self.__glob_path = self.__glob_path or self.log_path  # workaround for modules w/o config files
+        path_list = glob(self.__glob_path)
+        if path_list:
+            self.log_path = max(path_list)
+            return True
+        return False
 
     def check(self):
         """
         Parse basic configuration and check if log file exists
         :return: boolean
         """
-        if self.name is not None or self.name != str(None):
-            self.name = ""
-        else:
-            self.name = str(self.name)
-        try:
-            self.log_path = str(self.configuration['path'])
-        except (KeyError, TypeError):
-            self.info("No path to log specified. Using: '" + self.log_path + "'")
+        if not self.log_path:
+            self.error("No path to log specified")
+            return None
 
-        if os.access(self.log_path, os.R_OK):
+        if all([self._find_recent_log_file(),
+                os.access(self.log_path, os.R_OK),
+                os.path.isfile(self.log_path)]):
             return True
-        else:
-            self.error("Cannot access file: '" + self.log_path + "'")
-            return False
+        self.error("Cannot access %s" % self.log_path)
+        return False
 
     def create(self):
         # set cursor at last byte of log file
@@ -847,7 +917,7 @@ class ExecutableService(SimpleService):
         SimpleService.__init__(self, configuration=configuration, name=name)
         self.command = None
 
-    def _get_raw_data(self):
+    def _get_raw_data(self, stderr=False):
         """
         Get raw data from executed command
         :return: <list>
@@ -855,10 +925,11 @@ class ExecutableService(SimpleService):
         try:
             p = Popen(self.command, stdout=PIPE, stderr=PIPE)
         except Exception as error:
-            self.error("Executing command", self.command, "resulted in error:", str(error))
+            self.error("Executing command", " ".join(self.command), "resulted in error:", str(error))
             return None
         data = list()
-        for line in p.stdout.readlines():
+        std = p.stderr if stderr else p.stdout
+        for line in std.readlines():
             data.append(line.decode())
 
         return data or None

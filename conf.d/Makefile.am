@@ -17,6 +17,7 @@ dist_config_DATA = \
 nodeconfigdir=$(configdir)/node.d
 dist_nodeconfig_DATA = \
     node.d/README.md \
+    node.d/fronius.conf.md \
     node.d/named.conf.md \
     node.d/sma_webbox.conf.md \
     node.d/snmp.conf.md \
@@ -28,12 +29,14 @@ dist_pythonconfig_DATA = \
     python.d/apache_cache.conf \
     python.d/bind_rndc.conf \
     python.d/cpufreq.conf \
+    python.d/dns_query_time.conf \
     python.d/dovecot.conf \
     python.d/elasticsearch.conf \
     python.d/example.conf \
     python.d/exim.conf \
     python.d/fail2ban.conf \
     python.d/freeradius.conf \
+    python.d/go_expvar.conf \
     python.d/haproxy.conf \
     python.d/hddtemp.conf \
     python.d/ipfs.conf \
@@ -48,8 +51,10 @@ dist_pythonconfig_DATA = \
     python.d/phpfpm.conf \
     python.d/postfix.conf \
     python.d/postgres.conf \
+    python.d/rabbitmq.conf \
     python.d/redis.conf \
     python.d/retroshare.conf \
+    python.d/samba.conf \
     python.d/sensors.conf \
     python.d/squid.conf \
     python.d/smartd_log.conf \
@@ -70,10 +75,12 @@ dist_healthconfig_DATA = \
     health.d/ipfs.conf \
     health.d/ipmi.conf \
     health.d/isc_dhcpd.conf \
+    health.d/lighttpd.conf \
     health.d/mdstat.conf \
     health.d/memcached.conf \
     health.d/mysql.conf \
     health.d/named.conf \
+    health.d/mongodb.conf \
     health.d/nginx.conf \
     health.d/postgres.conf \
     health.d/redis.conf \
@@ -81,6 +88,7 @@ dist_healthconfig_DATA = \
     health.d/squid.conf \
     health.d/varnish.conf \
     health.d/web_log.conf \
+    health.d/zfs.conf \
     $(NULL)
 
 if LINUX
@@ -122,4 +130,9 @@ dist_chartsconfig_DATA = \
     charts.d/opensips.conf \
     charts.d/postfix.conf \
     charts.d/squid.conf \
+    $(NULL)
+
+statsdconfigdir=$(configdir)/statsd.d
+dist_statsdconfig_DATA = \
+    statsd.d/example.conf \
     $(NULL)

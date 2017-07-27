@@ -2,7 +2,7 @@
 # Description: smart netdata python.d module
 # Author: l2isbad, vorph1
 
-from re import compile
+from re import compile as r_compile
 from os import listdir, access, R_OK
 from os.path import isfile, join, getsize, basename, isdir
 try:
@@ -101,7 +101,7 @@ NAMED_DISKS = namedtuple('disks', ['name', 'size', 'number'])
 class Service(SimpleService):
     def __init__(self, configuration=None, name=None):
         SimpleService.__init__(self, configuration=configuration, name=name)
-        self.regex = compile(r'(\d+);(\d+);(\d+)')
+        self.regex = r_compile(r'(\d+);(\d+);(\d+)')
         self.log_path = self.configuration.get('log_path', '/var/log/smartd')
         self.raw_values = self.configuration.get('raw_values')
         self.attr = self.configuration.get('smart_attributes', [])
@@ -197,18 +197,19 @@ class Service(SimpleService):
                 result.append(['_'.join([name, attrid]), name[:name.index('.')], 'absolute'])
             return result
 
-        # Add additional smart attributes to the ORDER. If something goes wrong we don't care.
+        # Use configured attributes, if present. If something goes wrong we don't care.
+        order = ORDER
         try:
-            ORDER.extend(list(set(self.attr.split()) & SMART_ATTR.keys() - set(ORDER)))
+            order = [attr for attr in self.attr.split() if attr in SMART_ATTR.keys()] or ORDER
         except Exception:
             pass
-        self.order = [''.join(['attrid', i]) for i in ORDER]
+        self.order = [''.join(['attrid', i]) for i in order]
         self.definitions = dict()
         units = 'raw' if self.raw_values else 'normalized'
 
         for k, v in dict([(k, v) for k, v in SMART_ATTR.items() if k in ORDER]).items():
             self.definitions.update({''.join(['attrid', k]): {
-                                      'options': [None, v, units, v, 'smartd.attrid' + k, 'line'],
+                                      'options': [None, v, units, v.lower(), 'smartd.attrid' + k, 'line'],
                                        'lines': create_lines(k)}})
 
 def find_disks_in_log_path(log_path):
