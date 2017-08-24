@@ -3,6 +3,7 @@ netdata (1.7.0+dfsg-1) UNRELEASED; urgency=medium
   * New upstream release (Closes: #868662)
   * Rudimentary solution to the sysvinit conundrum (Closes: #861713)
   * Remove old config files from <1.6.0 with maintscript (Closes: #869200)
+  * Add a recommendation for curl. Fixing telegram pushes (Closes: #872799)
 
  -- Lennart Weller <lhw@ring0.de>  Thu, 27 Jul 2017 11:57:13 +0200
 
