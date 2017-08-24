@@ -1,4 +1,4 @@
-netdata (1.7.0+dfsg-1) UNRELEASED; urgency=medium
+netdata (1.7.0+dfsg-1) unstable; urgency=medium
 
   [ Lennart Weller ]
   * New upstream release (Closes: #868662)
@@ -9,7 +9,7 @@ netdata (1.7.0+dfsg-1) UNRELEASED; urgency=medium
   [ Federico Ceratto ]
   * Remove James Cowgill from Uploaders (Closes: #872245)
 
- -- Lennart Weller <lhw@ring0.de>  Thu, 27 Jul 2017 11:57:13 +0200
+ -- Federico Ceratto <federico@debian.org>  Thu, 24 Aug 2017 19:38:48 +0100
 
 netdata (1.6.0+dfsg-3) unstable; urgency=medium
 
