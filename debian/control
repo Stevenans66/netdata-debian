@@ -2,8 +2,7 @@ Source: netdata
 Section: net
 Priority: optional
 Maintainer: Lennart Weller <lhw@ring0.de>
-Uploaders: James Cowgill <jcowgill@debian.org>,
-           Federico Ceratto <federico@debian.org>
+Uploaders: Federico Ceratto <federico@debian.org>
 Build-Depends: debhelper (>= 9),
                dh-autoreconf,
                dh-systemd (>= 1.5),
