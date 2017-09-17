@@ -1,2 +1,2 @@
-rm_conffile /etc/netdata/python.d/nginx_log.conf 1.5.0~ netdata
-rm_conffile /etc/netdata/python.d/gunicorn_log.conf 1.5.0~ netdata
+rm_conffile /etc/netdata/python.d/nginx_log.conf 1.7.0+dfsg-2~ netdata
+rm_conffile /etc/netdata/python.d/gunicorn_log.conf 1.7.0+dfsg-2~ netdata
