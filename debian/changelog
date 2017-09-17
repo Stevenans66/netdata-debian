@@ -1,3 +1,9 @@
+netdata (187.0+dfsg-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Lennart Weller <lhw@ring0.de>  Mon, 18 Sep 2017 00:19:09 +0200
+
 netdata (1.7.0+dfsg-1) unstable; urgency=medium
 
   [ Lennart Weller ]
