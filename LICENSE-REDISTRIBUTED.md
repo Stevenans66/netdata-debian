@@ -127,10 +127,11 @@ connectivity is not available.
     [MIT License](https://github.com/stephenwvickers/node-net-snmp)
     
 
-- [node-asn1](https://github.com/mcavage/node-asn1)
+- [node-asn1-ber](https://github.com/stephenwvickers/node-asn1-ber)
 
+    Copyright 2017, Stephen Vickers
     Copyright 2011, Mark Cavage
-    [MIT License](https://github.com/mcavage/node-asn1)
+    [MIT License](https://github.com/stephenwvickers/node-asn1-ber)
     
 
 - [pixl-xml](https://github.com/jhuckaby/pixl-xml)
@@ -147,4 +148,9 @@ connectivity is not available.
 
     Copyright 2006, Kirill Simonov
     [MIT License](http://pyyaml.org)
+
+- [urllib3](https://github.com/shazow/urllib3)
+
+    Copyright 2008-2016 Andrey Petrov and [contributors](https://github.com/shazow/urllib3/blob/master/CONTRIBUTORS.txt)
+    [MIT License](https://github.com/shazow/urllib3/blob/master/LICENSE.txt)
 

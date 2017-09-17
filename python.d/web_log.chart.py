@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 # Description: web log netdata python.d module
 # Author: l2isbad
-import re
+
 import bisect
-from os import access, R_OK
-from os.path import getsize
+import re
+
 from collections import namedtuple, defaultdict
 from copy import deepcopy
+from os import access, R_OK
+from os.path import getsize
 
 try:
     from itertools import filterfalse
 except ImportError:
     from itertools import ifilterfalse as filterfalse
+
 from base import LogService
 import msg
 
@@ -475,7 +478,6 @@ class Web(Mixin):
         unique_current = set()
         timings = defaultdict(lambda: dict(minimum=None, maximum=0, summary=0, count=0))
 
-        ip_address_counter = {'unique_cur_ip': 0}
         for line in filtered_data:
             match = self.storage['regex'].search(line)
             if match:
@@ -526,13 +528,14 @@ class Web(Mixin):
                     get_timings(timings=timings['resp_time_upstream'],
                                 time=self.storage['func_resp_time'](float(match_dict['resp_time_upstream'])))
                 # requests per ip proto
-                proto = 'ipv4' if '.' in match_dict['address'] else 'ipv6'
+                proto = 'ipv6' if ':' in match_dict['address'] else 'ipv4'
                 self.data['req_' + proto] += 1
                 # unique clients ips
-                if address_not_in_pool(pool=self.storage['unique_all_time'],
-                                       address=match_dict['address'],
-                                       pool_size=self.data['unique_tot_ipv4'] + self.data['unique_tot_ipv6']):
-                    self.data['unique_tot_' + proto] += 1
+                if self.conf.get('all_time', True):
+                    if address_not_in_pool(pool=self.storage['unique_all_time'],
+                                           address=match_dict['address'],
+                                           pool_size=self.data['unique_tot_ipv4'] + self.data['unique_tot_ipv6']):
+                        self.data['unique_tot_' + proto] += 1
                 if match_dict['address'] not in unique_current:
                     self.data['unique_cur_' + proto] += 1
                     unique_current.add(match_dict['address'])
@@ -558,14 +561,14 @@ class Web(Mixin):
         """
         # REGEX: 1.IPv4 address 2.HTTP method 3. URL 4. Response code
         # 5. Bytes sent 6. Response length 7. Response process time
-        default = re.compile(r'(?P<address>[\da-f.:]+)'
+        default = re.compile(r'(?P<address>[\da-f.:]+|localhost)'
                              r' -.*?"(?P<method>[A-Z]+)'
                              r' (?P<url>[^ ]+)'
                              r' [A-Z]+/(?P<http_version>\d\.\d)"'
                              r' (?P<code>[1-9]\d{2})'
                              r' (?P<bytes_sent>\d+|-)')
 
-        apache_ext_insert = re.compile(r'(?P<address>[\da-f.:]+)'
+        apache_ext_insert = re.compile(r'(?P<address>[\da-f.:]+|localhost)'
                                        r' -.*?"(?P<method>[A-Z]+)'
                                        r' (?P<url>[^ ]+)'
                                        r' [A-Z]+/(?P<http_version>\d\.\d)"'
@@ -574,7 +577,7 @@ class Web(Mixin):
                                        r' (?P<resp_length>\d+)'
                                        r' (?P<resp_time>\d+) ')
 
-        apache_ext_append = re.compile(r'(?P<address>[\da-f.:]+)'
+        apache_ext_append = re.compile(r'(?P<address>[\da-f.:]+|localhost)'
                                        r' -.*?"(?P<method>[A-Z]+)'
                                        r' (?P<url>[^ ]+)'
                                        r' [A-Z]+/(?P<http_version>\d\.\d)"'
@@ -690,14 +693,14 @@ class Web(Mixin):
         if match_dict is None:
             return find_regex_return(msg='Custom log: search OK but contains no named subgroups'
                                          ' (you need to use ?P<subgroup_name>)')
-        mandatory_dict = {'address': r'[\da-f.:]+',
+        mandatory_dict = {'address': r'[\da-f.:]+|localhost',
                           'code': r'[1-9]\d{2}',
                           'method': r'[A-Z]+',
                           'bytes_sent': r'\d+|-'}
         optional_dict = {'resp_length': r'\d+',
                          'resp_time': r'[\d.]+',
                          'resp_time_upstream': r'[\d.-]+',
-                         'http_version': r'\d\.\d'}
+                         'http_version': r'\d(\.\d)?'}
 
         mandatory_values = set(mandatory_dict) - set(match_dict)
         if mandatory_values:
@@ -853,6 +856,8 @@ class Squid(Mixin):
                 'chart': 'squid_mime_type',
                 'func_dim_id': lambda v: v.split('/')[0],
                 'func_dim': None}}
+        if not self.conf.get('all_time', True):
+            self.order.remove('squid_clients_all')
         return True
 
     def get_data(self, raw_data=None):
@@ -883,10 +888,11 @@ class Squid(Mixin):
 
                 proto = 'ipv4' if '.' in match['client_address'] else 'ipv6'
                 # unique clients ips
-                if address_not_in_pool(pool=self.storage['unique_all_time'],
-                                       address=match['client_address'],
-                                       pool_size=self.data['unique_tot_ipv4'] + self.data['unique_tot_ipv6']):
-                    self.data['unique_tot_' + proto] += 1
+                if self.conf.get('all_time', True):
+                    if address_not_in_pool(pool=self.storage['unique_all_time'],
+                                           address=match['client_address'],
+                                           pool_size=self.data['unique_tot_ipv4'] + self.data['unique_tot_ipv6']):
+                        self.data['unique_tot_' + proto] += 1
 
                 if match['client_address'] not in unique_ip:
                     self.data['unique_' + proto] += 1
@@ -934,18 +940,21 @@ class Squid(Mixin):
         :return:
         """
         if code not in self.data:
-            self.add_new_dimension(dimension_id=code, chart_key='squid_code')
+            self.add_new_dimension(dimension_id=code,
+                                   chart_key='squid_code')
         self.data[code] += 1
-        if '_' not in code:
-            return
+
         for tag in code.split('_'):
             try:
                 chart_key = SQUID_CODES[tag]
             except KeyError:
                 continue
-            if tag not in self.data:
-                self.add_new_dimension(dimension_id=tag, chart_key=chart_key)
-            self.data[tag] += 1
+            dimension_id = '_'.join(['code_detailed', tag])
+            if dimension_id not in self.data:
+                self.add_new_dimension(dimension_id=dimension_id,
+                                       dimension=tag,
+                                       chart_key=chart_key)
+            self.data[dimension_id] += 1
 
 
 def get_timings(timings, time):

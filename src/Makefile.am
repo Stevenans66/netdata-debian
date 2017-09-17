@@ -37,6 +37,10 @@ if ENABLE_PLUGIN_FREEIPMI
 plugins_PROGRAMS += freeipmi.plugin
 endif
 
+if ENABLE_PLUGIN_CGROUP_NETWORK
+plugins_PROGRAMS += cgroup-network
+endif
+
 netdata_SOURCES = \
 	adaptive_resortable_list.c \
 	adaptive_resortable_list.h \
@@ -117,6 +121,8 @@ netdata_SOURCES = \
 	rrdset.c \
 	rrdsetvar.c \
 	rrdvar.c \
+	signals.c \
+	signals.h \
 	simple_pattern.c \
 	simple_pattern.h \
 	socket.c \
@@ -129,7 +135,6 @@ netdata_SOURCES = \
 	storage_number.h \
 	sys_devices_system_edac_mc.c \
 	sys_devices_system_node.c \
-	sys_fs_cgroup.c \
 	unit_test.c \
 	unit_test.h \
 	url.c url.h \
@@ -199,6 +204,7 @@ netdata_SOURCES += \
 	proc_vmstat.c \
 	proc_uptime.c \
 	sys_kernel_mm_ksm.c \
+	sys_fs_cgroup.c \
 	$(NULL)
 endif
 endif
@@ -243,4 +249,18 @@ freeipmi_plugin_SOURCES = \
 
 freeipmi_plugin_LDADD = \
 	$(OPTIONAL_IPMIMONITORING_LIBS) \
+	$(NULL)
+
+cgroup_network_SOURCES = \
+    cgroup-network.c \
+	clocks.c clocks.h \
+    common.c common.h \
+    inlined.h \
+    log.c log.h \
+	procfile.c procfile.h \
+    $(NULL)
+
+cgroup_network_LDADD = \
+	$(OPTIONAL_MATH_LIBS) \
+	$(OPTIONAL_LIBCAP_LIBS) \
 	$(NULL)

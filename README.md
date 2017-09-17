@@ -1,4 +1,4 @@
-# netdata [![Build Status](https://travis-ci.org/firehol/netdata.svg?branch=master)](https://travis-ci.org/firehol/netdata) [![Coverity Scan Build Status](https://scan.coverity.com/projects/9140/badge.svg)](https://scan.coverity.com/projects/firehol-netdata) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a994873f30d045b9b4b83606c3eb3498)](https://www.codacy.com/app/netdata/netdata?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=firehol/netdata&amp;utm_campaign=Badge_Grade) [![Code Climate](https://codeclimate.com/github/firehol/netdata/badges/gpa.svg)](https://codeclimate.com/github/firehol/netdata) [![license](https://img.shields.io/github/license/firehol/netdata.svg)](LICENSE)
+# netdata [![Build Status](https://travis-ci.org/firehol/netdata.svg?branch=master)](https://travis-ci.org/firehol/netdata) [![Coverity Scan Build Status](https://scan.coverity.com/projects/9140/badge.svg)](https://scan.coverity.com/projects/firehol-netdata) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a994873f30d045b9b4b83606c3eb3498)](https://www.codacy.com/app/netdata/netdata?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=firehol/netdata&amp;utm_campaign=Badge_Grade) [![Code Climate](https://codeclimate.com/github/firehol/netdata/badges/gpa.svg)](https://codeclimate.com/github/firehol/netdata) [![License: GPL v3+](https://img.shields.io/badge/License-GPL%20v3%2B-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 > *New to netdata? Here is a live demo: [http://my-netdata.io](http://my-netdata.io)*
 
 **netdata** is a system for **distributed real-time performance and health monitoring**.
@@ -34,14 +34,18 @@ Netdata is featured at <b><a href="https://octoverse.github.com/" target="_blank
 <a href="https://octoverse.github.com/" target="_blank"><img src="https://cloud.githubusercontent.com/assets/2662304/21743260/23ebe62c-d507-11e6-80c0-76b95f53e464.png"/></a>
 </p>
 
-`Mar 20th, 2017` - **[netdata v1.6.0 released!](https://github.com/firehol/netdata/releases)**
+`Jul 16th, 2017` - **[netdata v1.7.0 released!](https://github.com/firehol/netdata/releases)**
 
- - central netdata is here! headless collectors, proxies, streaming of metrics, etc.
- - [monitoring ephemeral nodes (auto-scaled VMs)](https://github.com/firehol/netdata/wiki/monitoring-ephemeral-nodes)
- - [monitoring ephemeral containers and VM guests](https://github.com/firehol/netdata/wiki/monitoring-ephemeral-containers)
- - [monitoring web servers](https://github.com/firehol/netdata/wiki/The-spectacles-of-a-web-server-log-file)
- - apps.plugin ported for FreeBSD
- - [monitoring IPMI](https://github.com/firehol/netdata/wiki/monitoring-IPMI)
+ - netdata is now a fully featured **statsd** server - [read more here](https://github.com/firehol/netdata/wiki/statsd)
+ - netdata now monitors **ZFS** of Linux and FreeBSD
+ - netdata now monitors **ElasticSearch**
+ - netdata now monitors **RabbitMQ**
+ - netdata now monitors **Go applications** (via `expvar`) - [read more here](https://github.com/firehol/netdata/wiki/Monitoring-Go-Applications)
+ - netdata now monitors **squid logs**
+ - netdata now monitors **samba**
+ - several **backends** improvements and enhancements, including **metrics filtering**
+ - **prometheus** backend support has been rewritten
+ - alarm notifications now support **custom hooks** to execute shell commands in parallel with all other notification methods
  - dozens of new and improved plugins
  - dozens of new and improved alarms
  - dozens more improvements and performance optimizations
@@ -56,50 +60,50 @@ Netdata is featured at <b><a href="https://octoverse.github.com/" target="_blank
 
  - **Stunning interactive bootstrap dashboards**<br/>
    mouse and touch friendly, in 2 themes: dark, light
-   
+
  - **Amazingly fast**<br/>
    responds to all queries in less than 0.5 ms per metric,
    even on low-end hardware
-   
+
  - **Highly efficient**<br/>
    collects thousands of metrics per server per second,
    with just 1% CPU utilization of a single core, a few MB of RAM and no disk I/O at all
-   
+
  - **Sophisticated alarming**<br/>
    hundreds of alarms, **out of the box**!<br/>
    supports dynamic thresholds, hysteresis, alarm templates,
    multiple role-based notification methods (such as email, slack.com,
    pushover.net, pushbullet.com, telegram.org, twilio.com, messagebird.com)
-   
+
  - **Extensible**<br/>
    you can monitor anything you can get a metric for,
    using its Plugin API (anything can be a netdata plugin,
    BASH, python, perl, node.js, java, Go, ruby, etc)
-   
+
  - **Embeddable**<br/>
    it can run anywhere a Linux kernel runs (even IoT)
    and its charts can be embedded on your web pages too
-   
+
  - **Customizable**<br/>
    custom dashboards can be built using simple HTML (no javascript necessary)
-   
+
  - **Zero configuration**<br/>
    auto-detects everything, it can collect up to 5000 metrics
    per server out of the box
-   
+
  - **Zero dependencies**<br/>
    it is even its own web server, for its static web files and its web API
-   
+
  - **Zero maintenance**<br/>
    you just run it, it does the rest
-   
+
  - **scales to infinity**<br/>
    requiring minimal central resources
-   
+
  - **several operating modes**<br/>
    autonomous host monitoring, headless data collector, forwarding proxy, store and forward proxy, central multi-host monitoring, in all possible configurations.
    Each node may have different metrics retention policy and run with or without health monitoring.
-   
+
  - **time-series back-ends supported**<br/>
    can archive its metrics on `graphite`, `opentsdb`, `prometheus`, json document DBs, in the same or lower detail
    (lower: to prevent it from congesting these servers due to the amount of data collected)
@@ -307,6 +311,13 @@ It should run on **any Linux** system (including IoT). It has been tested on:
 - RedHat Enterprise Linux
 - SUSE
 - Ubuntu
+
+---
+
+## Interaction with netdata
+
+After installation, you can interact with netdata using **[CLI](https://github.com/firehol/netdata/wiki/Command-Line-Options)** and web dashboards.
+The default port of dashboard is 19999. To access the web dashboard on localhost, use: http://localhost:19999
 
 ---
 

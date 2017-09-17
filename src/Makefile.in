@@ -80,10 +80,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 sbin_PROGRAMS = netdata$(EXEEXT)
-plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
+plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_PLUGIN_APPS_TRUE@am__append_1 = apps.plugin
 @ENABLE_PLUGIN_FREEIPMI_TRUE@am__append_2 = freeipmi.plugin
-@FREEBSD_TRUE@am__append_3 = \
+@ENABLE_PLUGIN_CGROUP_NETWORK_TRUE@am__append_3 = cgroup-network
+@FREEBSD_TRUE@am__append_4 = \
 @FREEBSD_TRUE@	plugin_freebsd.c \
 @FREEBSD_TRUE@	plugin_freebsd.h \
 @FREEBSD_TRUE@	freebsd_sysctl.c \
@@ -96,7 +97,7 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @FREEBSD_TRUE@	freebsd_ipfw.c \
 @FREEBSD_TRUE@	$(NULL)
 
-@FREEBSD_FALSE@@MACOS_TRUE@am__append_4 = \
+@FREEBSD_FALSE@@MACOS_TRUE@am__append_5 = \
 @FREEBSD_FALSE@@MACOS_TRUE@	plugin_macos.c \
 @FREEBSD_FALSE@@MACOS_TRUE@	plugin_macos.h \
 @FREEBSD_FALSE@@MACOS_TRUE@	macos_sysctl.c \
@@ -104,7 +105,7 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @FREEBSD_FALSE@@MACOS_TRUE@	macos_fw.c \
 @FREEBSD_FALSE@@MACOS_TRUE@	$(NULL)
 
-@FREEBSD_FALSE@@MACOS_FALSE@am__append_5 = \
+@FREEBSD_FALSE@@MACOS_FALSE@am__append_6 = \
 @FREEBSD_FALSE@@MACOS_FALSE@	ipc.c ipc.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.h \
@@ -133,9 +134,10 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_vmstat.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_uptime.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	sys_kernel_mm_ksm.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_cgroup.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	$(NULL)
 
-@FREEBSD_TRUE@am__append_6 = \
+@FREEBSD_TRUE@am__append_7 = \
 @FREEBSD_TRUE@	plugin_freebsd.h \
 @FREEBSD_TRUE@	$(NULL)
 
@@ -160,6 +162,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @ENABLE_PLUGIN_APPS_TRUE@am__EXEEXT_1 = apps.plugin$(EXEEXT)
 @ENABLE_PLUGIN_FREEIPMI_TRUE@am__EXEEXT_2 = freeipmi.plugin$(EXEEXT)
+@ENABLE_PLUGIN_CGROUP_NETWORK_TRUE@am__EXEEXT_3 =  \
+@ENABLE_PLUGIN_CGROUP_NETWORK_TRUE@	cgroup-network$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(pluginsdir)" "$(DESTDIR)$(sbindir)" \
 	"$(DESTDIR)$(cachedir)" "$(DESTDIR)$(logdir)" \
 	"$(DESTDIR)$(registrydir)" "$(DESTDIR)$(varlibdir)"
@@ -174,6 +178,11 @@ am_apps_plugin_OBJECTS = apps_plugin.$(OBJEXT) avl.$(OBJEXT) \
 apps_plugin_OBJECTS = $(am_apps_plugin_OBJECTS)
 am__DEPENDENCIES_1 =
 apps_plugin_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_cgroup_network_OBJECTS = cgroup-network.$(OBJEXT) clocks.$(OBJEXT) \
+	common.$(OBJEXT) log.$(OBJEXT) procfile.$(OBJEXT)
+cgroup_network_OBJECTS = $(am_cgroup_network_OBJECTS)
+cgroup_network_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_freeipmi_plugin_OBJECTS = freeipmi_plugin.$(OBJEXT) \
 	clocks.$(OBJEXT) common.$(OBJEXT) log.$(OBJEXT) \
 	procfile.$(OBJEXT)
@@ -197,20 +206,19 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 	registry_url.c registry_url.h rrd.c rrd.h rrd2json.c \
 	rrd2json.h rrd2json_api_old.c rrd2json_api_old.h rrdcalc.c \
 	rrdcalctemplate.c rrddim.c rrddimvar.c rrdfamily.c rrdhost.c \
-	rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c \
-	simple_pattern.c simple_pattern.h socket.c socket.h \
+	rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c signals.c \
+	signals.h simple_pattern.c simple_pattern.h socket.c socket.h \
 	statistical.c statistical.h statsd.c statsd.h storage_number.c \
 	storage_number.h sys_devices_system_edac_mc.c \
-	sys_devices_system_node.c sys_fs_cgroup.c unit_test.c \
-	unit_test.h url.c url.h web_api_old.c web_api_old.h \
-	web_api_v1.c web_api_v1.h web_buffer.c web_buffer.h \
-	web_buffer_svg.c web_buffer_svg.h web_client.c web_client.h \
-	web_server.c web_server.h plugin_freebsd.c plugin_freebsd.h \
-	freebsd_sysctl.c freebsd_getmntinfo.c freebsd_getifaddrs.c \
-	freebsd_devstat.c zfs_common.c zfs_common.h \
-	freebsd_kstat_zfs.c freebsd_ipfw.c plugin_macos.c \
-	plugin_macos.h macos_sysctl.c macos_mach_smi.c macos_fw.c \
-	ipc.c ipc.h plugin_proc.c plugin_proc.h \
+	sys_devices_system_node.c unit_test.c unit_test.h url.c url.h \
+	web_api_old.c web_api_old.h web_api_v1.c web_api_v1.h \
+	web_buffer.c web_buffer.h web_buffer_svg.c web_buffer_svg.h \
+	web_client.c web_client.h web_server.c web_server.h \
+	plugin_freebsd.c plugin_freebsd.h freebsd_sysctl.c \
+	freebsd_getmntinfo.c freebsd_getifaddrs.c freebsd_devstat.c \
+	zfs_common.c zfs_common.h freebsd_kstat_zfs.c freebsd_ipfw.c \
+	plugin_macos.c plugin_macos.h macos_sysctl.c macos_mach_smi.c \
+	macos_fw.c ipc.c ipc.h plugin_proc.c plugin_proc.h \
 	plugin_proc_diskspace.c plugin_proc_diskspace.h \
 	proc_diskstats.c proc_interrupts.c proc_softirqs.c \
 	proc_loadavg.c proc_meminfo.c proc_net_dev.c \
@@ -219,7 +227,7 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 	proc_net_softnet_stat.c proc_net_stat_conntrack.c \
 	proc_net_stat_synproxy.c proc_spl_kstat_zfs.c proc_stat.c \
 	proc_sys_kernel_random_entropy_avail.c proc_vmstat.c \
-	proc_uptime.c sys_kernel_mm_ksm.c
+	proc_uptime.c sys_kernel_mm_ksm.c sys_fs_cgroup.c
 @FREEBSD_TRUE@am__objects_2 = plugin_freebsd.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_sysctl.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_getmntinfo.$(OBJEXT) \
@@ -255,7 +263,8 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_sys_kernel_random_entropy_avail.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_vmstat.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_uptime.$(OBJEXT) \
-@FREEBSD_FALSE@@MACOS_FALSE@	sys_kernel_mm_ksm.$(OBJEXT)
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_kernel_mm_ksm.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_cgroup.$(OBJEXT)
 am_netdata_OBJECTS = adaptive_resortable_list.$(OBJEXT) \
 	appconfig.$(OBJEXT) avl.$(OBJEXT) backend_prometheus.$(OBJEXT) \
 	backends.$(OBJEXT) clocks.$(OBJEXT) common.$(OBJEXT) \
@@ -275,15 +284,14 @@ am_netdata_OBJECTS = adaptive_resortable_list.$(OBJEXT) \
 	rrdcalc.$(OBJEXT) rrdcalctemplate.$(OBJEXT) rrddim.$(OBJEXT) \
 	rrddimvar.$(OBJEXT) rrdfamily.$(OBJEXT) rrdhost.$(OBJEXT) \
 	rrdpush.$(OBJEXT) rrdset.$(OBJEXT) rrdsetvar.$(OBJEXT) \
-	rrdvar.$(OBJEXT) simple_pattern.$(OBJEXT) socket.$(OBJEXT) \
-	statistical.$(OBJEXT) statsd.$(OBJEXT) \
+	rrdvar.$(OBJEXT) signals.$(OBJEXT) simple_pattern.$(OBJEXT) \
+	socket.$(OBJEXT) statistical.$(OBJEXT) statsd.$(OBJEXT) \
 	storage_number.$(OBJEXT) sys_devices_system_edac_mc.$(OBJEXT) \
-	sys_devices_system_node.$(OBJEXT) sys_fs_cgroup.$(OBJEXT) \
-	unit_test.$(OBJEXT) url.$(OBJEXT) web_api_old.$(OBJEXT) \
-	web_api_v1.$(OBJEXT) web_buffer.$(OBJEXT) \
-	web_buffer_svg.$(OBJEXT) web_client.$(OBJEXT) \
-	web_server.$(OBJEXT) $(am__objects_2) $(am__objects_3) \
-	$(am__objects_4)
+	sys_devices_system_node.$(OBJEXT) unit_test.$(OBJEXT) \
+	url.$(OBJEXT) web_api_old.$(OBJEXT) web_api_v1.$(OBJEXT) \
+	web_buffer.$(OBJEXT) web_buffer_svg.$(OBJEXT) \
+	web_client.$(OBJEXT) web_server.$(OBJEXT) $(am__objects_2) \
+	$(am__objects_3) $(am__objects_4)
 netdata_OBJECTS = $(am_netdata_OBJECTS)
 netdata_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -315,10 +323,11 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(apps_plugin_SOURCES) $(freeipmi_plugin_SOURCES) \
-	$(netdata_SOURCES)
+SOURCES = $(apps_plugin_SOURCES) $(cgroup_network_SOURCES) \
+	$(freeipmi_plugin_SOURCES) $(netdata_SOURCES)
 DIST_SOURCES = $(am__apps_plugin_SOURCES_DIST) \
-	$(freeipmi_plugin_SOURCES) $(am__netdata_SOURCES_DIST)
+	$(cgroup_network_SOURCES) $(freeipmi_plugin_SOURCES) \
+	$(am__netdata_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -563,16 +572,15 @@ netdata_SOURCES = adaptive_resortable_list.c \
 	registry_url.c registry_url.h rrd.c rrd.h rrd2json.c \
 	rrd2json.h rrd2json_api_old.c rrd2json_api_old.h rrdcalc.c \
 	rrdcalctemplate.c rrddim.c rrddimvar.c rrdfamily.c rrdhost.c \
-	rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c \
-	simple_pattern.c simple_pattern.h socket.c socket.h \
+	rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c signals.c \
+	signals.h simple_pattern.c simple_pattern.h socket.c socket.h \
 	statistical.c statistical.h statsd.c statsd.h storage_number.c \
 	storage_number.h sys_devices_system_edac_mc.c \
-	sys_devices_system_node.c sys_fs_cgroup.c unit_test.c \
-	unit_test.h url.c url.h web_api_old.c web_api_old.h \
-	web_api_v1.c web_api_v1.h web_buffer.c web_buffer.h \
-	web_buffer_svg.c web_buffer_svg.h web_client.c web_client.h \
-	web_server.c web_server.h $(NULL) $(am__append_3) \
-	$(am__append_4) $(am__append_5)
+	sys_devices_system_node.c unit_test.c unit_test.h url.c url.h \
+	web_api_old.c web_api_old.h web_api_v1.c web_api_v1.h \
+	web_buffer.c web_buffer.h web_buffer_svg.c web_buffer_svg.h \
+	web_client.c web_client.h web_server.c web_server.h $(NULL) \
+	$(am__append_4) $(am__append_5) $(am__append_6)
 netdata_LDADD = \
 	$(OPTIONAL_MATH_LIBS) \
 	$(OPTIONAL_NFACCT_LIBS) \
@@ -582,7 +590,7 @@ netdata_LDADD = \
 
 apps_plugin_SOURCES = apps_plugin.c avl.c avl.h clocks.c clocks.h \
 	common.c common.h inlined.h log.c log.h procfile.c procfile.h \
-	web_buffer.c web_buffer.h $(NULL) $(am__append_6)
+	web_buffer.c web_buffer.h $(NULL) $(am__append_7)
 apps_plugin_LDADD = \
 	$(OPTIONAL_MATH_LIBS) \
 	$(OPTIONAL_LIBCAP_LIBS) \
@@ -599,6 +607,20 @@ freeipmi_plugin_SOURCES = \
 
 freeipmi_plugin_LDADD = \
 	$(OPTIONAL_IPMIMONITORING_LIBS) \
+	$(NULL)
+
+cgroup_network_SOURCES = \
+    cgroup-network.c \
+	clocks.c clocks.h \
+    common.c common.h \
+    inlined.h \
+    log.c log.h \
+	procfile.c procfile.h \
+    $(NULL)
+
+cgroup_network_LDADD = \
+	$(OPTIONAL_MATH_LIBS) \
+	$(OPTIONAL_LIBCAP_LIBS) \
 	$(NULL)
 
 all: all-am
@@ -724,6 +746,10 @@ apps.plugin$(EXEEXT): $(apps_plugin_OBJECTS) $(apps_plugin_DEPENDENCIES) $(EXTRA
 	@rm -f apps.plugin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(apps_plugin_OBJECTS) $(apps_plugin_LDADD) $(LIBS)
 
+cgroup-network$(EXEEXT): $(cgroup_network_OBJECTS) $(cgroup_network_DEPENDENCIES) $(EXTRA_cgroup_network_DEPENDENCIES) 
+	@rm -f cgroup-network$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(cgroup_network_OBJECTS) $(cgroup_network_LDADD) $(LIBS)
+
 freeipmi.plugin$(EXEEXT): $(freeipmi_plugin_OBJECTS) $(freeipmi_plugin_DEPENDENCIES) $(EXTRA_freeipmi_plugin_DEPENDENCIES) 
 	@rm -f freeipmi.plugin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(freeipmi_plugin_OBJECTS) $(freeipmi_plugin_LDADD) $(LIBS)
@@ -744,6 +770,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/avl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backend_prometheus.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backends.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup-network.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clocks.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemon.Po@am__quote@
@@ -820,6 +847,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrdset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrdsetvar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrdvar.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simple_pattern.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/socket.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistical.Po@am__quote@

@@ -118,29 +118,14 @@ GROUP BY datname, mode
 ORDER BY datname, mode;
 """,
     FIND_DATABASES="""
-SELECT datname FROM pg_stat_database WHERE NOT datname ~* '^template\d+'
+SELECT datname
+FROM pg_stat_database
+WHERE has_database_privilege((SELECT current_user), datname, 'connect')
+AND NOT datname ~* '^template\d+';
 """,
     IF_SUPERUSER="""
 SELECT current_setting('is_superuser') = 'on' AS is_superuser;
     """)
-
-# REPLICATION = """
-# SELECT
-#    client_hostname,
-#    client_addr,
-#    state,
-#    sent_offset - (
-#        replay_offset - (sent_xlog - replay_xlog) * 255 * 16 ^ 6 ) AS byte_lag
-# FROM (
-#    SELECT
-#        client_addr, client_hostname, state,
-#        ('x' || lpad(split_part(sent_location::text,   '/', 1), 8, '0'))::bit(32)::bigint AS sent_xlog,
-#        ('x' || lpad(split_part(replay_location::text, '/', 1), 8, '0'))::bit(32)::bigint AS replay_xlog,
-#        ('x' || lpad(split_part(sent_location::text,   '/', 2), 8, '0'))::bit(32)::bigint AS sent_offset,
-#        ('x' || lpad(split_part(replay_location::text, '/', 2), 8, '0'))::bit(32)::bigint AS replay_offset
-#    FROM pg_stat_replication
-# ) AS s;
-# """
 
 
 QUERY_STATS = {
@@ -244,10 +229,10 @@ class Service(SimpleService):
         self.database_poll = configuration.pop('database_poll', None)
         self.configuration = configuration
         self.connection = False
-        self.is_superuser = False
         self.data = dict()
         self.locks_zeroed = dict()
         self.databases = list()
+        self.queries = QUERY_STATS.copy()
 
     def _connect(self):
         params = dict(user='postgres',
@@ -294,12 +279,12 @@ class Service(SimpleService):
 
     def add_additional_queries_(self, is_superuser):
         if self.index_stats:
-            QUERY_STATS[QUERIES['INDEX_STATS']] = METRICS['INDEX_STATS']
+            self.queries[QUERIES['INDEX_STATS']] = METRICS['INDEX_STATS']
         if self.table_stats:
-            QUERY_STATS[QUERIES['TABLE_STATS']] = METRICS['TABLE_STATS']
+            self.queries[QUERIES['TABLE_STATS']] = METRICS['TABLE_STATS']
         if is_superuser:
-            QUERY_STATS[QUERIES['BGWRITER']] = METRICS['BGWRITER']
-            QUERY_STATS[QUERIES['ARCHIVE']] = METRICS['ARCHIVE']
+            self.queries[QUERIES['BGWRITER']] = METRICS['BGWRITER']
+            self.queries[QUERIES['ARCHIVE']] = METRICS['ARCHIVE']
 
     def create_dynamic_charts_(self):
 
@@ -318,7 +303,7 @@ class Service(SimpleService):
             cursor = self.connection.cursor(cursor_factory=DictCursor)
             try:
                 self.data.update(self.locks_zeroed)
-                for query, metrics in QUERY_STATS.items():
+                for query, metrics in self.queries.items():
                     self.query_stats_(cursor, query, metrics)
 
             except OperationalError:
@@ -398,13 +383,3 @@ def add_database_stat_chart_(order, definitions, name, database_name):
     definitions[chart_name] = {
                'options': [name, title + ': ' + database_name,  units, 'db ' + database_name, context,  chart_type],
                'lines': create_lines(database_name, chart_template['lines'])}
-
-
-#
-#    def add_replication_stats(self, cursor):
-#        cursor.execute(REPLICATION)
-#        temp = cursor.fetchall()
-#        for row in temp:
-#            self.add_gauge_value('Replication/%s' % row.get('client_addr', 'Unknown'),
-#                                 'byte_lag',
-#                                 int(row.get('byte_lag', 0)))

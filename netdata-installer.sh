@@ -49,7 +49,7 @@ umask 002
 # Be nice on production environments
 renice 19 $$ >/dev/null 2>/dev/null
 
-processors=$(cat /proc/cpuinfo 2>/dev/null | grep ^processor | wc -l)
+processors=$(grep -c ^processor /proc/cpuinfo)
 [ $(( processors )) -lt 1 ] && processors=1
 
 # you can set CFLAGS before running installer
@@ -392,8 +392,10 @@ if [ ${DONOTWAIT} -eq 0 ]
     if [ ! -z "${NETDATA_PREFIX}" ]
         then
         eval "read >&2 -ep \$'\001${TPUT_BOLD}${TPUT_GREEN}\002Press ENTER to build and install netdata to \'\001${TPUT_CYAN}\002${NETDATA_PREFIX}\001${TPUT_YELLOW}\002\'\001${TPUT_RESET}\002 > ' -e -r REPLY"
+        [ $? -ne 0 ] && exit 1
     else
         eval "read >&2 -ep \$'\001${TPUT_BOLD}${TPUT_GREEN}\002Press ENTER to build and install netdata to your system\001${TPUT_RESET}\002 > ' -e -r REPLY"
+        [ $? -ne 0 ] && exit 1
     fi
 fi
 
@@ -405,7 +407,7 @@ build_error() {
 
 Sorry! netdata failed to build...
 
-You many need to check these:
+You may need to check these:
 
 1. The package uuid-dev (or libuuid-devel) has to be installed.
 
@@ -782,6 +784,12 @@ if [ ${UID} -eq 0 ]
         run chmod 4755 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/freeipmi.plugin"
     fi
 
+    if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/cgroup-network" ]
+        then
+        run chown root "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/cgroup-network"
+        run chmod 4755 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/cgroup-network"
+    fi
+
 else
     run chown "${NETDATA_USER}:${NETDATA_USER}" "${NETDATA_LOG_DIR}"
     run chown -R "${NETDATA_USER}:${NETDATA_USER}" "${NETDATA_PREFIX}/usr/libexec/netdata"
@@ -1044,6 +1052,18 @@ if [ -f /etc/init.d/netdata ]
     then
     echo "Deleting /etc/init.d/netdata ..."
     rm -i /etc/init.d/netdata
+fi
+
+if [ -f /etc/periodic/daily/netdata-updater ]
+    then
+    echo "Deleting /etc/periodic/daily/netdata-updater ..."
+    rm -i /etc/periodic/daily/netdata-updater
+fi
+
+if [ -f /etc/cron.daily/netdata-updater ]
+    then
+    echo "Deleting /etc/cron.daily/netdata-updater ..."
+    rm -i /etc/cron.daily/netdata-updater
 fi
 
 getent passwd netdata > /dev/null

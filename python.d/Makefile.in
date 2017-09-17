@@ -81,7 +81,13 @@ build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = $(top_srcdir)/build/subst.inc $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.am $(dist_python_SCRIPTS) \
-	$(dist_python_DATA) $(dist_pythonmodules_DATA) \
+	$(dist_python_DATA) $(dist_python_urllib3_DATA) \
+	$(dist_python_urllib3_backports_DATA) \
+	$(dist_python_urllib3_contrib_DATA) \
+	$(dist_python_urllib3_packages_DATA) \
+	$(dist_python_urllib3_securetransport_DATA) \
+	$(dist_python_urllib3_ssl_match_hostname_DATA) \
+	$(dist_python_urllib3_util_DATA) $(dist_pythonmodules_DATA) \
 	$(dist_pythonyaml2_DATA) $(dist_pythonyaml3_DATA)
 subdir = python.d
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -127,6 +133,13 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" \
+	"$(DESTDIR)$(python_urllib3dir)" \
+	"$(DESTDIR)$(python_urllib3_backportsdir)" \
+	"$(DESTDIR)$(python_urllib3_contribdir)" \
+	"$(DESTDIR)$(python_urllib3_packagesdir)" \
+	"$(DESTDIR)$(python_urllib3_securetransportdir)" \
+	"$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" \
+	"$(DESTDIR)$(python_urllib3_utildir)" \
 	"$(DESTDIR)$(pythonmodulesdir)" "$(DESTDIR)$(pythonyaml2dir)" \
 	"$(DESTDIR)$(pythonyaml3dir)"
 SCRIPTS = $(dist_python_SCRIPTS)
@@ -149,7 +162,13 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(dist_python_DATA) $(dist_pythonmodules_DATA) \
+DATA = $(dist_python_DATA) $(dist_python_urllib3_DATA) \
+	$(dist_python_urllib3_backports_DATA) \
+	$(dist_python_urllib3_contrib_DATA) \
+	$(dist_python_urllib3_packages_DATA) \
+	$(dist_python_urllib3_securetransport_DATA) \
+	$(dist_python_urllib3_ssl_match_hostname_DATA) \
+	$(dist_python_urllib3_util_DATA) $(dist_pythonmodules_DATA) \
 	$(dist_pythonyaml2_DATA) $(dist_pythonyaml3_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -312,6 +331,7 @@ dist_python_DATA = \
     apache.chart.py \
     apache_cache.chart.py \
     bind_rndc.chart.py \
+    chrony.chart.py \
     cpufreq.chart.py \
     cpuidle.chart.py \
     dns_query_time.chart.py \
@@ -396,6 +416,70 @@ dist_pythonyaml3_DATA = \
     python_modules/pyyaml3/scanner.py \
     python_modules/pyyaml3/serializer.py \
     python_modules/pyyaml3/tokens.py \
+    $(NULL)
+
+python_urllib3dir = $(pythonmodulesdir)/urllib3
+dist_python_urllib3_DATA = \
+    python_modules/urllib3/__init__.py \
+    python_modules/urllib3/_collections.py \
+    python_modules/urllib3/connection.py \
+    python_modules/urllib3/connectionpool.py \
+    python_modules/urllib3/exceptions.py \
+    python_modules/urllib3/fields.py \
+    python_modules/urllib3/filepost.py \
+    python_modules/urllib3/response.py \
+    python_modules/urllib3/poolmanager.py \
+    python_modules/urllib3/request.py \
+    $(NULL)
+
+python_urllib3_utildir = $(python_urllib3dir)/util
+dist_python_urllib3_util_DATA = \
+    python_modules/urllib3/util/__init__.py \
+    python_modules/urllib3/util/connection.py \
+    python_modules/urllib3/util/request.py \
+    python_modules/urllib3/util/response.py \
+    python_modules/urllib3/util/retry.py \
+    python_modules/urllib3/util/selectors.py \
+    python_modules/urllib3/util/ssl_.py \
+    python_modules/urllib3/util/timeout.py \
+    python_modules/urllib3/util/url.py \
+    python_modules/urllib3/util/wait.py \
+    $(NULL)
+
+python_urllib3_packagesdir = $(python_urllib3dir)/packages
+dist_python_urllib3_packages_DATA = \
+    python_modules/urllib3/packages/__init__.py \
+    python_modules/urllib3/packages/ordered_dict.py \
+    python_modules/urllib3/packages/six.py \
+    $(NULL)
+
+python_urllib3_backportsdir = $(python_urllib3_packagesdir)/backports
+dist_python_urllib3_backports_DATA = \
+    python_modules/urllib3/packages/backports/__init__.py \
+    python_modules/urllib3/packages/backports/makefile.py \
+    $(NULL)
+
+python_urllib3_ssl_match_hostnamedir = $(python_urllib3_packagesdir)/ssl_match_hostname
+dist_python_urllib3_ssl_match_hostname_DATA = \
+    python_modules/urllib3/packages/ssl_match_hostname/__init__.py \
+    python_modules/urllib3/packages/ssl_match_hostname/_implementation.py \
+    $(NULL)
+
+python_urllib3_contribdir = $(python_urllib3dir)/contrib
+dist_python_urllib3_contrib_DATA = \
+    python_modules/urllib3/contrib/__init__.py \
+    python_modules/urllib3/contrib/appengine.py \
+    python_modules/urllib3/contrib/ntlmpool.py \
+    python_modules/urllib3/contrib/pyopenssl.py \
+    python_modules/urllib3/contrib/securetransport.py \
+    python_modules/urllib3/contrib/socks.py \
+    $(NULL)
+
+python_urllib3_securetransportdir = $(python_urllib3_contribdir)/_securetransport
+dist_python_urllib3_securetransport_DATA = \
+    python_modules/urllib3/contrib/_securetransport/__init__.py \
+    python_modules/urllib3/contrib/_securetransport/bindings.py \
+    python_modules/urllib3/contrib/_securetransport/low_level.py \
     $(NULL)
 
 all: all-am
@@ -489,6 +573,153 @@ uninstall-dist_pythonDATA:
 	@list='$(dist_python_DATA)'; test -n "$(pythondir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pythondir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3DATA: $(dist_python_urllib3_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_DATA)'; test -n "$(python_urllib3dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3dir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_DATA)'; test -n "$(python_urllib3dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3dir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3_backportsDATA: $(dist_python_urllib3_backports_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_backports_DATA)'; test -n "$(python_urllib3_backportsdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3_backportsdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3_backportsdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3_backportsdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3_backportsdir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3_backportsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_backports_DATA)'; test -n "$(python_urllib3_backportsdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3_backportsdir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3_contribDATA: $(dist_python_urllib3_contrib_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_contrib_DATA)'; test -n "$(python_urllib3_contribdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3_contribdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3_contribdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3_contribdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3_contribdir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3_contribDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_contrib_DATA)'; test -n "$(python_urllib3_contribdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3_contribdir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3_packagesDATA: $(dist_python_urllib3_packages_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_packages_DATA)'; test -n "$(python_urllib3_packagesdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3_packagesdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3_packagesdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3_packagesdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3_packagesdir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3_packagesDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_packages_DATA)'; test -n "$(python_urllib3_packagesdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3_packagesdir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3_securetransportDATA: $(dist_python_urllib3_securetransport_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_securetransport_DATA)'; test -n "$(python_urllib3_securetransportdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3_securetransportdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3_securetransportdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3_securetransportdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3_securetransportdir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3_securetransportDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_securetransport_DATA)'; test -n "$(python_urllib3_securetransportdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3_securetransportdir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3_ssl_match_hostnameDATA: $(dist_python_urllib3_ssl_match_hostname_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_ssl_match_hostname_DATA)'; test -n "$(python_urllib3_ssl_match_hostnamedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3_ssl_match_hostnameDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_ssl_match_hostname_DATA)'; test -n "$(python_urllib3_ssl_match_hostnamedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)'; $(am__uninstall_files_from_dir)
+install-dist_python_urllib3_utilDATA: $(dist_python_urllib3_util_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_python_urllib3_util_DATA)'; test -n "$(python_urllib3_utildir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(python_urllib3_utildir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(python_urllib3_utildir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(python_urllib3_utildir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(python_urllib3_utildir)" || exit $$?; \
+	done
+
+uninstall-dist_python_urllib3_utilDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_python_urllib3_util_DATA)'; test -n "$(python_urllib3_utildir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(python_urllib3_utildir)'; $(am__uninstall_files_from_dir)
 install-dist_pythonmodulesDATA: $(dist_pythonmodules_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_pythonmodules_DATA)'; test -n "$(pythonmodulesdir)" || list=; \
@@ -593,7 +824,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythonmodulesdir)" "$(DESTDIR)$(pythonyaml2dir)" "$(DESTDIR)$(pythonyaml3dir)"; do \
+	for dir in "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(python_urllib3dir)" "$(DESTDIR)$(python_urllib3_backportsdir)" "$(DESTDIR)$(python_urllib3_contribdir)" "$(DESTDIR)$(python_urllib3_packagesdir)" "$(DESTDIR)$(python_urllib3_securetransportdir)" "$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" "$(DESTDIR)$(python_urllib3_utildir)" "$(DESTDIR)$(pythonmodulesdir)" "$(DESTDIR)$(pythonyaml2dir)" "$(DESTDIR)$(pythonyaml3dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -649,6 +880,13 @@ info: info-am
 info-am:
 
 install-data-am: install-dist_pythonDATA install-dist_pythonSCRIPTS \
+	install-dist_python_urllib3DATA \
+	install-dist_python_urllib3_backportsDATA \
+	install-dist_python_urllib3_contribDATA \
+	install-dist_python_urllib3_packagesDATA \
+	install-dist_python_urllib3_securetransportDATA \
+	install-dist_python_urllib3_ssl_match_hostnameDATA \
+	install-dist_python_urllib3_utilDATA \
 	install-dist_pythonmodulesDATA install-dist_pythonyaml2DATA \
 	install-dist_pythonyaml3DATA
 
@@ -695,6 +933,13 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
+	uninstall-dist_python_urllib3DATA \
+	uninstall-dist_python_urllib3_backportsDATA \
+	uninstall-dist_python_urllib3_contribDATA \
+	uninstall-dist_python_urllib3_packagesDATA \
+	uninstall-dist_python_urllib3_securetransportDATA \
+	uninstall-dist_python_urllib3_ssl_match_hostnameDATA \
+	uninstall-dist_python_urllib3_utilDATA \
 	uninstall-dist_pythonmodulesDATA \
 	uninstall-dist_pythonyaml2DATA uninstall-dist_pythonyaml3DATA
 
@@ -704,16 +949,30 @@ uninstall-am: uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
 	ctags-am distclean distclean-generic distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dist_pythonDATA \
-	install-dist_pythonSCRIPTS install-dist_pythonmodulesDATA \
-	install-dist_pythonyaml2DATA install-dist_pythonyaml3DATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags-am \
-	uninstall uninstall-am uninstall-dist_pythonDATA \
-	uninstall-dist_pythonSCRIPTS uninstall-dist_pythonmodulesDATA \
+	install-dist_pythonSCRIPTS install-dist_python_urllib3DATA \
+	install-dist_python_urllib3_backportsDATA \
+	install-dist_python_urllib3_contribDATA \
+	install-dist_python_urllib3_packagesDATA \
+	install-dist_python_urllib3_securetransportDATA \
+	install-dist_python_urllib3_ssl_match_hostnameDATA \
+	install-dist_python_urllib3_utilDATA \
+	install-dist_pythonmodulesDATA install-dist_pythonyaml2DATA \
+	install-dist_pythonyaml3DATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
+	pdf-am ps ps-am tags-am uninstall uninstall-am \
+	uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
+	uninstall-dist_python_urllib3DATA \
+	uninstall-dist_python_urllib3_backportsDATA \
+	uninstall-dist_python_urllib3_contribDATA \
+	uninstall-dist_python_urllib3_packagesDATA \
+	uninstall-dist_python_urllib3_securetransportDATA \
+	uninstall-dist_python_urllib3_ssl_match_hostnameDATA \
+	uninstall-dist_python_urllib3_utilDATA \
+	uninstall-dist_pythonmodulesDATA \
 	uninstall-dist_pythonyaml2DATA uninstall-dist_pythonyaml3DATA
 
 .in:

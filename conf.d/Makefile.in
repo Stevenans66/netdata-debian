@@ -78,26 +78,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@LINUX_TRUE@am__append_1 = \
-@LINUX_TRUE@    health.d/cpu.conf \
-@LINUX_TRUE@    health.d/disks.conf \
-@LINUX_TRUE@    health.d/entropy.conf \
-@LINUX_TRUE@    health.d/ipc.conf \
-@LINUX_TRUE@    health.d/memory.conf \
-@LINUX_TRUE@    health.d/net.conf \
-@LINUX_TRUE@    health.d/netfilter.conf \
-@LINUX_TRUE@    health.d/qos.conf \
-@LINUX_TRUE@    health.d/ram.conf \
-@LINUX_TRUE@    health.d/softnet.conf \
-@LINUX_TRUE@    health.d/swap.conf \
-@LINUX_TRUE@    health.d/tcp_resets.conf \
-@LINUX_TRUE@    health.d/udp_errors.conf \
-@LINUX_TRUE@    $(NULL)
-
 subdir = conf.d
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(dist_chartsconfig_DATA) $(dist_config_DATA) \
-	$(am__dist_healthconfig_DATA_DIST) $(dist_nodeconfig_DATA) \
+	$(dist_healthconfig_DATA) $(dist_nodeconfig_DATA) \
 	$(dist_pythonconfig_DATA) $(dist_statsdconfig_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
@@ -164,21 +148,6 @@ am__installdirs = "$(DESTDIR)$(chartsconfigdir)" \
 	"$(DESTDIR)$(configdir)" "$(DESTDIR)$(healthconfigdir)" \
 	"$(DESTDIR)$(nodeconfigdir)" "$(DESTDIR)$(pythonconfigdir)" \
 	"$(DESTDIR)$(statsdconfigdir)"
-am__dist_healthconfig_DATA_DIST = health.d/apache.conf \
-	health.d/backend.conf health.d/bind_rndc.conf \
-	health.d/elasticsearch.conf health.d/fping.conf \
-	health.d/haproxy.conf health.d/ipfs.conf health.d/ipmi.conf \
-	health.d/isc_dhcpd.conf health.d/lighttpd.conf \
-	health.d/mdstat.conf health.d/memcached.conf \
-	health.d/mysql.conf health.d/named.conf health.d/mongodb.conf \
-	health.d/nginx.conf health.d/postgres.conf health.d/redis.conf \
-	health.d/retroshare.conf health.d/squid.conf \
-	health.d/varnish.conf health.d/web_log.conf health.d/zfs.conf \
-	health.d/cpu.conf health.d/disks.conf health.d/entropy.conf \
-	health.d/ipc.conf health.d/memory.conf health.d/net.conf \
-	health.d/netfilter.conf health.d/qos.conf health.d/ram.conf \
-	health.d/softnet.conf health.d/swap.conf \
-	health.d/tcp_resets.conf health.d/udp_errors.conf
 DATA = $(dist_chartsconfig_DATA) $(dist_config_DATA) \
 	$(dist_healthconfig_DATA) $(dist_nodeconfig_DATA) \
 	$(dist_pythonconfig_DATA) $(dist_statsdconfig_DATA)
@@ -351,6 +320,7 @@ dist_nodeconfig_DATA = \
     node.d/named.conf.md \
     node.d/sma_webbox.conf.md \
     node.d/snmp.conf.md \
+    node.d/stiebeleltron.conf.md \
     $(NULL)
 
 pythonconfigdir = $(configdir)/python.d
@@ -358,6 +328,7 @@ dist_pythonconfig_DATA = \
     python.d/apache.conf \
     python.d/apache_cache.conf \
     python.d/bind_rndc.conf \
+    python.d/chrony.conf \
     python.d/cpufreq.conf \
     python.d/dns_query_time.conf \
     python.d/dovecot.conf \
@@ -394,17 +365,45 @@ dist_pythonconfig_DATA = \
     $(NULL)
 
 healthconfigdir = $(configdir)/health.d
-dist_healthconfig_DATA = health.d/apache.conf health.d/backend.conf \
-	health.d/bind_rndc.conf health.d/elasticsearch.conf \
-	health.d/fping.conf health.d/haproxy.conf health.d/ipfs.conf \
-	health.d/ipmi.conf health.d/isc_dhcpd.conf \
-	health.d/lighttpd.conf health.d/mdstat.conf \
-	health.d/memcached.conf health.d/mysql.conf \
-	health.d/named.conf health.d/mongodb.conf health.d/nginx.conf \
-	health.d/postgres.conf health.d/redis.conf \
-	health.d/retroshare.conf health.d/squid.conf \
-	health.d/varnish.conf health.d/web_log.conf health.d/zfs.conf \
-	$(NULL) $(am__append_1)
+dist_healthconfig_DATA = \
+    health.d/apache.conf \
+    health.d/backend.conf \
+    health.d/bind_rndc.conf \
+    health.d/cpu.conf \
+    health.d/disks.conf \
+    health.d/elasticsearch.conf \
+    health.d/entropy.conf \
+    health.d/fping.conf \
+    health.d/haproxy.conf \
+    health.d/ipc.conf \
+    health.d/ipfs.conf \
+    health.d/ipmi.conf \
+    health.d/isc_dhcpd.conf \
+    health.d/lighttpd.conf \
+    health.d/mdstat.conf \
+    health.d/memcached.conf \
+    health.d/memory.conf \
+    health.d/mongodb.conf \
+    health.d/mysql.conf \
+    health.d/named.conf \
+    health.d/net.conf \
+    health.d/netfilter.conf \
+    health.d/nginx.conf \
+    health.d/postgres.conf \
+    health.d/qos.conf \
+    health.d/ram.conf \
+    health.d/redis.conf \
+    health.d/retroshare.conf \
+    health.d/softnet.conf \
+    health.d/squid.conf \
+    health.d/swap.conf \
+    health.d/tcp_resets.conf \
+    health.d/udp_errors.conf \
+    health.d/varnish.conf \
+    health.d/web_log.conf \
+    health.d/zfs.conf \
+    $(NULL)
+
 chartsconfigdir = $(configdir)/charts.d
 dist_chartsconfig_DATA = \
     charts.d/apache.conf \

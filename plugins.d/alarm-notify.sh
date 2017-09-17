@@ -43,7 +43,7 @@ then
 
     id=1
     last="CLEAR"
-    for x in "CRITICAL" "WARNING" "CLEAR"
+    for x in "WARNING" "CRITICAL"  "CLEAR"
     do
         echo >&2
         echo >&2 "# SENDING TEST ${x} ALARM TO ROLE: ${recipient}"
@@ -99,11 +99,41 @@ fatal() {
     exit 1
 }
 
-debug=0
+debug=${NETDATA_ALARM_NOTIFY_DEBUG-0}
 debug() {
-    [ ${debug} -eq 1 ] && log DEBUG "${@}"
+    [ "${debug}" = "1" ] && log DEBUG "${@}"
 }
 
+docurl() {
+    if [ -z "${curl}" ]
+        then
+        error "\${curl} is unset."
+        return 1
+    fi
+
+    if [ "${debug}" = "1" ]
+        then
+        echo >&2 "--- BEGIN curl command ---"
+        printf >&2 "%q " ${curl} "${@}"
+        echo >&2
+        echo >&2 "--- END curl command ---"
+
+        local out=$(mktemp /tmp/netdata-health-alarm-notify-XXXXXXXX)
+        local code=$(${curl} --write-out %{http_code} --output "${out}" --silent --show-error "${@}")
+        local ret=$?
+        echo >&2 "--- BEGIN received response ---"
+        cat >&2 "${out}"
+        echo >&2
+        echo >&2 "--- END received response ---"
+        echo >&2 "RECEIVED HTTP RESPONSE CODE: ${code}"
+        rm "${out}"
+        echo "${code}"
+        return ${ret}
+    fi
+
+    ${curl} --write-out %{http_code} --output /dev/null --silent --show-error "${@}"
+    return $?
+}
 
 # -----------------------------------------------------------------------------
 # this is to be overwritten by the config file
@@ -122,33 +152,33 @@ custom_sender() {
 # -----------------------------------------------------------------------------
 # defaults to allow running this script by hand
 
-[ -z "${NETDATA_CONFIG_DIR}" ] && NETDATA_CONFIG_DIR="$(dirname "${0}")/../../../../etc/netdata"
-[ -z "${NETDATA_CACHE_DIR}" ] && NETDATA_CACHE_DIR="$(dirname "${0}")/../../../../var/cache/netdata"
+[ -z "${NETDATA_CONFIG_DIR}"   ] && NETDATA_CONFIG_DIR="$(dirname "${0}")/../../../../etc/netdata"
+[ -z "${NETDATA_CACHE_DIR}"    ] && NETDATA_CACHE_DIR="$(dirname "${0}")/../../../../var/cache/netdata"
 [ -z "${NETDATA_REGISTRY_URL}" ] && NETDATA_REGISTRY_URL="https://registry.my-netdata.io"
 
 # -----------------------------------------------------------------------------
 # parse command line parameters
 
-roles="${1}"       # the roles that should be notified for this event
-host="${2}"        # the host generated this event
-unique_id="${3}"   # the unique id of this event
-alarm_id="${4}"    # the unique id of the alarm that generated this event
-event_id="${5}"    # the incremental id of the event, for this alarm id
-when="${6}"        # the timestamp this event occurred
-name="${7}"        # the name of the alarm, as given in netdata health.d entries
-chart="${8}"       # the name of the chart (type.id)
-family="${9}"      # the family of the chart
-status="${10}"     # the current status : REMOVED, UNINITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
-old_status="${11}" # the previous status: REMOVED, UNINITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
-value="${12}"      # the current value of the alarm
-old_value="${13}"  # the previous value of the alarm
-src="${14}"        # the line number and file the alarm has been configured
-duration="${15}"   # the duration in seconds of the previous alarm state
+roles="${1}"               # the roles that should be notified for this event
+host="${2}"                # the host generated this event
+unique_id="${3}"           # the unique id of this event
+alarm_id="${4}"            # the unique id of the alarm that generated this event
+event_id="${5}"            # the incremental id of the event, for this alarm id
+when="${6}"                # the timestamp this event occurred
+name="${7}"                # the name of the alarm, as given in netdata health.d entries
+chart="${8}"               # the name of the chart (type.id)
+family="${9}"              # the family of the chart
+status="${10}"             # the current status : REMOVED, UNINITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
+old_status="${11}"         # the previous status: REMOVED, UNINITIALIZED, UNDEFINED, CLEAR, WARNING, CRITICAL
+value="${12}"              # the current value of the alarm
+old_value="${13}"          # the previous value of the alarm
+src="${14}"                # the line number and file the alarm has been configured
+duration="${15}"           # the duration in seconds of the previous alarm state
 non_clear_duration="${16}" # the total duration in seconds this is/was non-clear
-units="${17}"      # the units of the value
-info="${18}"       # a short description of the alarm
-value_string="${19}"        # friendly value (with units)
-old_value_string="${20}"    # friendly old value (with units)
+units="${17}"              # the units of the value
+info="${18}"               # a short description of the alarm
+value_string="${19}"       # friendly value (with units)
+old_value_string="${20}"   # friendly old value (with units)
 
 # -----------------------------------------------------------------------------
 # find a suitable hostname to use, if netdata did not supply a hostname
@@ -251,6 +281,7 @@ KAFKA_SENDER_IP=
 
 # pagerduty.com configs
 PD_SERVICE_KEY=
+DEFAULT_RECIPIENT_PD=
 declare -A role_recipients_pd=()
 
 # custom configs
@@ -258,7 +289,9 @@ DEFAULT_RECIPIENT_CUSTOM=
 declare -A role_recipients_custom=()
 
 # email configs
+EMAIL_SENDER=
 DEFAULT_RECIPIENT_EMAIL="root"
+EMAIL_CHARSET=$(locale charmap 2>/dev/null)
 declare -A role_recipients_email=()
 
 # load the user configuration
@@ -266,6 +299,16 @@ declare -A role_recipients_email=()
 if [ -f "${NETDATA_CONFIG_DIR}/health_alarm_notify.conf" ]
     then
     source "${NETDATA_CONFIG_DIR}/health_alarm_notify.conf"
+else
+    error "Cannot find file ${NETDATA_CONFIG_DIR}/health_alarm_notify.conf. Using internal defaults."
+fi
+
+# If we didn't autodetect the character set for e-mail and it wasn't
+# set by the user, we need to set it to a reasonable default.  UTF-8
+# should be correct for almost all modern UNIX systems.
+if [ -z ${EMAIL_CHARSET} ]
+    then
+    EMAIL_CHARSET="UTF-8"
 fi
 
 # -----------------------------------------------------------------------------
@@ -283,28 +326,45 @@ filter_recipient_by_criticality() {
 
     # the severity is invalid
     s="${s^^}"
-    [ "${s}" != "CRITICAL" ] && return 0
-
-    # the new or the old status matches the severity
-    if [ "${s}" = "${status}" -o "${s}" = "${old_status}" ]
-        then
-        [ ! -d "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}" ] && \
-            mkdir -p "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}"
-
-        # we need to keep track of the notifications we sent
-        # so that the same user will receive the recovery
-        # even if old_status does not match the required severity
-        touch "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}"
+    if [ "${s}" != "CRITICAL" ]
+    then
+        error "SEVERITY FILTERING for ${x} VIA ${method}: invalid severity '${s,,}', only 'critical' is supported."
         return 0
     fi
 
-    # it is a cleared alarm we have sent notification for
-    if [ "${status}" != "WARNING" -a "${status}" != "CRITICAL" -a -f "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}" ]
-        then
-        rm "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}"
-        return 0
-    fi
+    # create the status tracking directory for this user
+    [ ! -d "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}" ] && \
+        mkdir -p "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}"
 
+    case "${status}" in
+        CRITICAL)
+            # make sure he will get future notifications for this alarm too
+            touch "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}"
+            debug "SEVERITY FILTERING for ${x} VIA ${method}: ALLOW: the alarm is CRITICAL (will now receive next status change)"
+            return 0
+            ;;
+
+        WARNING)
+            if [ -f "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}" ]
+            then
+                # we do not remove the file, so that he will get future notifications of this alarm
+                debug "SEVERITY FILTERING for ${x} VIA ${method}: ALLOW: recipient has been notified for this alarm in the past (will still receive next status change)"
+                return 0
+            fi
+            ;;
+
+        *)
+            if [ -f "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}" ]
+            then
+                # remove the file, so that he will only receive notifications for CRITICAL states for this alarm
+                rm "${NETDATA_CACHE_DIR}/alarm-notify/${method}/${r}/${alarm_id}"
+                debug "SEVERITY FILTERING for ${x} VIA ${method}: ALLOW: recipient has been notified for this alarm (will only receive CRITICAL notifications from now on)"
+                return 0
+            fi
+            ;;
+    esac
+
+    debug "SEVERITY FILTERING for ${x} VIA ${method}: BLOCK: recipient should not receive this notification"
     return 1
 }
 
@@ -321,6 +381,7 @@ declare -A arr_telegram=()
 declare -A arr_pd=()
 declare -A arr_email=()
 declare -A arr_custom=()
+declare -A arr_messagebird=()
 
 # netdata may call us with multiple roles, and roles may have multiple but
 # overlapping recipients - so, here we find the unique recipients.
@@ -508,8 +569,7 @@ if [ "${SEND_PD}" = "YES" ]
     pd_send="$(which pd-send 2>/dev/null || command -v pd-send 2>/dev/null)"
     if [ -z "${pd_send}" ]
         then
-        # no pd-send available
-        # disable pagerduty.com
+        error "Cannot find pd-send command in the system path. Disabling pagerduty.com notifications."
         SEND_PD="NO"
     fi
 fi
@@ -530,8 +590,7 @@ if [ \( \
     curl="$(which curl 2>/dev/null || command -v curl 2>/dev/null)"
     if [ -z "${curl}" ]
         then
-        # no curl available
-        # disable all curl based methods
+        error "Cannot find curl command in the system path. Disabling all curl based notifications."
         SEND_PUSHOVER="NO"
         SEND_PUSHBULLET="NO"
         SEND_TELEGRAM="NO"
@@ -548,7 +607,11 @@ fi
 if [ "${SEND_EMAIL}" = "YES" -a -z "${sendmail}" ]
     then
     sendmail="$(which sendmail 2>/dev/null || command -v sendmail 2>/dev/null)"
-    [ -z "${sendmail}" ] && SEND_EMAIL="NO"
+    if [ -z "${sendmail}" ]
+        then
+        debug "Cannot find sendmail command in the system path. Disabling email notifications."
+        SEND_EMAIL="NO"
+    fi
 fi
 
 # check that we have at least a method enabled
@@ -659,11 +722,39 @@ duration4human() {
 # email sender
 
 send_email() {
-    local ret=
+    local ret= opts=
     if [ "${SEND_EMAIL}" = "YES" ]
         then
 
-        "${sendmail}" -t
+        if [ ! -z "${EMAIL_SENDER}" ]
+            then
+            if [[ "${EMAIL_SENDER}" =~ \".*\"\ \<.*\> ]]
+                then
+                # the name includes single quotes
+                opts=" -f $(echo "${EMAIL_SENDER}" | cut -d '<' -f 2 | cut -d '>' -f 1) -F $(echo "${EMAIL_SENDER}" | cut -d '<' -f 1)"
+            elif [[ "${EMAIL_SENDER}" =~ \'.*\'\ \<.*\> ]]
+                then
+                # the name includes double quotes
+                opts=" -f $(echo "${EMAIL_SENDER}" | cut -d '<' -f 2 | cut -d '>' -f 1) -F $(echo "${EMAIL_SENDER}" | cut -d '<' -f 1)"
+            elif [[ "${EMAIL_SENDER}" =~ .*\ \<.*\> ]]
+                then
+                # the name does not have any quotes
+                opts=" -f $(echo "${EMAIL_SENDER}" | cut -d '<' -f 2 | cut -d '>' -f 1) -F '$(echo "${EMAIL_SENDER}" | cut -d '<' -f 1)'"
+            else
+                # no name at all
+                opts=" -f ${EMAIL_SENDER}"
+            fi
+        fi
+
+        if [ "${debug}" = "1" ]
+            then
+            echo >&2 "--- BEGIN sendmail command ---"
+            printf >&2 "%q " "${sendmail}" -t ${opts}
+            echo >&2
+            echo >&2 "--- END sendmail command ---"
+        fi
+
+        "${sendmail}" -t ${opts}
         ret=$?
 
         if [ ${ret} -eq 0 ]
@@ -699,7 +790,7 @@ send_pushover() {
 
         for user in ${usertokens}
         do
-            httpcode=$(${curl} --write-out %{http_code} --silent --output /dev/null \
+            httpcode=$(docurl \
                 --form-string "token=${apptoken}" \
                 --form-string "user=${user}" \
                 --form-string "html=1" \
@@ -736,7 +827,7 @@ send_pushbullet() {
         #https://docs.pushbullet.com/#create-push
         for user in ${recipients}
         do
-            httpcode=$(${curl} --write-out %{http_code} --silent --output /dev/null \
+            httpcode=$(docurl \
               --header 'Access-Token: '${userapikey}'' \
               --header 'Content-Type: application/json' \
               --data-binary  @<(cat <<EOF
@@ -769,7 +860,7 @@ send_kafka() {
     local httpcode sent=0 
     if [ "${SEND_KAFKA}" = "YES" ]
         then
-            httpcode=$(${curl} -X POST --write-out %{http_code} --silent --output /dev/null \
+            httpcode=$(docurl -X POST \
                 --data "{host_ip:\"${KAFKA_SENDER_IP}\",when:${when},name:\"${name}\",chart:\"${chart}\",family:\"${family}\",status:\"${status}\",old_status:\"${old_status}\",value:${value},old_value:${old_value},duration:${duration},non_clear_duration:${non_clear_duration},units:\"${units}\",info:\"${info}\"}" \
                 "${KAFKA_URL}")
 
@@ -853,7 +944,7 @@ send_twilio() {
         #https://www.twilio.com/packages/labs/code/bash/twilio-sms
         for user in ${recipients}
         do
-            httpcode=$(${curl} -X POST --write-out %{http_code} --silent --output /dev/null \
+            httpcode=$(docurl -X POST \
                 --data-urlencode "From=${twilionumber}" \
                 --data-urlencode "To=${user}" \
                 --data-urlencode "Body=${title} ${message}" \
@@ -907,10 +998,10 @@ send_hipchat() {
 
         for room in ${recipients}
         do
-            httpcode=$(${curl} -X POST --write-out %{http_code} --silent --output /dev/null \
+            httpcode=$(docurl -X POST \
                     -H "Content-type: application/json" \
                     -H "Authorization: Bearer ${authtoken}" \
-                    -d "{\"color\": \"${color}\", \"from\": \"${netdata}\", \"message_format\": \"${msg_format}\", \"message\": \"${message}\", \"notify\": \"${notify}\"}" \
+                    -d "{\"color\": \"${color}\", \"from\": \"${host}\", \"message_format\": \"${msg_format}\", \"message\": \"${message}\", \"notify\": \"${notify}\"}" \
                     "https://${HIPCHAT_SERVER}/v2/room/${room}/notification")
  
             if [ "${httpcode}" == "204" ]
@@ -939,7 +1030,7 @@ send_messagebird() {
         #https://developers.messagebird.com/docs/messaging
         for user in ${recipients}
         do
-            httpcode=$(${curl} -X POST --write-out %{http_code} --silent --output /dev/null \
+            httpcode=$(docurl -X POST \
                 --data-urlencode "originator=${messagebirdnumber}" \
                 --data-urlencode "recipients=${user}" \
                 --data-urlencode "body=${title} ${message}" \
@@ -982,7 +1073,7 @@ send_telegram() {
         for chatid in ${chatids}
         do
             # https://core.telegram.org/bots/api#sendmessage
-            httpcode=$(${curl} --write-out %{http_code} --silent --output /dev/null ${disableNotification} \
+            httpcode=$(docurl ${disableNotification} \
                 --data-urlencode "parse_mode=HTML" \
                 --data-urlencode "disable_web_page_preview=true" \
                 --data-urlencode "text=${emoji} ${message}" \
@@ -1047,7 +1138,7 @@ send_slack() {
                         }
                     ],
                     "thumb_url": "${image}",
-                    "footer": "<${goto_url}|${host}>",
+                    "footer": "by <${goto_url}|${this_host}>",
                     "ts": ${when}
                 }
             ]
@@ -1055,7 +1146,7 @@ send_slack() {
 EOF
         )"
 
-        httpcode=$(${curl} --write-out %{http_code} --silent --output /dev/null -X POST --data-urlencode "payload=${payload}" "${webhook}")
+        httpcode=$(docurl -X POST --data-urlencode "payload=${payload}" "${webhook}")
         if [ "${httpcode}" == "200" ]
         then
             info "sent slack notification for: ${host} ${chart}.${name} is ${status} to '${channel}'"
@@ -1110,7 +1201,7 @@ send_discord() {
                     ],
                     "thumb_url": "${image}",
                     "footer_icon": "${images_base_url}/images/seo-performance-128.png",
-                    "footer": "${host}",
+                    "footer": "${this_host}",
                     "ts": ${when}
                 }
             ]
@@ -1118,7 +1209,7 @@ send_discord() {
 EOF
         )"
 
-        httpcode=$(${curl} --write-out %{http_code} --silent --output /dev/null -X POST --data-urlencode "payload=${payload}" "${webhook}")
+        httpcode=$(docurl -X POST --data-urlencode "payload=${payload}" "${webhook}")
         if [ "${httpcode}" == "200" ]
         then
             info "sent discord notification for: ${host} ${chart}.${name} is ${status} to '${channel}'"
@@ -1363,7 +1454,9 @@ Content-Type: multipart/alternative; boundary="multipart-boundary"
 This is a MIME-encoded multipart message
 
 --multipart-boundary
-Content-Type: text/plain
+Content-Type: text/plain; encoding=${EMAIL_CHARSET}
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
 ${host} ${status_message}
 
@@ -1379,7 +1472,9 @@ Date    : ${date}
 Notification generated on ${this_host}
 
 --multipart-boundary
-Content-Type: text/html
+Content-Type: text/html; encoding=${EMAIL_CHARSET}
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; padding: 0;">

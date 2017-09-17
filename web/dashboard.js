@@ -51,7 +51,7 @@
 
 var NETDATA = window.NETDATA || {};
 
-(function(window, document) {
+(function(window, document, $, undefined) {
     // ------------------------------------------------------------------------
     // compatibility fixes
 
@@ -144,7 +144,7 @@ var NETDATA = window.NETDATA || {};
     NETDATA.themes = {
         white: {
             bootstrap_css: NETDATA.serverDefault + 'css/bootstrap-3.3.7.css',
-            dashboard_css: NETDATA.serverDefault + 'dashboard.css?v20170605-2',
+            dashboard_css: NETDATA.serverDefault + 'dashboard.css?v20170725-1',
             background: '#FFFFFF',
             foreground: '#000000',
             grid: '#F0F0F0',
@@ -161,7 +161,7 @@ var NETDATA = window.NETDATA || {};
         },
         slate: {
             bootstrap_css: NETDATA.serverDefault + 'css/bootstrap-slate-flat-3.3.7.css?v20161229-1',
-            dashboard_css: NETDATA.serverDefault + 'dashboard.slate.css?v20170605-2',
+            dashboard_css: NETDATA.serverDefault + 'dashboard.slate.css?v20170725-1',
             background: '#272b30',
             foreground: '#C8C8C8',
             grid: '#283236',
@@ -2554,11 +2554,14 @@ var NETDATA = window.NETDATA || {};
                 else
                     delta = Math.abs(max - min);
 
-                if (delta > 1000)     __legendFormatValueChartDecimals = 0;
-                else if (delta > 10)  __legendFormatValueChartDecimals = 1;
-                else if (delta > 1)   __legendFormatValueChartDecimals = 2;
-                else if (delta > 0.1) __legendFormatValueChartDecimals = 2;
-                else                  __legendFormatValueChartDecimals = 4;
+                if (delta > 1000)        __legendFormatValueChartDecimals = 0;
+                else if (delta > 10)     __legendFormatValueChartDecimals = 1;
+                else if (delta > 1)      __legendFormatValueChartDecimals = 2;
+                else if (delta > 0.1)    __legendFormatValueChartDecimals = 2;
+                else if (delta > 0.01)   __legendFormatValueChartDecimals = 4;
+                else if (delta > 0.001)  __legendFormatValueChartDecimals = 5;
+                else if (delta > 0.0001) __legendFormatValueChartDecimals = 6;
+                else                     __legendFormatValueChartDecimals = 7;
             }
 
             if(__legendFormatValueChartDecimals !== old) {
@@ -2585,11 +2588,14 @@ var NETDATA = window.NETDATA || {};
             else {
                 dmin = 0;
                 var abs = (value < 0) ? -value : value;
-                if (abs > 1000)     dmax = 0;
-                else if (abs > 10)  dmax = 1;
-                else if (abs > 1)   dmax = 2;
-                else if (abs > 0.1) dmax = 2;
-                else                dmax = 4;
+                if (abs > 1000)        dmax = 0;
+                else if (abs > 10)     dmax = 1;
+                else if (abs > 1)      dmax = 2;
+                else if (abs > 0.1)    dmax = 2;
+                else if (abs > 0.01)   dmax = 4;
+                else if (abs > 0.001)  dmax = 5;
+                else if (abs > 0.0001) dmax = 6;
+                else                   dmax = 7;
             }
 
             return NETDATA.fastNumberFormat.get(dmin, dmax).format(value);
@@ -3926,14 +3932,20 @@ var NETDATA = window.NETDATA || {};
 
             // script.onabort = onError;
             script.onerror = function() { NETDATA.error(101, NETDATA.jQuery); };
-            if(typeof callback === "function")
-                script.onload = callback;
+            if(typeof callback === "function") {
+                script.onload = function () {
+                    $ = jQuery;
+                    return callback();
+                };
+            }
 
             var s = document.getElementsByTagName('script')[0];
             s.parentNode.insertBefore(script, s);
         }
-        else if(typeof callback === "function")
+        else if(typeof callback === "function") {
+            $ = jQuery;
             return callback();
+        }
     };
 
     NETDATA._loadCSS = function(filename) {
@@ -5557,23 +5569,34 @@ var NETDATA = window.NETDATA || {};
         if(typeof min !== 'number') min = 0;
         if(typeof max !== 'number') max = 0;
 
+        if(min > max) {
+            var t = min;
+            min = max;
+            max = t;
+        }
+
         if(min > value) min = value;
         if(max < value) max = value;
 
-        // make sure it is zero based
-        // but only they have not been set by the user
         if(state.tmp.easyPieChartMin === null && min > 0) min = 0;
         if(state.tmp.easyPieChartMax === null && max < 0) max = 0;
 
-        var pcent = 0;
-        if(value >= 0) {
-            if(max !== 0)
-                pcent = Math.round(value * 100 / max);
+        var pcent;
+
+        if(min < 0 && max > 0) {
+            // it is both positive and negative
+            // zero at the top center of the chart
+            max = (-min > max)? -min : max;
+            pcent = Math.round(value * 100 / max);
+        }
+        else if(value >= 0 && min >= 0 && max >= 0) {
+            // clockwise
+            pcent = Math.round((value - min) * 100 / (max - min));
             if(pcent === 0) pcent = 0.1;
         }
         else {
-            if(min !== 0)
-                pcent = Math.round(-value * 100 / min);
+            // counter clockwise
+            pcent = Math.round((value - max) * 100 / (max - min));
             if(pcent === 0) pcent = -0.1;
         }
 
@@ -7069,4 +7092,4 @@ var NETDATA = window.NETDATA || {};
             }
         });
     });
-})(window, document);
+})(window, document, (typeof jQuery === 'function')?jQuery:undefined);
