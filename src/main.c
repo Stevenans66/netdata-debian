@@ -172,7 +172,7 @@ void kill_childs()
         // it is detached
         // pthread_join(w->thread, NULL);
 
-        w->obsolete = 1;
+        WEB_CLIENT_IS_OBSOLETE(w);
     }
 
     int i;
@@ -635,6 +635,7 @@ int main(int argc, char **argv) {
                         char* debug_flags_string = "debug_flags=";
 
                         if(strcmp(optarg, "unittest") == 0) {
+                            if(unit_test_buffer()) exit(1);
                             if(unit_test_str2ld()) exit(1);
                             //default_rrd_update_every = 1;
                             //default_rrd_memory_mode = RRD_MEMORY_MODE_RAM;
@@ -854,47 +855,10 @@ int main(int argc, char **argv) {
 
         // block signals while initializing threads.
         // this causes the threads to block signals.
-        sigset_t sigset;
-        sigfillset(&sigset);
-        if(pthread_sigmask(SIG_BLOCK, &sigset, NULL) == -1)
-            error("Could not block signals for threads");
+        signals_block();
 
-        // Catch signals which we want to use
-        struct sigaction sa;
-        sa.sa_flags = 0;
-
-        // ingore all signals while we run in a signal handler
-        sigfillset(&sa.sa_mask);
-
-        // INFO: If we add signals here we have to unblock them
-        // at popen.c when running a external plugin.
-
-        // Ignore SIGPIPE completely.
-        sa.sa_handler = SIG_IGN;
-        if(sigaction(SIGPIPE, &sa, NULL) == -1)
-            error("Failed to change signal handler for SIGPIPE");
-
-        sa.sa_handler = sig_handler_exit;
-        if(sigaction(SIGINT, &sa, NULL) == -1)
-            error("Failed to change signal handler for SIGINT");
-
-        sa.sa_handler = sig_handler_exit;
-        if(sigaction(SIGTERM, &sa, NULL) == -1)
-            error("Failed to change signal handler for SIGTERM");
-
-        sa.sa_handler = sig_handler_logrotate;
-        if(sigaction(SIGHUP, &sa, NULL) == -1)
-            error("Failed to change signal handler for SIGHUP");
-
-        // save database on SIGUSR1
-        sa.sa_handler = sig_handler_save;
-        if(sigaction(SIGUSR1, &sa, NULL) == -1)
-            error("Failed to change signal handler for SIGUSR1");
-
-        // reload health configuration on SIGUSR2
-        sa.sa_handler = sig_handler_reload_health;
-        if(sigaction(SIGUSR2, &sa, NULL) == -1)
-            error("Failed to change signal handler for SIGUSR2");
+        // setup the signals we want to use
+        signals_init();
 
 
         // --------------------------------------------------------------------
@@ -939,11 +903,6 @@ int main(int argc, char **argv) {
             user = config_get(CONFIG_SECTION_GLOBAL, "run as user", (passwd && passwd->pw_name)?passwd->pw_name:"");
         }
 
-        // IMPORTANT: these have to run once, while single threaded
-        web_files_uid(); // IMPORTANT: web_files_uid() before web_files_gid()
-        web_files_gid();
-
-
         // --------------------------------------------------------------------
         // create the listening sockets
 
@@ -973,6 +932,11 @@ int main(int argc, char **argv) {
         fatal("Cannot daemonize myself.");
 
     info("netdata started on pid %d.", getpid());
+
+    // IMPORTANT: these have to run once, while single threaded
+    // but after we have switched user
+    web_files_uid();
+    web_files_gid();
 
 
     // ------------------------------------------------------------------------
@@ -1025,21 +989,12 @@ int main(int argc, char **argv) {
 
 
     // ------------------------------------------------------------------------
-    // block signals while initializing threads.
-    sigset_t sigset;
-    sigfillset(&sigset);
+    // unblock signals
 
-    if(pthread_sigmask(SIG_UNBLOCK, &sigset, NULL) == -1) {
-        error("Could not unblock signals for threads");
-    }
+    signals_unblock();
 
-    // Handle flags set in the signal handler.
-    while(1) {
-        pause();
-        if(netdata_exit) {
-            debug(D_EXIT, "Exit main loop of netdata.");
-            netdata_cleanup_and_exit(0);
-            exit(0);
-        }
-    }
+    // ------------------------------------------------------------------------
+    // Handle signals
+
+    signals_handle();
 }

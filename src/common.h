@@ -80,6 +80,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
@@ -215,6 +216,7 @@
 #include "web_client.h"
 #include "web_server.h"
 #include "registry.h"
+#include "signals.h"
 #include "daemon.h"
 #include "main.h"
 #include "unit_test.h"
@@ -308,5 +310,7 @@ extern const char *program_version;
 #define RUSAGE_THREAD RUSAGE_CHILDREN
 #endif
 #endif
+
+#define BITS_IN_A_KILOBIT 1000
 
 #endif /* NETDATA_COMMON_H */

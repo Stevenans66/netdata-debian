@@ -138,7 +138,7 @@ run chown -R ${NETDATA_USER}:${NETDATA_GROUP} /opt/netdata
 # -----------------------------------------------------------------------------
 progress "fix plugin permissions"
 
-for x in apps.plugin freeipmi.plugin
+for x in apps.plugin freeipmi.plugin cgroup-network
 do
     f="usr/libexec/netdata/plugins.d/${x}"
 
@@ -149,6 +149,12 @@ do
     fi
 done
 
+# fix the fping binary
+if [ -f bin/fping ]
+then
+    run chown root:${NETDATA_GROUP} bin/fping
+    run chmod 4750 bin/fping
+fi
 
 # -----------------------------------------------------------------------------
 progress "starting netdata"

@@ -291,6 +291,12 @@ netdataDashboard.menu = {
         info: undefined
     },
 
+    'stiebeleltron': {
+        title: 'Stiebel Eltron',
+        icon: '<i class="fa fa-thermometer-full" aria-hidden="true"></i>',
+        info: undefined
+    },
+
     'snmp': {
         title: 'SNMP',
         icon: '<i class="fa fa-random" aria-hidden="true"></i>',
@@ -301,6 +307,11 @@ netdataDashboard.menu = {
         title: 'Go - expvars',
         icon: '<i class="fa fa-eye" aria-hidden="true"></i>',
         info: 'Statistics about running Go applications exposed by the <a href="https://golang.org/pkg/expvar/" target="_blank">expvar package</a>.'
+    },
+
+    'chrony': {
+        icon: '<i class="fa fa-clock-o" aria-hidden="true"></i>',
+        info: 'chronyd parameters about the system’s clock performance.'
     }
 };
 
@@ -470,7 +481,7 @@ netdataDashboard.context = {
 
     'system.entropy': {
         colors: '#CC22AA',
-        info: '<a href="https://en.wikipedia.org/wiki/Entropy_(computing)" target="_blank">Entropy</a>, is like a pool of random numbers (<a href="https://en.wikipedia.org/wiki//dev/random" target="_blank">/dev/random</a>) that are mainly used in cryptography. It is advised that the pool remains always <a href="https://blog.cloudflare.com/ensuring-randomness-with-linuxs-random-number-generator/" target="_blank">above 200</a>. If the pool of entropy gets empty, you risk your security to be predictable and you should install a user-space random numbers generating daemon, like <code>haveged</code> or <code>rng-tools</code> (i.e. <b>rngd</b>), to keep the pool in healthy levels.'
+        info: '<a href="https://en.wikipedia.org/wiki/Entropy_(computing)" target="_blank">Entropy</a>, is a pool of random numbers (<a href="https://en.wikipedia.org/wiki//dev/random" target="_blank">/dev/random</a>) that is mainly used in cryptography. If the pool of entropy gets empty, processes requiring random numbers may run a lot slower (it depends on the interface each program uses), waiting for the pool to be replenished. Ideally a system with high entropy demands should have a hardware device for that purpose (TPM is one such device). There are also several software-only options you may install, like <code>haveged</code>, although these are generally useful only in servers.'
     },
 
     'system.forks': {
@@ -589,7 +600,7 @@ netdataDashboard.context = {
     },
 
     'mem.kernel': {
-        info: 'The total ammount of memory being used by the kernel. <b>Slab</b> is the amount of memory used by the kernel to cache data structures for its own use. <b>KernelStack</b> is the amount of memory allocated for each task done by the kernel. <b>PageTables</b> is the amount of memory decicated to the lowest level of page tables (A page table is used to turn a virtual address into a physical memory address). <b>VmallocUsed</b> is the amount of memory being used as virtual address space.'
+        info: 'The total amount of memory being used by the kernel. <b>Slab</b> is the amount of memory used by the kernel to cache data structures for its own use. <b>KernelStack</b> is the amount of memory allocated for each task done by the kernel. <b>PageTables</b> is the amount of memory decicated to the lowest level of page tables (A page table is used to turn a virtual address into a physical memory address). <b>VmallocUsed</b> is the amount of memory being used as virtual address space.'
     },
 
     'mem.slab': {
@@ -703,9 +714,53 @@ netdataDashboard.context = {
     // NETWORK INTERFACES
 
     'net.net': {
+        mainheads: [
+            function(os, id) {
+                void(os);
+                if(id.match(/^cgroup_.*/)) {
+                    var iface;
+                    try {
+                        iface = ' ' + id.substring(id.lastIndexOf('.net_') + 5, id.length);
+                    }
+                    catch (e) {
+                        iface = '';
+                    }
+                    return netdataDashboard.gaugeChart('Received' + iface, '12%', 'received');
+                }
+                else
+                    return '';
+            },
+            function(os, id) {
+                void(os);
+                if(id.match(/^cgroup_.*/)) {
+                    var iface;
+                    try {
+                        iface = ' ' + id.substring(id.lastIndexOf('.net_') + 5, id.length);
+                    }
+                    catch (e) {
+                        iface = '';
+                    }
+                    return netdataDashboard.gaugeChart('Sent' + iface, '12%', 'sent');
+                }
+                else
+                    return '';
+            }
+        ],
         heads: [
-            netdataDashboard.gaugeChart('Received', '12%', 'received'),
-            netdataDashboard.gaugeChart('Sent', '12%', 'sent')
+            function(os, id) {
+                void(os);
+                if(!id.match(/^cgroup_.*/))
+                    return netdataDashboard.gaugeChart('Received', '12%', 'received');
+                else
+                    return '';
+            },
+            function(os, id) {
+                void(os);
+                if(!id.match(/^cgroup_.*/))
+                    return netdataDashboard.gaugeChart('Sent', '12%', 'sent');
+                else
+                    return '';
+            }
         ]
     },
 
@@ -1018,6 +1073,83 @@ netdataDashboard.context = {
 
     'fping.packets': {
         height: 0.5
+    },
+
+
+    // ------------------------------------------------------------------------
+    // containers
+
+    'cgroup.cpu': {
+        mainheads: [
+            function(os, id) {
+                void(os);
+                return  '<div data-netdata="' + id + '"'
+                    + ' data-chart-library="gauge"'
+                    + ' data-title="CPU"'
+                    + ' data-units="%"'
+                    + ' data-gauge-adjust="width"'
+                    + ' data-width="12%"'
+                    + ' data-before="0"'
+                    + ' data-after="-CHART_DURATION"'
+                    + ' data-points="CHART_DURATION"'
+                    + ' data-colors="' + NETDATA.colors[4] + '"'
+                    + ' role="application"></div>';
+            }
+        ]
+    },
+
+    'cgroup.mem_usage': {
+        mainheads: [
+            function(os, id) {
+                void(os);
+                return  '<div data-netdata="' + id + '"'
+                    + ' data-chart-library="gauge"'
+                    + ' data-title="Memory"'
+                    + ' data-units="MB"'
+                    + ' data-gauge-adjust="width"'
+                    + ' data-width="12%"'
+                    + ' data-before="0"'
+                    + ' data-after="-CHART_DURATION"'
+                    + ' data-points="CHART_DURATION"'
+                    + ' data-colors="' + NETDATA.colors[1] + '"'
+                    + ' role="application"></div>';
+            }
+        ]
+    },
+
+    'cgroup.throttle_io': {
+        mainheads: [
+            function(os, id) {
+                void(os);
+                return  '<div data-netdata="' + id + '"'
+                    + ' data-dimensions="read"'
+                    + ' data-chart-library="gauge"'
+                    + ' data-title="Read Disk I/O"'
+                    + ' data-units="KB/s"'
+                    + ' data-gauge-adjust="width"'
+                    + ' data-width="12%"'
+                    + ' data-before="0"'
+                    + ' data-after="-CHART_DURATION"'
+                    + ' data-points="CHART_DURATION"'
+                    + ' data-colors="' + NETDATA.colors[2] + '"'
+                    + ' role="application"></div>';
+            },
+            function(os, id) {
+                void(os);
+                return  '<div data-netdata="' + id + '"'
+                    + ' data-dimensions="write"'
+                    + ' data-chart-library="gauge"'
+                    + ' data-title="Write Disk I/O"'
+                    + ' data-units="KB/s"'
+                    + ' data-gauge-adjust="width"'
+                    + ' data-width="12%"'
+                    + ' data-before="0"'
+                    + ' data-after="-CHART_DURATION"'
+                    + ' data-points="CHART_DURATION"'
+                    + ' data-colors="' + NETDATA.colors[3] + '"'
+                    + ' role="application"></div>';
+            }
+        ]
     },
 
     // ------------------------------------------------------------------------
@@ -1353,5 +1485,54 @@ netdataDashboard.context = {
         commonMin: true,
         commonMax: true,
         valueRange: "[0, null]"
+    },
+
+    // ------------------------------------------------------------------------
+    // Stiebel Eltron Heat pump installation
+
+    'stiebeleltron.system.roomtemp': {
+        commonMin: true,
+        commonMax: true,
+        valueRange: "[0, null]"
+    },
+
+    // ------------------------------------------------------------------------
+
+    'chrony.system': {
+        info: 'In normal operation, chronyd never steps the system clock, because any jump in the timescale can have adverse consequences for certain application programs. Instead, any error in the system clock is corrected by slightly speeding up or slowing down the system clock until the error has been removed, and then returning to the system clock’s normal speed. A consequence of this is that there will be a period when the system clock (as read by other programs using the <code>gettimeofday()</code> system call, or by the <code>date</code> command in the shell) will be different from chronyd\'s estimate of the current true time (which it reports to NTP clients when it is operating in server mode). The value reported on this line is the difference due to this effect.',
+        colors: NETDATA.colors[3]
+    },
+
+    'chrony.offsets': {
+        info: '<code>last offset</code> is the estimated local offset on the last clock update. <code>RMS offset</code> is a long-term average of the offset value.',
+        height: 0.5
+    },
+
+    'chrony.stratum': {
+        info: 'The <code>stratum</code> indicates how many hops away from a computer with an attached reference clock we are. Such a computer is a stratum-1 computer.',
+        decimalDigits: 0,
+        height: 0.5
+    },
+
+    'chrony.root': {
+        info: 'Estimated delays against the root time server this system is synchronized with. <code>delay</code> is the total of the network path delays to the stratum-1 computer from which the computer is ultimately synchronised. <code>dispersion</code> is the total dispersion accumulated through all the computers back to the stratum-1 computer from which the computer is ultimately synchronised. Dispersion is due to system clock resolution, statistical measurement variations etc.'
+    },
+
+    'chrony.frequency': {
+        info: 'The <code>frequency</code> is the rate by which the system\'s clock would be would be wrong if chronyd was not correcting it. It is expressed in ppm (parts per million). For example, a value of 1ppm would mean that when the system\'s clock thinks it has advanced 1 second, it has actually advanced by 1.000001 seconds relative to true time.',
+        colors: NETDATA.colors[0]
+    },
+
+    'chrony.residualfreq': {
+        info: 'This shows the <code>residual frequency</code> for the currently selected reference source. It reflects any difference between what the measurements from the reference source indicate the frequency should be and the frequency currently being used.' +
+        'The reason this is not always zero is that a smoothing procedure is applied to the frequency. Each time a measurement from the reference source is obtained and a new residual frequency computed, the estimated accuracy of this residual is compared with the estimated accuracy (see <code>skew</code>) of the existing frequency value. A weighted average is computed for the new frequency, with weights depending on these accuracies. If the measurements from the reference source follow a consistent trend, the residual will be driven to zero over time.',
+        height: 0.5,
+        colors: NETDATA.colors[3]
+    },
+
+    'chrony.skew': {
+        info: 'The estimated error bound on the frequency.',
+        height: 0.5,
+        colors: NETDATA.colors[5]
     }
 };

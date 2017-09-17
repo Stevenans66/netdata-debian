@@ -81,7 +81,7 @@ host_triplet = @host@
 subdir = node.d
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(dist_node_DATA) $(dist_nodemodules_DATA) \
-	$(dist_nodemodulesber_DATA)
+	$(dist_nodemoduleslibber_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
 	$(top_srcdir)/m4/ax_c__generic.m4 $(top_srcdir)/m4/ax_c_lto.m4 \
@@ -144,9 +144,9 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(nodedir)" "$(DESTDIR)$(nodemodulesdir)" \
-	"$(DESTDIR)$(nodemodulesberdir)"
+	"$(DESTDIR)$(nodemoduleslibberdir)"
 DATA = $(dist_node_DATA) $(dist_nodemodules_DATA) \
-	$(dist_nodemodulesber_DATA)
+	$(dist_nodemoduleslibber_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
@@ -300,6 +300,7 @@ dist_node_DATA = \
 	fronius.node.js \
 	sma_webbox.node.js \
 	snmp.node.js \
+	stiebeleltron.node.js \
 	$(NULL)
 
 nodemodulesdir = $(nodedir)/node_modules
@@ -308,16 +309,16 @@ dist_nodemodules_DATA = \
 	node_modules/extend.js \
 	node_modules/pixl-xml.js \
 	node_modules/net-snmp.js \
-	node_modules/asn1.js \
+	node_modules/asn1-ber.js \
 	$(NULL)
 
-nodemodulesberdir = $(nodedir)/node_modules/ber
-dist_nodemodulesber_DATA = \
-	node_modules/ber/index.js \
-	node_modules/ber/errors.js \
-	node_modules/ber/reader.js \
-	node_modules/ber/types.js \
-	node_modules/ber/writer.js \
+nodemoduleslibberdir = $(nodedir)/node_modules/lib/ber
+dist_nodemoduleslibber_DATA = \
+	node_modules/lib/ber/index.js \
+	node_modules/lib/ber/errors.js \
+	node_modules/lib/ber/reader.js \
+	node_modules/lib/ber/types.js \
+	node_modules/lib/ber/writer.js \
 	$(NULL)
 
 all: all-am
@@ -395,27 +396,27 @@ uninstall-dist_nodemodulesDATA:
 	@list='$(dist_nodemodules_DATA)'; test -n "$(nodemodulesdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(nodemodulesdir)'; $(am__uninstall_files_from_dir)
-install-dist_nodemodulesberDATA: $(dist_nodemodulesber_DATA)
+install-dist_nodemoduleslibberDATA: $(dist_nodemoduleslibber_DATA)
 	@$(NORMAL_INSTALL)
-	@list='$(dist_nodemodulesber_DATA)'; test -n "$(nodemodulesberdir)" || list=; \
+	@list='$(dist_nodemoduleslibber_DATA)'; test -n "$(nodemoduleslibberdir)" || list=; \
 	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(nodemodulesberdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(nodemodulesberdir)" || exit 1; \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(nodemoduleslibberdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(nodemoduleslibberdir)" || exit 1; \
 	fi; \
 	for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  echo "$$d$$p"; \
 	done | $(am__base_list) | \
 	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(nodemodulesberdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(nodemodulesberdir)" || exit $$?; \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(nodemoduleslibberdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(nodemoduleslibberdir)" || exit $$?; \
 	done
 
-uninstall-dist_nodemodulesberDATA:
+uninstall-dist_nodemoduleslibberDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(dist_nodemodulesber_DATA)'; test -n "$(nodemodulesberdir)" || list=; \
+	@list='$(dist_nodemoduleslibber_DATA)'; test -n "$(nodemoduleslibberdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(nodemodulesberdir)'; $(am__uninstall_files_from_dir)
+	dir='$(DESTDIR)$(nodemoduleslibberdir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -457,7 +458,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(nodedir)" "$(DESTDIR)$(nodemodulesdir)" "$(DESTDIR)$(nodemodulesberdir)"; do \
+	for dir in "$(DESTDIR)$(nodedir)" "$(DESTDIR)$(nodemodulesdir)" "$(DESTDIR)$(nodemoduleslibberdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -512,7 +513,7 @@ info: info-am
 info-am:
 
 install-data-am: install-dist_nodeDATA install-dist_nodemodulesDATA \
-	install-dist_nodemodulesberDATA
+	install-dist_nodemoduleslibberDATA
 
 install-dvi: install-dvi-am
 
@@ -557,7 +558,7 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-dist_nodeDATA uninstall-dist_nodemodulesDATA \
-	uninstall-dist_nodemodulesberDATA
+	uninstall-dist_nodemoduleslibberDATA
 
 .MAKE: install-am install-strip
 
@@ -565,16 +566,16 @@ uninstall-am: uninstall-dist_nodeDATA uninstall-dist_nodemodulesDATA \
 	ctags-am distclean distclean-generic distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dist_nodeDATA \
-	install-dist_nodemodulesDATA install-dist_nodemodulesberDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags-am \
-	uninstall uninstall-am uninstall-dist_nodeDATA \
-	uninstall-dist_nodemodulesDATA \
-	uninstall-dist_nodemodulesberDATA
+	install-dist_nodemodulesDATA \
+	install-dist_nodemoduleslibberDATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
+	pdf-am ps ps-am tags-am uninstall uninstall-am \
+	uninstall-dist_nodeDATA uninstall-dist_nodemodulesDATA \
+	uninstall-dist_nodemoduleslibberDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

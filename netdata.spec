@@ -77,11 +77,11 @@ Recommends:	python2-psycopg2 \
 
 Summary:	Real-time performance monitoring, done right
 Name:		netdata
-Version:	1.7.0
+Version:	1.8.0
 Release:	1%{?dist}
 License:	GPLv3+
 Group:		Applications/System
-Source0:	https://github.com/firehol/%{name}/releases/download/v1.7.0/%{name}-1.7.0.tar.xz
+Source0:	https://github.com/firehol/%{name}/releases/download/v1.8.0/%{name}-1.8.0.tar.xz
 URL:		http://my-netdata.io
 BuildRequires:	pkgconfig
 BuildRequires:	xz
@@ -117,7 +117,7 @@ so that you can get insights of what is happening now and what just
 happened, on your systems and applications.
 
 %prep
-%setup -q -n netdata-1.7.0
+%setup -q -n netdata-1.8.0
 
 %build
 %configure \
@@ -207,6 +207,9 @@ rm -rf "${RPM_BUILD_ROOT}"
 %{_datadir}/%{name}/web
 
 %changelog
+* Mon Sep 17 2017 Costa Tsaousis <costa@tsaousis.gr> - 1.8.0-1
+  This is mainly a bugfix release.
+  Please check full changelog at github.
 * Mon Jul 16 2017 Costa Tsaousis <costa@tsaousis.gr> - 1.7.0-1
 - netdata is now a fully featured statsd server
 - new installation options

@@ -31,8 +31,8 @@ int check_storage_number(calculated_number n, int debug) {
             CALCULATED_NUMBER_FORMAT " re-parsed from printed (diff " CALCULATED_NUMBER_FORMAT ", " CALCULATED_NUMBER_FORMAT "%%)\n\n",
             n,
             d, s, ddiff, dcdiff,
-            buffer,
-            len, p, pdiff, pcdiff
+            buffer, len,
+            p, pdiff, pcdiff
         );
         if(len != strlen(buffer)) fprintf(stderr, "ERROR: printed number %s is reported to have length %zu but it has %zu\n", buffer, len, strlen(buffer));
         if(dcdiff > ACCURACY_LOSS) fprintf(stderr, "WARNING: packing number " CALCULATED_NUMBER_FORMAT " has accuracy loss %0.7Lf %%\n", n, dcdiff);
@@ -43,6 +43,19 @@ int check_storage_number(calculated_number n, int debug) {
     if(dcdiff > ACCURACY_LOSS) return 3;
     if(pcdiff > ACCURACY_LOSS) return 4;
     return 0;
+}
+
+calculated_number storage_number_min(calculated_number n) {
+    calculated_number r = 1, last;
+
+    do {
+        last = n;
+        n /= 2.0;
+        storage_number t = pack_storage_number(n, SN_EXISTS);
+        r = unpack_storage_number(t);
+    } while(r != 0.0 && r != last);
+
+    return last;
 }
 
 void benchmark_storage_number(int loop, int multiplier) {
@@ -73,10 +86,10 @@ void benchmark_storage_number(int loop, int multiplier) {
     }
 
     fprintf(stderr, "\nNETDATA FLOATING POINT\n");
-    fprintf(stderr, "MIN POSITIVE VALUE " CALCULATED_NUMBER_FORMAT "\n", (calculated_number)STORAGE_NUMBER_POSITIVE_MIN);
+    fprintf(stderr, "MIN POSITIVE VALUE " CALCULATED_NUMBER_FORMAT "\n", storage_number_min(1));
     fprintf(stderr, "MAX POSITIVE VALUE " CALCULATED_NUMBER_FORMAT "\n", (calculated_number)STORAGE_NUMBER_POSITIVE_MAX);
     fprintf(stderr, "MIN NEGATIVE VALUE " CALCULATED_NUMBER_FORMAT "\n", (calculated_number)STORAGE_NUMBER_NEGATIVE_MIN);
-    fprintf(stderr, "MAX NEGATIVE VALUE " CALCULATED_NUMBER_FORMAT "\n", (calculated_number)STORAGE_NUMBER_NEGATIVE_MAX);
+    fprintf(stderr, "MAX NEGATIVE VALUE " CALCULATED_NUMBER_FORMAT "\n", -storage_number_min(1));
     fprintf(stderr, "Maximum accuracy loss: " CALCULATED_NUMBER_FORMAT "%%\n\n\n", (calculated_number)ACCURACY_LOSS);
 
     // ------------------------------------------------------------------------
@@ -231,7 +244,7 @@ int unit_test_storage()
 
 int unit_test_str2ld() {
     char *values[] = {
-            "1.234567", "-35.6", "0.00123", "23842384234234.2", ".1", "1.2e-10",
+            "1.2345678", "-35.6", "0.00123", "23842384234234.2", ".1", "1.2e-10",
             "hello", "1wrong", "nan", "inf", NULL
     };
 
@@ -266,6 +279,36 @@ int unit_test_str2ld() {
         fprintf(stderr, "str2ld() parsed value '%s' exactly the same way with strtold(), returned %Lf vs %Lf\n", values[i], mine, sys);
     }
 
+    return 0;
+}
+
+int unit_test_buffer() {
+    BUFFER *wb = buffer_create(1);
+    char string[2048 + 1];
+    char final[9000 + 1];
+    int i;
+
+    for(i = 0; i < 2048; i++)
+        string[i] = (char)((i % 24) + 'a');
+    string[2048] = '\0';
+
+    const char *fmt = "string1: %s\nstring2: %s\nstring3: %s\nstring4: %s";
+    buffer_sprintf(wb, fmt, string, string, string, string);
+    snprintfz(final, 9000, fmt, string, string, string, string);
+
+    const char *s = buffer_tostring(wb);
+
+    if(buffer_strlen(wb) != strlen(final) || strcmp(s, final) != 0) {
+        fprintf(stderr, "\nbuffer_sprintf() is faulty.\n");
+        fprintf(stderr, "\nstring  : %s (length %zu)\n", string, strlen(string));
+        fprintf(stderr, "\nbuffer  : %s (length %zu)\n", s, buffer_strlen(wb));
+        fprintf(stderr, "\nexpected: %s (length %zu)\n", final, strlen(final));
+        buffer_free(wb);
+        return -1;
+    }
+
+    fprintf(stderr, "buffer_sprintf() works as expected.\n");
+    buffer_free(wb);
     return 0;
 }
 
@@ -994,7 +1037,7 @@ int run_test(struct test *test)
     for(c = 0 ; c < max ; c++) {
         calculated_number v = unpack_storage_number(rd->values[c]);
         calculated_number n = test->results[c];
-        int same = (roundl(v * 10000000.0) == roundl(n * 10000000.0))?1:0;
+        int same = (calculated_number_round(v * 10000000.0) == calculated_number_round(n * 10000000.0))?1:0;
         fprintf(stderr, "    %s/%s: checking position %lu (at %lu secs), expecting value " CALCULATED_NUMBER_FORMAT ", found " CALCULATED_NUMBER_FORMAT ", %s\n",
             test->name, rd->name, c+1,
             (rrdset_first_entry_t(st) + c * st->update_every) - time_start,
@@ -1005,7 +1048,7 @@ int run_test(struct test *test)
         if(rd2) {
             v = unpack_storage_number(rd2->values[c]);
             n = test->results2[c];
-            same = (roundl(v * 10000000.0) == roundl(n * 10000000.0))?1:0;
+            same = (calculated_number_round(v * 10000000.0) == calculated_number_round(n * 10000000.0))?1:0;
             fprintf(stderr, "    %s/%s: checking position %lu (at %lu secs), expecting value " CALCULATED_NUMBER_FORMAT ", found " CALCULATED_NUMBER_FORMAT ", %s\n",
                 test->name, rd2->name, c+1,
                 (rrdset_first_entry_t(st) + c * st->update_every) - time_start,
@@ -1019,8 +1062,7 @@ int run_test(struct test *test)
 
 static int test_variable_renames(void) {
     fprintf(stderr, "Creating chart\n");
-    RRDSET *st = rrdset_create_localhost("chart", "ID", NULL, "family", "context", "Unit Testing", "a value", 1, 1
-                                         , RRDSET_TYPE_LINE);
+    RRDSET *st = rrdset_create_localhost("chart", "ID", NULL, "family", "context", "Unit Testing", "a value", 1, 1, RRDSET_TYPE_LINE);
     fprintf(stderr, "Created chart with id '%s', name '%s'\n", st->id, st->name);
 
     fprintf(stderr, "Creating dimension DIM1\n");
