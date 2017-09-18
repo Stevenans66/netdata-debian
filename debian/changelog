@@ -1,6 +1,7 @@
 netdata (1.8.0+dfsg-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Maintscript update to hopefully rename old old config files (Closes: #869200)
 
  -- Lennart Weller <lhw@ring0.de>  Mon, 18 Sep 2017 00:19:09 +0200
 
