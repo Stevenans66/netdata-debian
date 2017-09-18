@@ -22,11 +22,12 @@ Depends: adduser,
          lsb-base (>= 3.1-23.2),
          netdata-data (=${source:Version}),
          python,
+         python-urllib3,
          python-yaml,
          ${misc:Depends},
          ${misc:Pre-Depends},
          ${shlibs:Depends}
-Recommends: nodejs, fping, curl
+Recommends: curl, fping, nodejs
 Description: real-time charts for system monitoring
  Netdata is a daemon that collects data in realtime (per second)
  and presents a web site to view and analyze them. The presentation

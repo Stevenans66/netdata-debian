@@ -1,5 +1,5 @@
 From: Lennart Weller <lhw@ring0.de>
-Date: Tue, 24 Jan 2017 16:48:19 +0100
+Date: Mon, 18 Sep 2017 13:09:35 +0200
 Subject: remove file serve restrictions for symlinks
 
 ---
@@ -7,10 +7,10 @@ Subject: remove file serve restrictions for symlinks
  1 file changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/src/web_client.c b/src/web_client.c
-index 7da0807..4e1e8fb 100644
+index 6ec3e11..6d30205 100644
 --- a/src/web_client.c
 +++ b/src/web_client.c
-@@ -294,8 +294,8 @@ int mysendfile(struct web_client *w, char *filename) {
+@@ -303,8 +303,8 @@ int mysendfile(struct web_client *w, char *filename) {
      snprintfz(webfilename, FILENAME_MAX, "%s/%s", netdata_configured_web_dir, filename);
  
      // check if the file exists
@@ -21,7 +21,7 @@ index 7da0807..4e1e8fb 100644
          debug(D_WEB_CLIENT_ACCESS, "%llu: File '%s' is not found.", w->id, webfilename);
          w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "File does not exist, or is not accessible: ");
-@@ -304,8 +304,8 @@ int mysendfile(struct web_client *w, char *filename) {
+@@ -313,8 +313,8 @@ int mysendfile(struct web_client *w, char *filename) {
      }
  
      // check if the file is owned by expected user
@@ -32,7 +32,7 @@ index 7da0807..4e1e8fb 100644
          w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
          buffer_strcat_htmlescape(w->response.data, webfilename);
-@@ -313,20 +313,20 @@ int mysendfile(struct web_client *w, char *filename) {
+@@ -322,20 +322,20 @@ int mysendfile(struct web_client *w, char *filename) {
      }
  
      // check if the file is owned by expected group
@@ -57,7 +57,7 @@ index 7da0807..4e1e8fb 100644
          error("%llu: File '%s' is not a regular file. Access Denied.", w->id, webfilename);
          w->response.data->contenttype = CT_TEXT_HTML;
          buffer_strcat(w->response.data, "Access to file is not permitted: ");
-@@ -380,17 +380,17 @@ int mysendfile(struct web_client *w, char *filename) {
+@@ -389,17 +389,17 @@ int mysendfile(struct web_client *w, char *filename) {
      else if(strstr(filename, ".icns") != NULL)  w->response.data->contenttype = CT_IMAGE_ICNS;
      else w->response.data->contenttype = CT_APPLICATION_OCTET_STREAM;
  
@@ -65,8 +65,8 @@ index 7da0807..4e1e8fb 100644
 +    debug(D_WEB_CLIENT_ACCESS, "%llu: Sending file '%s' (%ld bytes, ifd %d, ofd %d).", w->id, webfilename, wstat.st_size, w->ifd, w->ofd);
  
      w->mode = WEB_CLIENT_MODE_FILECOPY;
-     w->wait_receive = 1;
-     w->wait_send = 0;
+     web_client_enable_wait_receive(w);
+     web_client_disable_wait_send(w);
      buffer_flush(w->response.data);
 -    w->response.rlen = stat.st_size;
 +    w->response.rlen = wstat.st_size;

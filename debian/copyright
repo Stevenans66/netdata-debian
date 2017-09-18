@@ -30,8 +30,7 @@ Copyright: 2004 Free Software Foundation Inc.
 License: LGPL-3+
 
 Files:
- node.d/node_modules/ber/*
- node.d/node_modules/asn1.js
+ node.d/node_modules/lib/ber/*
 Copyright: 2011 Mark Cavage <mcavage@gmail.com>
 License: Expat
 

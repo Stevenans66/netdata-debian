@@ -1,5 +1,5 @@
 From: Federico Ceratto <federico.ceratto@gmail.com>
-Date: Tue, 24 Jan 2017 16:48:45 +0100
+Date: Mon, 18 Sep 2017 13:10:09 +0200
 Subject: hide update button
 
 ---
@@ -7,10 +7,10 @@ Subject: hide update button
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/web/index.html b/web/index.html
-index be944e3..7bbae2f 100644
+index cd8239d..57d6a75 100644
 --- a/web/index.html
 +++ b/web/index.html
-@@ -3025,7 +3025,7 @@
+@@ -3033,7 +3033,7 @@
                  <ul class="nav navbar-nav">
                      <li><a href="#" class="btn" data-toggle="modal" data-target="#alarmsModal" title="alarms"><i class="fa fa-bell"></i>&nbsp;<span class="hidden-sm">Alarms&nbsp;</span><span id="alarms_count_badge" class="badge"></span></a></li>
                      <li><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal" title="dashboard settings"><i class="fa fa-sliders"></i>&nbsp;<span class="hidden-sm">Settings</span></a></li>
