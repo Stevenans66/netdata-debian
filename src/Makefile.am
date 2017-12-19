@@ -137,7 +137,8 @@ netdata_SOURCES = \
 	sys_devices_system_node.c \
 	unit_test.c \
 	unit_test.h \
-	url.c url.h \
+	url.c \
+	url.h \
 	web_api_old.c \
 	web_api_old.h \
 	web_api_v1.c \
@@ -176,7 +177,8 @@ netdata_SOURCES += \
 	$(NULL)
 else
 netdata_SOURCES += \
-	ipc.c ipc.h \
+	ipc.c \
+	ipc.h \
 	plugin_proc.c \
 	plugin_proc.h \
 	plugin_proc_diskspace.c \
@@ -193,6 +195,8 @@ netdata_SOURCES += \
 	proc_net_rpc_nfsd.c \
 	proc_net_snmp.c \
 	proc_net_snmp6.c \
+	proc_net_sockstat.c \
+	proc_net_sockstat6.c \
 	proc_net_softnet_stat.c \
 	proc_net_stat_conntrack.c \
 	proc_net_stat_synproxy.c \
@@ -258,6 +262,8 @@ cgroup_network_SOURCES = \
     inlined.h \
     log.c log.h \
 	procfile.c procfile.h \
+	popen.c popen.h \
+	signals.c signals.h \
     $(NULL)
 
 cgroup_network_LDADD = \

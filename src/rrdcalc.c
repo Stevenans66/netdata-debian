@@ -4,7 +4,7 @@
 // ----------------------------------------------------------------------------
 // RRDCALC management
 
-inline const char *rrdcalc_status2string(int status) {
+inline const char *rrdcalc_status2string(RRDCALC_STATUS status) {
     switch(status) {
         case RRDCALC_STATUS_REMOVED:
             return "REMOVED";
@@ -62,15 +62,15 @@ static void rrdsetcalc_link(RRDSET *st, RRDCALC *rc) {
         st->red = rc->red;
     }
 
-    rc->local  = rrdvar_create_and_index("local",  &st->variables_root_index, rc->name, RRDVAR_TYPE_CALCULATED, &rc->value);
-    rc->family = rrdvar_create_and_index("family", &st->rrdfamily->variables_root_index, rc->name, RRDVAR_TYPE_CALCULATED, &rc->value);
+    rc->local  = rrdvar_create_and_index("local",  &st->rrdvar_root_index, rc->name, RRDVAR_TYPE_CALCULATED, &rc->value);
+    rc->family = rrdvar_create_and_index("family", &st->rrdfamily->rrdvar_root_index, rc->name, RRDVAR_TYPE_CALCULATED, &rc->value);
 
     char fullname[RRDVAR_MAX_LENGTH + 1];
     snprintfz(fullname, RRDVAR_MAX_LENGTH, "%s.%s", st->id, rc->name);
-    rc->hostid   = rrdvar_create_and_index("host", &st->rrdhost->variables_root_index, fullname, RRDVAR_TYPE_CALCULATED, &rc->value);
+    rc->hostid   = rrdvar_create_and_index("host", &st->rrdhost->rrdvar_root_index, fullname, RRDVAR_TYPE_CALCULATED, &rc->value);
 
     snprintfz(fullname, RRDVAR_MAX_LENGTH, "%s.%s", st->name, rc->name);
-    rc->hostname = rrdvar_create_and_index("host", &st->rrdhost->variables_root_index, fullname, RRDVAR_TYPE_CALCULATED, &rc->value);
+    rc->hostname = rrdvar_create_and_index("host", &st->rrdhost->rrdvar_root_index, fullname, RRDVAR_TYPE_CALCULATED, &rc->value);
 
     if(!rc->units) rc->units = strdupz(st->units);
 
@@ -173,16 +173,16 @@ inline void rrdsetcalc_unlink(RRDCALC *rc) {
 
     rc->rrdset_prev = rc->rrdset_next = NULL;
 
-    rrdvar_free(st->rrdhost, &st->variables_root_index, rc->local);
+    rrdvar_free(st->rrdhost, &st->rrdvar_root_index, rc->local);
     rc->local = NULL;
 
-    rrdvar_free(st->rrdhost, &st->rrdfamily->variables_root_index, rc->family);
+    rrdvar_free(st->rrdhost, &st->rrdfamily->rrdvar_root_index, rc->family);
     rc->family = NULL;
 
-    rrdvar_free(st->rrdhost, &st->rrdhost->variables_root_index, rc->hostid);
+    rrdvar_free(st->rrdhost, &st->rrdhost->rrdvar_root_index, rc->hostid);
     rc->hostid = NULL;
 
-    rrdvar_free(st->rrdhost, &st->rrdhost->variables_root_index, rc->hostname);
+    rrdvar_free(st->rrdhost, &st->rrdhost->rrdvar_root_index, rc->hostname);
     rc->hostname = NULL;
 
     rc->rrdset = NULL;
@@ -375,8 +375,27 @@ inline RRDCALC *rrdcalc_create(RRDHOST *host, RRDCALCTEMPLATE *rt, const char *c
     return rc;
 }
 
-void rrdcalc_free(RRDHOST *host, RRDCALC *rc) {
-    if(!rc) return;
+void rrdcalc_free(RRDCALC *rc) {
+    if(unlikely(!rc)) return;
+
+    expression_free(rc->calculation);
+    expression_free(rc->warning);
+    expression_free(rc->critical);
+
+    freez(rc->name);
+    freez(rc->chart);
+    freez(rc->family);
+    freez(rc->dimensions);
+    freez(rc->exec);
+    freez(rc->recipient);
+    freez(rc->source);
+    freez(rc->units);
+    freez(rc->info);
+    freez(rc);
+}
+
+void rrdcalc_unlink_and_free(RRDHOST *host, RRDCALC *rc) {
+    if(unlikely(!rc)) return;
 
     debug(D_HEALTH, "Health removing alarm '%s.%s' of host '%s'", rc->chart?rc->chart:"NOCHART", rc->name, host->hostname);
 
@@ -398,18 +417,5 @@ void rrdcalc_free(RRDHOST *host, RRDCALC *rc) {
             error("Cannot unlink alarm '%s.%s' from host '%s': not found", rc->chart?rc->chart:"NOCHART", rc->name, host->hostname);
     }
 
-    expression_free(rc->calculation);
-    expression_free(rc->warning);
-    expression_free(rc->critical);
-
-    freez(rc->name);
-    freez(rc->chart);
-    freez(rc->family);
-    freez(rc->dimensions);
-    freez(rc->exec);
-    freez(rc->recipient);
-    freez(rc->source);
-    freez(rc->units);
-    freez(rc->info);
-    freez(rc);
+    rrdcalc_free(rc);
 }

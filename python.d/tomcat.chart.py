@@ -2,8 +2,9 @@
 # Description: tomcat netdata python.d module
 # Author: Pawel Krupa (paulfantom)
 
-from base import UrlService
 import xml.etree.ElementTree as ET
+
+from bases.FrameworkServices.UrlService import UrlService
 
 # default module values (can be overridden per job in `config`)
 # update_every = 2
@@ -71,6 +72,7 @@ CHARTS = {
         ]},
 }
 
+
 class Service(UrlService):
     def __init__(self, configuration=None, name=None):
         UrlService.__init__(self, configuration=configuration, name=name)
@@ -87,7 +89,6 @@ class Service(UrlService):
         data = None
         raw_data = self._get_raw_data()
         if raw_data:
-            xml = None
             try:
                 xml = ET.fromstring(raw_data)
             except ET.ParseError:
@@ -100,27 +101,27 @@ class Service(UrlService):
             connector = None
             if self.connector_name:
                 for conn in xml.findall('connector'):
-                    if conn.get('name') == self.connector_name:
+                    if self.connector_name in conn.get('name'):
                         connector = conn
                         break
             else:
                 connector = xml.find('connector')
 
             memory = jvm.find('memory')
-            data['free']  = memory.get('free')
+            data['free'] = memory.get('free')
             data['total'] = memory.get('total')
 
             for pool in jvm.findall('memorypool'):
                 name = pool.get('name')
-                if name == 'Eden Space':
+                if 'Eden Space' in name:
                     data['eden_used'] = pool.get('usageUsed')
                     data['eden_commited'] = pool.get('usageCommitted')
                     data['eden_max'] = pool.get('usageMax')
-                elif name == 'Survivor Space':
+                elif 'Survivor Space' in name:
                     data['survivor_used'] = pool.get('usageUsed')
                     data['survivor_commited'] = pool.get('usageCommitted')
                     data['survivor_max'] = pool.get('usageMax')
-                elif name == 'Tenured Gen':
+                elif 'Tenured Gen' in name or 'Old Gen' in name:
                     data['tenured_used'] = pool.get('usageUsed')
                     data['tenured_commited'] = pool.get('usageCommitted')
                     data['tenured_max'] = pool.get('usageMax')

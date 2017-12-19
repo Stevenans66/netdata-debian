@@ -135,17 +135,22 @@ char *rrdset_strncpyz_name(char *to, const char *from, size_t length) {
     return to;
 }
 
-void rrdset_set_name(RRDSET *st, const char *name) {
+int rrdset_set_name(RRDSET *st, const char *name) {
     if(unlikely(st->name && !strcmp(st->name, name)))
-        return;
+        return 1;
 
-    debug(D_RRD_CALLS, "rrdset_set_name() old: %s, new: %s", st->name, name);
+    debug(D_RRD_CALLS, "rrdset_set_name() old: '%s', new: '%s'", st->name?st->name:"", name);
 
     char b[CONFIG_MAX_VALUE + 1];
     char n[RRD_ID_LENGTH_MAX + 1];
 
     snprintfz(n, RRD_ID_LENGTH_MAX, "%s.%s", st->type, name);
     rrdset_strncpyz_name(b, n, CONFIG_MAX_VALUE);
+
+    if(rrdset_index_find_name(st->rrdhost, b, 0)) {
+        error("RRDSET: chart name '%s' on host '%s' already exists.", b, st->rrdhost->hostname);
+        return 0;
+    }
 
     if(st->name) {
         rrdset_index_del_name(st->rrdhost, st);
@@ -166,6 +171,8 @@ void rrdset_set_name(RRDSET *st, const char *name) {
 
     if(unlikely(rrdset_index_add_name(st->rrdhost, st) != st))
         error("RRDSET: INTERNAL ERROR: attempted to index duplicate chart name '%s'", st->name);
+
+    return 1;
 }
 
 inline void rrdset_is_obsolete(RRDSET *st) {
@@ -175,7 +182,7 @@ inline void rrdset_is_obsolete(RRDSET *st) {
 
         // the chart will not get more updates (data collection)
         // so, we have to push its definition now
-        if(unlikely(st->rrdhost->rrdpush_enabled))
+        if(unlikely(st->rrdhost->rrdpush_send_enabled))
             rrdset_push_chart_definition(st);
     }
 }
@@ -309,6 +316,9 @@ void rrdset_free(RRDSET *st) {
 
     rrdfamily_free(st->rrdhost, st->rrdfamily);
 
+    debug(D_RRD_CALLS, "RRDSET: Cleaning up remaining chart variables for host '%s', chart '%s'", st->rrdhost->hostname, st->id);
+    rrdvar_free_remaining_variables(st->rrdhost, &st->rrdvar_root_index);
+
     // ------------------------------------------------------------------------
     // unlink it from the host
 
@@ -334,6 +344,8 @@ void rrdset_free(RRDSET *st) {
 
     // free directly allocated members
     freez(st->config_section);
+    freez(st->plugin_name);
+    freez(st->module_name);
 
     switch(st->rrd_memory_mode) {
         case RRD_MEMORY_MODE_SAVE:
@@ -416,6 +428,8 @@ RRDSET *rrdset_create_custom(
         , const char *context
         , const char *title
         , const char *units
+        , const char *plugin
+        , const char *module
         , long priority
         , int update_every
         , RRDSET_TYPE chart_type
@@ -423,12 +437,30 @@ RRDSET *rrdset_create_custom(
         , long history_entries
 ) {
     if(!type || !type[0]) {
-        fatal("Cannot create rrd stats without a type.");
+        fatal("Cannot create rrd stats without a type: id '%s', name '%s', family '%s', context '%s', title '%s', units '%s', plugin '%s', module '%s'."
+              , (id && *id)?id:"<unset>"
+              , (name && *name)?name:"<unset>"
+              , (family && *family)?family:"<unset>"
+              , (context && *context)?context:"<unset>"
+              , (title && *title)?title:"<unset>"
+              , (units && *units)?units:"<unset>"
+              , (plugin && *plugin)?plugin:"<unset>"
+              , (module && *module)?module:"<unset>"
+        );
         return NULL;
     }
 
     if(!id || !id[0]) {
-        fatal("Cannot create rrd stats without an id.");
+        fatal("Cannot create rrd stats without an id: type '%s', name '%s', family '%s', context '%s', title '%s', units '%s', plugin '%s', module '%s'."
+              , type
+              , (name && *name)?name:"<unset>"
+              , (family && *family)?family:"<unset>"
+              , (context && *context)?context:"<unset>"
+              , (title && *title)?title:"<unset>"
+              , (units && *units)?units:"<unset>"
+              , (plugin && *plugin)?plugin:"<unset>"
+              , (module && *module)?module:"<unset>"
+        );
         return NULL;
     }
 
@@ -495,7 +527,7 @@ RRDSET *rrdset_create_custom(
         if(st) {
             memset(&st->avl, 0, sizeof(avl));
             memset(&st->avlname, 0, sizeof(avl));
-            memset(&st->variables_root_index, 0, sizeof(avl_tree_lock));
+            memset(&st->rrdvar_root_index, 0, sizeof(avl_tree_lock));
             memset(&st->dimensions_index, 0, sizeof(avl_tree_lock));
             memset(&st->rrdset_rwlock, 0, sizeof(netdata_rwlock_t));
 
@@ -507,6 +539,8 @@ RRDSET *rrdset_create_custom(
             st->units = NULL;
             st->context = NULL;
             st->cache_dir = NULL;
+            st->plugin_name = NULL;
+            st->module_name = NULL;
             st->dimensions = NULL;
             st->rrdfamily = NULL;
             st->rrdhost = NULL;
@@ -563,6 +597,9 @@ RRDSET *rrdset_create_custom(
         st = callocz(1, size);
         st->rrd_memory_mode = (memory_mode == RRD_MEMORY_MODE_NONE) ? RRD_MEMORY_MODE_NONE : RRD_MEMORY_MODE_ALLOC;
     }
+
+    st->plugin_name = plugin?strdup(plugin):NULL;
+    st->module_name = module?strdup(module):NULL;
 
     st->config_section = strdup(config_section);
     st->rrdhost = host;
@@ -624,12 +661,16 @@ RRDSET *rrdset_create_custom(
     st->upstream_resync_time = 0;
 
     avl_init_lock(&st->dimensions_index, rrddim_compare);
-    avl_init_lock(&st->variables_root_index, rrdvar_compare);
+    avl_init_lock(&st->rrdvar_root_index, rrdvar_compare);
 
     netdata_rwlock_init(&st->rrdset_rwlock);
 
-    if(name && *name) rrdset_set_name(st, name);
-    else rrdset_set_name(st, id);
+    if(name && *name && rrdset_set_name(st, name))
+        // we did set the name
+        ;
+    else
+        // could not use the name, use the id
+        rrdset_set_name(st, id);
 
     st->title = config_get(st->config_section, "title", title);
     json_fix_string(st->title);
@@ -640,11 +681,11 @@ RRDSET *rrdset_create_custom(
     host->rrdset_root = st;
 
     if(host->health_enabled) {
-        rrdsetvar_create(st, "last_collected_t", RRDVAR_TYPE_TIME_T, &st->last_collected_time.tv_sec, 0);
-        rrdsetvar_create(st, "collected_total_raw", RRDVAR_TYPE_TOTAL, &st->last_collected_total, 0);
-        rrdsetvar_create(st, "green", RRDVAR_TYPE_CALCULATED, &st->green, 0);
-        rrdsetvar_create(st, "red", RRDVAR_TYPE_CALCULATED, &st->red, 0);
-        rrdsetvar_create(st, "update_every", RRDVAR_TYPE_INT, &st->update_every, 0);
+        rrdsetvar_create(st, "last_collected_t",    RRDVAR_TYPE_TIME_T,     &st->last_collected_time.tv_sec, RRDVAR_OPTION_DEFAULT);
+        rrdsetvar_create(st, "collected_total_raw", RRDVAR_TYPE_TOTAL,      &st->last_collected_total,       RRDVAR_OPTION_DEFAULT);
+        rrdsetvar_create(st, "green",               RRDVAR_TYPE_CALCULATED, &st->green,                      RRDVAR_OPTION_DEFAULT);
+        rrdsetvar_create(st, "red",                 RRDVAR_TYPE_CALCULATED, &st->red,                        RRDVAR_OPTION_DEFAULT);
+        rrdsetvar_create(st, "update_every",        RRDVAR_TYPE_INT,        &st->update_every,               RRDVAR_OPTION_DEFAULT);
     }
 
     if(unlikely(rrdset_index_add(host, st) != st))
@@ -1029,7 +1070,7 @@ void rrdset_done(RRDSET *st) {
     if(unlikely(netdata_exit)) return;
 
     if(unlikely(st->rrd_memory_mode == RRD_MEMORY_MODE_NONE)) {
-        if(unlikely(st->rrdhost->rrdpush_enabled))
+        if(unlikely(st->rrdhost->rrdpush_send_enabled))
             rrdset_done_push_exclusive(st);
 
         return;
@@ -1154,7 +1195,7 @@ void rrdset_done(RRDSET *st) {
     }
     st->counter_done++;
 
-    if(unlikely(st->rrdhost->rrdpush_enabled))
+    if(unlikely(st->rrdhost->rrdpush_send_enabled))
         rrdset_done_push(st);
 
     #ifdef NETDATA_INTERNAL_CHECKS

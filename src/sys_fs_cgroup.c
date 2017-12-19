@@ -151,7 +151,8 @@ void read_cgroup_plugin_configuration() {
             // ----------------------------------------------------------------
 
                     " !*/init.scope "                      // ignore init.scope
-                    " *.scope "                            // we need all *.scope for sure
+                    " !/system.slice/run-*.scope "         // ignore system.slice/run-XXXX.scope
+                    " *.scope "                            // we need all other *.scope for sure
 
             // ----------------------------------------------------------------
 
@@ -180,6 +181,7 @@ void read_cgroup_plugin_configuration() {
             config_get("plugin:cgroups", "search for cgroups in subpaths matching",
                     " !*/init.scope "                      // ignore init.scope
                     " !*-qemu "                            //  #345
+                    " !*.libvirt-qemu "                    //  #3010
                     " !/init.scope "
                     " !/system "
                     " !/systemd "
@@ -201,6 +203,9 @@ void read_cgroup_plugin_configuration() {
                     " *docker* "
                     " *lxc* "
                     " *qemu* "
+                    " *.libvirt-qemu "                    //  #3010
+                    " !*/vcpu* "                          // libvirtd adds these sub-cgroups
+                    " !*/emulator* "                      // libvirtd adds these sub-cgroups
                     " !/ "
                     " !*.mount "
                     " !*.partition "
@@ -762,7 +767,7 @@ static inline void read_cgroup_network_interfaces(struct cgroup *cg) {
                 }
 
                 if(!*t) {
-                    error("CGROUP: empty container interface returned by script");
+                    error("CGROUP: empty guest interface returned by script");
                     continue;
                 }
 
@@ -1447,6 +1452,8 @@ void update_systemd_services_charts(
                     , "services.cpu"
                     , title
                     , "%"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1469,6 +1476,8 @@ void update_systemd_services_charts(
                     , (cgroup_used_memory_without_cache) ? "Systemd Services Used Memory without Cache"
                                                          : "Systemd Services Used Memory"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 10
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1490,6 +1499,8 @@ void update_systemd_services_charts(
                     , "services.mem_rss"
                     , "Systemd Services RSS Memory"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 20
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1509,6 +1520,8 @@ void update_systemd_services_charts(
                     , "services.mem_mapped"
                     , "Systemd Services Mapped Memory"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 30
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1528,6 +1541,8 @@ void update_systemd_services_charts(
                     , "services.mem_cache"
                     , "Systemd Services Cache Memory"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 40
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1547,6 +1562,8 @@ void update_systemd_services_charts(
                     , "services.mem_writeback"
                     , "Systemd Services Writeback Memory"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 50
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1566,6 +1583,8 @@ void update_systemd_services_charts(
                     , "services.mem_pgfault"
                     , "Systemd Services Memory Minor Page Faults"
                     , "MB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 60
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1584,6 +1603,8 @@ void update_systemd_services_charts(
                     , "services.mem_pgmajfault"
                     , "Systemd Services Memory Major Page Faults"
                     , "MB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 70
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1603,6 +1624,8 @@ void update_systemd_services_charts(
                     , "services.mem_pgpgin"
                     , "Systemd Services Memory Charging Activity"
                     , "MB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 80
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1622,6 +1645,8 @@ void update_systemd_services_charts(
                     , "services.mem_pgpgout"
                     , "Systemd Services Memory Uncharging Activity"
                     , "MB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 90
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1643,6 +1668,8 @@ void update_systemd_services_charts(
                     , "services.mem_failcnt"
                     , "Systemd Services Memory Limit Failures"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 110
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1664,6 +1691,8 @@ void update_systemd_services_charts(
                     , "services.swap_usage"
                     , "Systemd Services Swap Memory Used"
                     , "MB"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 100
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1685,6 +1714,8 @@ void update_systemd_services_charts(
                     , "services.io_read"
                     , "Systemd Services Disk Read Bandwidth"
                     , "KB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 120
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1704,6 +1735,8 @@ void update_systemd_services_charts(
                     , "services.io_write"
                     , "Systemd Services Disk Write Bandwidth"
                     , "KB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 130
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1725,6 +1758,8 @@ void update_systemd_services_charts(
                     , "services.io_ops_read"
                     , "Systemd Services Disk Read Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 140
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1744,6 +1779,8 @@ void update_systemd_services_charts(
                     , "services.io_ops_write"
                     , "Systemd Services Disk Write Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 150
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1765,6 +1802,8 @@ void update_systemd_services_charts(
                     , "services.throttle_io_read"
                     , "Systemd Services Throttle Disk Read Bandwidth"
                     , "KB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 160
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1784,6 +1823,8 @@ void update_systemd_services_charts(
                     , "services.throttle_io_write"
                     , "Systemd Services Throttle Disk Write Bandwidth"
                     , "KB/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 170
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1805,6 +1846,8 @@ void update_systemd_services_charts(
                     , "services.throttle_io_ops_read"
                     , "Systemd Services Throttle Disk Read Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 180
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1824,6 +1867,8 @@ void update_systemd_services_charts(
                     , "services.throttle_io_ops_write"
                     , "Systemd Services Throttle Disk Write Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 190
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1845,6 +1890,8 @@ void update_systemd_services_charts(
                     , "services.queued_io_ops_read"
                     , "Systemd Services Queued Disk Read Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 200
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1864,6 +1911,8 @@ void update_systemd_services_charts(
                     , "services.queued_io_ops_write"
                     , "Systemd Services Queued Disk Write Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 210
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1885,6 +1934,8 @@ void update_systemd_services_charts(
                     , "services.merged_io_ops_read"
                     , "Systemd Services Merged Disk Read Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 220
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -1904,6 +1955,8 @@ void update_systemd_services_charts(
                     , "services.merged_io_ops_write"
                     , "Systemd Services Merged Disk Write Operations"
                     , "operations/s"
+                    , "cgroup"
+                    , "systemd"
                     , CHART_PRIORITY_SYSTEMD_SERVICES + 230
                     , update_every
                     , RRDSET_TYPE_STACKED
@@ -2184,6 +2237,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.cpu"
                         , title
                         , "%"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS
                         , update_every
                         , RRDSET_TYPE_STACKED
@@ -2215,6 +2270,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.cpu_per_core"
                         , title
                         , "%"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 100
                         , update_every
                         , RRDSET_TYPE_STACKED
@@ -2247,6 +2304,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.mem"
                         , title
                         , "MB"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 210
                         , update_every
                         , RRDSET_TYPE_STACKED
@@ -2285,6 +2344,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.writeback"
                         , title
                         , "MB"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 300
                         , update_every
                         , RRDSET_TYPE_AREA
@@ -2315,6 +2376,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.mem_activity"
                         , title
                         , "MB/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 400
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2341,6 +2404,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.pgfaults"
                         , title
                         , "MB/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 500
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2369,6 +2434,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.mem_usage"
                         , title
                         , "MB"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 200
                         , update_every
                         , RRDSET_TYPE_STACKED
@@ -2397,6 +2464,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.mem_failcnt"
                         , title
                         , "count"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 250
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2423,6 +2492,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.io"
                         , title
                         , "KB/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 1200
                         , update_every
                         , RRDSET_TYPE_AREA
@@ -2451,6 +2522,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.serviced_ops"
                         , title
                         , "operations/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 1200
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2479,6 +2552,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.throttle_io"
                         , title
                         , "KB/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 1200
                         , update_every
                         , RRDSET_TYPE_AREA
@@ -2507,6 +2582,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.throttle_serviced_ops"
                         , title
                         , "operations/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 1200
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2535,6 +2612,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.queued_ops"
                         , title
                         , "operations"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 2000
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2563,6 +2642,8 @@ void update_cgroup_charts(int update_every) {
                         , "cgroup.merged_ops"
                         , title
                         , "operations/s"
+                        , "cgroup"
+                        , "default"
                         , CHART_PRIORITY_CONTAINERS + 2100
                         , update_every
                         , RRDSET_TYPE_LINE
@@ -2650,6 +2731,8 @@ void *cgroups_main(void *ptr) {
                         , NULL
                         , "NetData CGroups Plugin CPU usage"
                         , "milliseconds/s"
+                        , "cgroup"
+                        , "stats"
                         , 132000
                         , cgroup_update_every
                         , RRDSET_TYPE_STACKED

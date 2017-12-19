@@ -1,5 +1,8 @@
 #include "common.h"
 
+char *plugin_directories[PLUGINSD_MAX_DIRECTORIES] = { NULL };
+char *netdata_configured_plugins_dir_base;
+
 struct plugind *pluginsd_root = NULL;
 
 static inline int pluginsd_space(char c) {
@@ -16,13 +19,27 @@ static inline int pluginsd_space(char c) {
     }
 }
 
+inline int config_isspace(char c) {
+    switch(c) {
+        case ' ':
+        case '\t':
+        case '\r':
+        case '\n':
+        case ',':
+            return 1;
+
+        default:
+            return 0;
+    }
+}
+
 // split a text into words, respecting quotes
-inline int pluginsd_split_words(char *str, char **words, int max_words) {
+inline int quoted_strings_splitter(char *str, char **words, int max_words, int (*custom_isspace)(char)) {
     char *s = str, quote = 0;
     int i = 0, j;
 
     // skip all white space
-    while(unlikely(pluginsd_space(*s))) s++;
+    while(unlikely(custom_isspace(*s))) s++;
 
     // check for quote
     if(unlikely(*s == '\'' || *s == '"')) {
@@ -49,13 +66,13 @@ inline int pluginsd_split_words(char *str, char **words, int max_words) {
         }
 
         // if it is a space
-        else if(unlikely(quote == 0 && pluginsd_space(*s))) {
+        else if(unlikely(quote == 0 && custom_isspace(*s))) {
 
             // terminate the word
             *s++ = '\0';
 
             // skip all white space
-            while(likely(pluginsd_space(*s))) s++;
+            while(likely(custom_isspace(*s))) s++;
 
             // check for quote
             if(unlikely(*s == '\'' || *s == '"')) {
@@ -82,6 +99,10 @@ inline int pluginsd_split_words(char *str, char **words, int max_words) {
     return i;
 }
 
+inline int pluginsd_split_words(char *str, char **words, int max_words) {
+    return quoted_strings_splitter(str, words, max_words, pluginsd_space);
+}
+
 inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int trust_durations) {
     int enabled = cd->enabled;
 
@@ -101,6 +122,7 @@ inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int 
     uint32_t CHART_HASH = simple_hash(PLUGINSD_KEYWORD_CHART);
     uint32_t DIMENSION_HASH = simple_hash(PLUGINSD_KEYWORD_DIMENSION);
     uint32_t DISABLE_HASH = simple_hash(PLUGINSD_KEYWORD_DISABLE);
+    uint32_t VARIABLE_HASH = simple_hash(PLUGINSD_KEYWORD_VARIABLE);
 
     RRDSET *st = NULL;
     uint32_t hash;
@@ -212,10 +234,6 @@ inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int 
 
             count++;
         }
-        else if(likely(hash == FLUSH_HASH && !strcmp(s, PLUGINSD_KEYWORD_FLUSH))) {
-            debug(D_PLUGINSD, "PLUGINSD: '%s' is requesting a FLUSH", cd->fullfilename);
-            st = NULL;
-        }
         else if(likely(hash == CHART_HASH && !strcmp(s, PLUGINSD_KEYWORD_CHART))) {
             st = NULL;
 
@@ -229,6 +247,8 @@ inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int 
             char *priority_s     = words[8];
             char *update_every_s = words[9];
             char *options        = words[10];
+            char *plugin         = words[11];
+            char *module         = words[12];
 
             // parse the id from type
             char *id = NULL;
@@ -275,22 +295,31 @@ inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int 
             if(unlikely(!title)) title = "";
             if(unlikely(!units)) units = "unknown";
 
-            st = rrdset_find_bytype(host, type, id);
-            if(unlikely(!st)) {
-                debug(D_PLUGINSD, "PLUGINSD: Creating chart type='%s', id='%s', name='%s', family='%s', context='%s', chart='%s', priority=%d, update_every=%d"
-                      , type, id
-                      , name?name:""
-                      , family?family:""
-                      , context?context:""
-                      , rrdset_type_name(chart_type)
-                      , priority
-                      , update_every
-                );
+            debug(D_PLUGINSD, "PLUGINSD: Creating chart type='%s', id='%s', name='%s', family='%s', context='%s', chart='%s', priority=%d, update_every=%d"
+                  , type, id
+                  , name?name:""
+                  , family?family:""
+                  , context?context:""
+                  , rrdset_type_name(chart_type)
+                  , priority
+                  , update_every
+            );
 
-                st = rrdset_create(host, type, id, name, family, context, title, units, priority, update_every, chart_type);
-                cd->update_every = update_every;
-            }
-            else debug(D_PLUGINSD, "PLUGINSD: Chart '%s' already exists. Not adding it again.", st->id);
+            st = rrdset_create(
+                    host
+                    , type
+                    , id
+                    , name
+                    , family
+                    , context
+                    , title
+                    , units
+                    , (plugin && *plugin)?plugin:cd->filename
+                    , module
+                    , priority
+                    , update_every
+                    , chart_type
+            );
 
             if(options && *options) {
                 if(strstr(options, "obsolete"))
@@ -307,6 +336,11 @@ inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int 
                     rrdset_flag_set(st, RRDSET_FLAG_STORE_FIRST);
                 else
                     rrdset_flag_clear(st, RRDSET_FLAG_STORE_FIRST);
+            }
+            else {
+                rrdset_isnot_obsolete(st);
+                rrdset_flag_clear(st, RRDSET_FLAG_DETAIL);
+                rrdset_flag_clear(st, RRDSET_FLAG_STORE_FIRST);
             }
         }
         else if(likely(hash == DIMENSION_HASH && !strcmp(s, PLUGINSD_KEYWORD_DIMENSION))) {
@@ -358,6 +392,64 @@ inline size_t pluginsd_process(RRDHOST *host, struct plugind *cd, FILE *fp, int 
                 if(strstr(options, "noreset") != NULL) rrddim_flag_set(rd, RRDDIM_FLAG_DONT_DETECT_RESETS_OR_OVERFLOWS);
                 if(strstr(options, "nooverflow") != NULL) rrddim_flag_set(rd, RRDDIM_FLAG_DONT_DETECT_RESETS_OR_OVERFLOWS);
             }
+        }
+        else if(likely(hash == VARIABLE_HASH && !strcmp(s, PLUGINSD_KEYWORD_VARIABLE))) {
+            char *name = words[1];
+            char *value = words[2];
+            int global = (st)?0:1;
+
+            if(name && *name) {
+                if((strcmp(name, "GLOBAL") == 0 || strcmp(name, "HOST") == 0)) {
+                    global = 1;
+                    name = words[2];
+                    value  = words[3];
+                }
+                else if((strcmp(name, "LOCAL") == 0 || strcmp(name, "CHART") == 0)) {
+                    global = 0;
+                    name = words[2];
+                    value  = words[3];
+                }
+            }
+
+            if(unlikely(!name || !*name)) {
+                error("PLUGINSD: '%s' is requesting a VARIABLE on host '%s', without a variable name. Disabling it.", cd->fullfilename, host->hostname);
+                enabled = 0;
+                break;
+            }
+
+            if(unlikely(!value || !*value))
+                value = NULL;
+
+            if(value) {
+                char *endptr = NULL;
+                calculated_number v = (calculated_number)str2ld(value, &endptr);
+
+                if(unlikely(endptr && *endptr)) {
+                    if(endptr == value)
+                        error("PLUGINSD: '%s': the value '%s' of VARIABLE '%s' on host '%s' cannot be parsed as a number", cd->fullfilename, value, name, host->hostname);
+                    else
+                        error("PLUGINSD: '%s': the value '%s' of VARIABLE '%s' on host '%s' has leftovers: '%s'", cd->fullfilename, value, name, host->hostname, endptr);
+                }
+
+                if(global) {
+                    RRDVAR *rv = rrdvar_custom_host_variable_create(host, name);
+                    if (rv) rrdvar_custom_host_variable_set(host, rv, v);
+                    else error("PLUGINSD: '%s': cannot find/create HOST VARIABLE '%s' on host '%s'", cd->fullfilename, name, host->hostname);
+                }
+                else if(st) {
+                    RRDSETVAR *rs = rrdsetvar_custom_chart_variable_create(st, name);
+                    if (rs) rrdsetvar_custom_chart_variable_set(rs, v);
+                    else error("PLUGINSD: '%s': cannot find/create CHART VARIABLE '%s' on host '%s', chart '%s'", cd->fullfilename, name, host->hostname, st->id);
+                }
+                else
+                    error("PLUGINSD: '%s': cannot find/create CHART VARIABLE '%s' on host '%s' without a chart", cd->fullfilename, name, host->hostname);
+            }
+            else
+                error("PLUGINSD: '%s': cannot set %s VARIABLE '%s' on host '%s' to an empty value", cd->fullfilename, (global)?"HOST":"CHART", name, host->hostname);
+        }
+        else if(likely(hash == FLUSH_HASH && !strcmp(s, PLUGINSD_KEYWORD_FLUSH))) {
+            debug(D_PLUGINSD, "PLUGINSD: '%s' is requesting a FLUSH", cd->fullfilename);
+            st = NULL;
         }
         else if(unlikely(hash == DISABLE_HASH && !strcmp(s, PLUGINSD_KEYWORD_DISABLE))) {
             info("PLUGINSD: '%s' called DISABLE. Disabling it.", cd->fullfilename);
@@ -476,99 +568,131 @@ void *pluginsd_main(void *ptr) {
 
     int automatic_run = config_get_boolean(CONFIG_SECTION_PLUGINS, "enable running new plugins", 1);
     int scan_frequency = (int) config_get_number(CONFIG_SECTION_PLUGINS, "check for new plugins every", 60);
-    DIR *dir = NULL;
-    struct dirent *file = NULL;
-    struct plugind *cd;
-
-    // enable the apps plugin by default
-    // config_get_boolean(CONFIG_SECTION_PLUGINS, "apps", 1);
-
     if(scan_frequency < 1) scan_frequency = 1;
+
+    // store the errno for each plugins directory
+    // so that we don't log broken directories on each loop
+    int directory_errors[PLUGINSD_MAX_DIRECTORIES] =  { 0 };
 
     for(;;) {
         if(unlikely(netdata_exit)) break;
 
-        dir = opendir(netdata_configured_plugins_dir);
-        if(unlikely(!dir)) {
-            error("Cannot open directory '%s'.", netdata_configured_plugins_dir);
-            goto cleanup;
-        }
+        int idx;
+        const char *directory_name;
 
-        while(likely((file = readdir(dir)))) {
+        for( idx = 0; idx < PLUGINSD_MAX_DIRECTORIES && (directory_name = plugin_directories[idx]) ; idx++ ) {
             if(unlikely(netdata_exit)) break;
 
-            debug(D_PLUGINSD, "PLUGINSD: Examining file '%s'", file->d_name);
-
-            if(unlikely(strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..") == 0)) continue;
-
-            int len = (int) strlen(file->d_name);
-            if(unlikely(len <= (int)PLUGINSD_FILE_SUFFIX_LEN)) continue;
-            if(unlikely(strcmp(PLUGINSD_FILE_SUFFIX, &file->d_name[len - (int)PLUGINSD_FILE_SUFFIX_LEN]) != 0)) {
-                debug(D_PLUGINSD, "PLUGINSD: File '%s' does not end in '%s'.", file->d_name, PLUGINSD_FILE_SUFFIX);
+            errno = 0;
+            DIR *dir = opendir(directory_name);
+            if(unlikely(!dir)) {
+                if(directory_errors[idx] != errno) {
+                    directory_errors[idx] = errno;
+                    error("PLUGINSD: Cannot open plugins directory '%s'.", directory_name);
+                }
                 continue;
             }
 
-            char pluginname[CONFIG_MAX_NAME + 1];
-            snprintfz(pluginname, CONFIG_MAX_NAME, "%.*s", (int)(len - PLUGINSD_FILE_SUFFIX_LEN), file->d_name);
-            int enabled = config_get_boolean(CONFIG_SECTION_PLUGINS, pluginname, automatic_run);
+            struct dirent *file = NULL;
+            while(likely((file = readdir(dir)))) {
+                if(unlikely(netdata_exit)) break;
 
-            if(unlikely(!enabled)) {
-                debug(D_PLUGINSD, "PLUGINSD: plugin '%s' is not enabled", file->d_name);
-                continue;
-            }
+                debug(D_PLUGINSD, "PLUGINSD: Examining file '%s'", file->d_name);
 
-            // check if it runs already
-            for(cd = pluginsd_root ; cd ; cd = cd->next)
-                if(unlikely(strcmp(cd->filename, file->d_name) == 0)) break;
+                if(unlikely(strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..") == 0)) continue;
 
-            if(likely(cd && !cd->obsolete)) {
-                debug(D_PLUGINSD, "PLUGINSD: plugin '%s' is already running", cd->filename);
-                continue;
-            }
+                int len = (int) strlen(file->d_name);
+                if(unlikely(len <= (int)PLUGINSD_FILE_SUFFIX_LEN)) continue;
+                if(unlikely(strcmp(PLUGINSD_FILE_SUFFIX, &file->d_name[len - (int)PLUGINSD_FILE_SUFFIX_LEN]) != 0)) {
+                    debug(D_PLUGINSD, "PLUGINSD: File '%s' does not end in '%s'.", file->d_name, PLUGINSD_FILE_SUFFIX);
+                    continue;
+                }
 
-            // it is not running
-            // allocate a new one, or use the obsolete one
-            if(unlikely(!cd)) {
-                cd = callocz(sizeof(struct plugind), 1);
+                char pluginname[CONFIG_MAX_NAME + 1];
+                snprintfz(pluginname, CONFIG_MAX_NAME, "%.*s", (int)(len - PLUGINSD_FILE_SUFFIX_LEN), file->d_name);
+                int enabled = config_get_boolean(CONFIG_SECTION_PLUGINS, pluginname, automatic_run);
 
-                snprintfz(cd->id, CONFIG_MAX_NAME, "plugin:%s", pluginname);
+                if(unlikely(!enabled)) {
+                    debug(D_PLUGINSD, "PLUGINSD: plugin '%s' is not enabled", file->d_name);
+                    continue;
+                }
 
-                strncpyz(cd->filename, file->d_name, FILENAME_MAX);
-                snprintfz(cd->fullfilename, FILENAME_MAX, "%s/%s", netdata_configured_plugins_dir, cd->filename);
+                // check if it runs already
+                struct plugind *cd;
+                for(cd = pluginsd_root ; cd ; cd = cd->next)
+                    if(unlikely(strcmp(cd->filename, file->d_name) == 0)) break;
 
-                cd->enabled = enabled;
-                cd->update_every = (int) config_get_number(cd->id, "update every", localhost->rrd_update_every);
-                cd->started_t = now_realtime_sec();
+                if(likely(cd && !cd->obsolete)) {
+                    debug(D_PLUGINSD, "PLUGINSD: plugin '%s' is already running", cd->filename);
+                    continue;
+                }
 
-                char *def = "";
-                snprintfz(cd->cmd, PLUGINSD_CMD_MAX, "exec %s %d %s", cd->fullfilename, cd->update_every, config_get(cd->id, "command options", def));
+                // it is not running
+                // allocate a new one, or use the obsolete one
+                if(unlikely(!cd)) {
+                    cd = callocz(sizeof(struct plugind), 1);
 
-                // link it
-                if(likely(pluginsd_root)) cd->next = pluginsd_root;
-                pluginsd_root = cd;
+                    snprintfz(cd->id, CONFIG_MAX_NAME, "plugin:%s", pluginname);
 
-                // it is not currently running
-                cd->obsolete = 1;
+                    strncpyz(cd->filename, file->d_name, FILENAME_MAX);
+                    snprintfz(cd->fullfilename, FILENAME_MAX, "%s/%s", directory_name, cd->filename);
 
-                if(cd->enabled) {
-                    // spawn a new thread for it
-                    if(unlikely(pthread_create(&cd->thread, NULL, pluginsd_worker_thread, cd) != 0))
-                        error("PLUGINSD: failed to create new thread for plugin '%s'.", cd->filename);
+                    cd->enabled = enabled;
+                    cd->update_every = (int) config_get_number(cd->id, "update every", localhost->rrd_update_every);
+                    cd->started_t = now_realtime_sec();
 
-                    else if(unlikely(pthread_detach(cd->thread) != 0))
-                        error("PLUGINSD: Cannot request detach of newly created thread for plugin '%s'.", cd->filename);
+                    char *def = "";
+                    snprintfz(cd->cmd, PLUGINSD_CMD_MAX, "exec %s %d %s", cd->fullfilename, cd->update_every, config_get(cd->id, "command options", def));
+
+                    // link it
+                    if(likely(pluginsd_root)) cd->next = pluginsd_root;
+                    pluginsd_root = cd;
+
+                    // it is not currently running
+                    cd->obsolete = 1;
+
+                    if(cd->enabled) {
+                        // spawn a new thread for it
+                        if(unlikely(pthread_create(&cd->thread, NULL, pluginsd_worker_thread, cd) != 0))
+                            error("PLUGINSD: failed to create new thread for plugin '%s'.", cd->filename);
+
+                        else if(unlikely(pthread_detach(cd->thread) != 0))
+                            error("PLUGINSD: Cannot request detach of newly created thread for plugin '%s'.", cd->filename);
+                    }
                 }
             }
+
+            closedir(dir);
         }
 
-        closedir(dir);
         sleep((unsigned int) scan_frequency);
     }
 
-cleanup:
     info("PLUGINS.D thread exiting");
 
     static_thread->enabled = 0;
     pthread_exit(NULL);
     return NULL;
+}
+
+
+void pluginsd_stop_all_external_plugins() {
+    siginfo_t info;
+    struct plugind *cd;
+    for(cd = pluginsd_root ; cd ; cd = cd->next) {
+        if(cd->enabled && !cd->obsolete) {
+            info("Stopping %s plugin thread", cd->id);
+            pthread_cancel(cd->thread);
+
+            if(cd->pid) {
+                info("killing %s plugin child process pid %d", cd->id, cd->pid);
+                if(killpid(cd->pid, SIGTERM) != -1)
+                    waitid(P_PID, (id_t) cd->pid, &info, WEXITED);
+
+                cd->pid = 0;
+            }
+
+            cd->obsolete = 1;
+        }
+    }
 }

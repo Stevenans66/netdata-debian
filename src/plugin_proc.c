@@ -32,6 +32,8 @@ static struct proc_module {
 
         // network metrics
         { .name = "/proc/net/dev", .dim = "netdev", .func = do_proc_net_dev },
+        { .name = "/proc/net/sockstat", .dim = "sockstat", .func = do_proc_net_sockstat },
+        { .name = "/proc/net/sockstat6", .dim = "sockstat6", .func = do_proc_net_sockstat6 },
         { .name = "/proc/net/netstat", .dim = "netstat", .func = do_proc_net_netstat }, // this has to be before /proc/net/snmp, because there is a shared metric
         { .name = "/proc/net/snmp", .dim = "snmp", .func = do_proc_net_snmp },
         { .name = "/proc/net/snmp6", .dim = "snmp6", .func = do_proc_net_snmp6 },
@@ -118,9 +120,20 @@ void *proc_main(void *ptr) {
                 st = rrdset_find_bytype_localhost("netdata", "plugin_proc_modules");
 
                 if(!st) {
-                    st = rrdset_create_localhost("netdata", "plugin_proc_modules", NULL, "proc", NULL
-                                                 , "NetData Proc Plugin Modules Durations", "milliseconds/run", 132001
-                                                 , localhost->rrd_update_every, RRDSET_TYPE_STACKED);
+                    st = rrdset_create_localhost(
+                            "netdata"
+                            , "plugin_proc_modules"
+                            , NULL
+                            , "proc"
+                            , NULL
+                            , "NetData Proc Plugin Modules Durations"
+                            , "milliseconds/run"
+                            , "netdata"
+                            , "stats"
+                            , 132001
+                            , localhost->rrd_update_every
+                            , RRDSET_TYPE_STACKED
+                    );
 
                     for(i = 0 ; proc_modules[i].name ;i++) {
                         struct proc_module *pm = &proc_modules[i];

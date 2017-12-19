@@ -29,26 +29,12 @@ netdata runs on **Linux**, **FreeBSD**, and **MacOS**.
 
 ## News
 
-<p align="center">
-Netdata is featured at <b><a href="https://octoverse.github.com/" target="_blank">GitHub's State Of The Octoverse 2016</a></b><br/>
-<a href="https://octoverse.github.com/" target="_blank"><img src="https://cloud.githubusercontent.com/assets/2662304/21743260/23ebe62c-d507-11e6-80c0-76b95f53e464.png"/></a>
-</p>
+`Sep 17th, 2017` - **[netdata v1.8.0 released!](https://github.com/firehol/netdata/releases)**
 
-`Jul 16th, 2017` - **[netdata v1.7.0 released!](https://github.com/firehol/netdata/releases)**
-
- - netdata is now a fully featured **statsd** server - [read more here](https://github.com/firehol/netdata/wiki/statsd)
- - netdata now monitors **ZFS** of Linux and FreeBSD
- - netdata now monitors **ElasticSearch**
- - netdata now monitors **RabbitMQ**
- - netdata now monitors **Go applications** (via `expvar`) - [read more here](https://github.com/firehol/netdata/wiki/Monitoring-Go-Applications)
- - netdata now monitors **squid logs**
- - netdata now monitors **samba**
- - several **backends** improvements and enhancements, including **metrics filtering**
- - **prometheus** backend support has been rewritten
- - alarm notifications now support **custom hooks** to execute shell commands in parallel with all other notification methods
- - dozens of new and improved plugins
- - dozens of new and improved alarms
- - dozens more improvements and performance optimizations
+ - mainly a bug fix release - all users are advised to update this release
+ - better support for containers (`veth` interfaces are now visualized at their containers section, container sections now provide a summary view for each container)
+ - netdata can now listen on UNIX domain sockets
+ - dozens of more improvements, compatibility fixes and enhancements
 
 ---
 
@@ -69,11 +55,11 @@ Netdata is featured at <b><a href="https://octoverse.github.com/" target="_blank
    collects thousands of metrics per server per second,
    with just 1% CPU utilization of a single core, a few MB of RAM and no disk I/O at all
 
- - **Sophisticated alarming**<br/>
+ - **Sophisticated alerting**<br/>
    hundreds of alarms, **out of the box**!<br/>
    supports dynamic thresholds, hysteresis, alarm templates,
-   multiple role-based notification methods (such as email, slack.com,
-   pushover.net, pushbullet.com, telegram.org, twilio.com, messagebird.com)
+   multiple role-based notification methods (such as email, slack.com, flock.com,
+   pushover.net, pushbullet.com, telegram.org, twilio.com, messagebird.com, kavenegar.com)
 
  - **Extensible**<br/>
    you can monitor anything you can get a metric for,
@@ -219,6 +205,9 @@ This is a list of what it currently monitors:
 - **Redis databases**<br/>
   multiple servers, each showing: operations, hit rate, memory, keys, clients, slaves
 
+- **couchdb**<br/>
+  reads/writes, request methods, status codes, tasks, replication, per-db, etc
+
 - **mongodb**<br/>
   operations, clients, transactions, cursors, connections, asserts, locks, etc
 
@@ -233,6 +222,9 @@ This is a list of what it currently monitors:
 
 - **NSD name servers**<br/>
   queries, zones, protocols, query types, transfers, etc.
+
+- **PowerDNS**</br>
+  queries, answers, cache, latency, etc.
 
 - **Postfix email servers**<br/>
   message queue (entries, size)
@@ -278,6 +270,12 @@ This is a list of what it currently monitors:
 - **SNMP devices**<br/>
   can be monitored too (although you will need to configure these)
 
+- **chrony**</br>
+  frequencies, offsets, delays, etc.
+
+- **beanstalkd**</br>
+  global and per tube monitoring
+
 - **statsd**<br/>
   [netdata is a fully featured statsd server](https://github.com/firehol/netdata/wiki/statsd)
 
@@ -290,7 +288,7 @@ And you can extend it, by writing plugins that collect data from any source, usi
 This is a high level overview of netdata feature set and architecture.
 Click it to to interact with it (it has direct links to documentation).
 
-[![netdata-overview](https://cloud.githubusercontent.com/assets/2662304/26529478/104652ac-43c9-11e7-903f-edb9bb2ced24.png)](https://my-netdata.io/infographic.html)
+[![netdata-overview](https://user-images.githubusercontent.com/2662304/32415725-a4779606-c246-11e7-8985-2b350181aa27.png)](https://my-netdata.io/infographic.html)
 
 ---
 

@@ -27,11 +27,13 @@ dist_nodeconfig_DATA = \
 pythonconfigdir=$(configdir)/python.d
 dist_pythonconfig_DATA = \
     python.d/apache.conf \
-    python.d/apache_cache.conf \
+    python.d/beanstalk.conf \
     python.d/bind_rndc.conf \
     python.d/chrony.conf \
+    python.d/couchdb.conf \
     python.d/cpufreq.conf \
     python.d/dns_query_time.conf \
+    python.d/dnsdist.conf \
     python.d/dovecot.conf \
     python.d/elasticsearch.conf \
     python.d/example.conf \
@@ -53,6 +55,7 @@ dist_pythonconfig_DATA = \
     python.d/phpfpm.conf \
     python.d/postfix.conf \
     python.d/postgres.conf \
+    python.d/powerdns.conf \
     python.d/rabbitmq.conf \
     python.d/redis.conf \
     python.d/retroshare.conf \
@@ -70,8 +73,10 @@ healthconfigdir=$(configdir)/health.d
 dist_healthconfig_DATA = \
     health.d/apache.conf \
     health.d/backend.conf \
+    health.d/beanstalkd.conf \
     health.d/bind_rndc.conf \
     health.d/cpu.conf \
+    health.d/couchdb.conf \
     health.d/disks.conf \
     health.d/elasticsearch.conf \
     health.d/entropy.conf \
@@ -99,6 +104,10 @@ dist_healthconfig_DATA = \
     health.d/softnet.conf \
     health.d/squid.conf \
     health.d/swap.conf \
+    health.d/tcp_conn.conf \
+    health.d/tcp_listen.conf \
+    health.d/tcp_mem.conf \
+    health.d/tcp_orphans.conf \
     health.d/tcp_resets.conf \
     health.d/udp_errors.conf \
     health.d/varnish.conf \

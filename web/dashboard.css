@@ -44,6 +44,8 @@ body {
     display: inline-block;
     overflow: hidden;
 
+    transform: translate3d(0,0,0);
+
     /* required for child elements to have absolute position */
     position: relative;
 
@@ -53,6 +55,8 @@ body {
 .netdata-container-gauge {
     display: inline-block;
     overflow: hidden;
+
+    transform: translate3d(0,0,0);
 
     /* required for child elements to have absolute position */
     position: relative;
@@ -69,6 +73,8 @@ body {
 .netdata-container-easypiechart {
     display: inline-block;
     overflow: hidden;
+
+    transform: translate3d(0,0,0);
 
     /* required for child elements to have absolute position */
     position: relative;
@@ -93,6 +99,8 @@ body {
     display: inline-block;
     overflow: hidden;
 
+    transform: translate3d(0,0,0);
+
     /* fix minimum scrollbar issue in firefox */
     min-height: 99px;
 
@@ -108,9 +116,9 @@ body {
     bottom: 0px;
     right: 0px;
     height: 15px;
-    width: 30px;
+    width: 20px;
     background-color: White;
-    font-size: 12px;
+    font-size: 15px;
     vertical-align: middle;
     line-height: 15px;
     cursor: ns-resize;
@@ -286,6 +294,7 @@ body {
     white-space: nowrap;
     display: inline-block;
     cursor: pointer;
+    -webkit-print-color-adjust: exact;
 }
 
 .netdata-legend-value {

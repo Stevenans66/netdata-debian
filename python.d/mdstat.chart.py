@@ -2,9 +2,10 @@
 # Description: mdstat netdata python.d module
 # Author: l2isbad
 
-from re import compile as re_compile
 from collections import defaultdict
-from base import SimpleService
+from re import compile as re_compile
+
+from bases.FrameworkServices.SimpleService import SimpleService
 
 priority = 60000
 retries = 60
@@ -18,7 +19,7 @@ class Service(SimpleService):
         SimpleService.__init__(self, configuration=configuration, name=name)
         self.regex = dict(disks=re_compile(r' (?P<array>[a-zA-Z_0-9]+) : active .+\['
                                            r'(?P<total_disks>[0-9]+)/'
-                                           r'(?P<inuse_disks>[0-9])\]'),
+                                           r'(?P<inuse_disks>[0-9]+)\]'),
                           status=re_compile(r' (?P<array>[a-zA-Z_0-9]+) : active .+ '
                                             r'(?P<operation>[a-z]+) =[ ]{1,2}'
                                             r'(?P<operation_status>[0-9.]+).+finish='

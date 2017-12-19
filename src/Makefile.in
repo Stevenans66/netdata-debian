@@ -106,7 +106,8 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @FREEBSD_FALSE@@MACOS_TRUE@	$(NULL)
 
 @FREEBSD_FALSE@@MACOS_FALSE@am__append_6 = \
-@FREEBSD_FALSE@@MACOS_FALSE@	ipc.c ipc.h \
+@FREEBSD_FALSE@@MACOS_FALSE@	ipc.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	ipc.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc_diskspace.c \
@@ -123,6 +124,8 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_rpc_nfsd.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_snmp.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_snmp6.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_net_sockstat.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_net_sockstat6.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_softnet_stat.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_conntrack.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_synproxy.c \
@@ -179,7 +182,8 @@ apps_plugin_OBJECTS = $(am_apps_plugin_OBJECTS)
 am__DEPENDENCIES_1 =
 apps_plugin_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_cgroup_network_OBJECTS = cgroup-network.$(OBJEXT) clocks.$(OBJEXT) \
-	common.$(OBJEXT) log.$(OBJEXT) procfile.$(OBJEXT)
+	common.$(OBJEXT) log.$(OBJEXT) procfile.$(OBJEXT) \
+	popen.$(OBJEXT) signals.$(OBJEXT)
 cgroup_network_OBJECTS = $(am_cgroup_network_OBJECTS)
 cgroup_network_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
@@ -224,6 +228,7 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 	proc_loadavg.c proc_meminfo.c proc_net_dev.c \
 	proc_net_ip_vs_stats.c proc_net_netstat.c proc_net_rpc_nfs.c \
 	proc_net_rpc_nfsd.c proc_net_snmp.c proc_net_snmp6.c \
+	proc_net_sockstat.c proc_net_sockstat6.c \
 	proc_net_softnet_stat.c proc_net_stat_conntrack.c \
 	proc_net_stat_synproxy.c proc_spl_kstat_zfs.c proc_stat.c \
 	proc_sys_kernel_random_entropy_avail.c proc_vmstat.c \
@@ -254,6 +259,8 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_rpc_nfsd.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_snmp.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_snmp6.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_net_sockstat.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_net_sockstat6.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_softnet_stat.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_conntrack.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_synproxy.$(OBJEXT) \
@@ -616,6 +623,8 @@ cgroup_network_SOURCES = \
     inlined.h \
     log.c log.h \
 	procfile.c procfile.h \
+	popen.c popen.h \
+	signals.c signals.h \
     $(NULL)
 
 cgroup_network_LDADD = \
@@ -815,6 +824,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_rpc_nfsd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_snmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_snmp6.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_sockstat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_sockstat6.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_softnet_stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_stat_conntrack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_net_stat_synproxy.Po@am__quote@

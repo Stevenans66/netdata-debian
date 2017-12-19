@@ -1,20 +1,105 @@
 #include "common.h"
 
+static struct {
+    const char *name;
+    uint32_t hash;
+    int value;
+} api_v1_data_groups[] = {
+        {  "average"        , 0    , GROUP_AVERAGE}
+        , {"min"            , 0    , GROUP_MIN}
+        , {"max"            , 0    , GROUP_MAX}
+        , {"sum"            , 0    , GROUP_SUM}
+        , {"incremental_sum", 0    , GROUP_INCREMENTAL_SUM}
+        , {"incremental-sum", 0    , GROUP_INCREMENTAL_SUM}
+        , {                 NULL, 0, 0}
+};
+
+static struct {
+    const char *name;
+    uint32_t hash;
+    uint32_t value;
+} api_v1_data_options[] = {
+        {  "nonzero"         , 0    , RRDR_OPTION_NONZERO}
+        , {"flip"            , 0    , RRDR_OPTION_REVERSED}
+        , {"reversed"        , 0    , RRDR_OPTION_REVERSED}
+        , {"reverse"         , 0    , RRDR_OPTION_REVERSED}
+        , {"jsonwrap"        , 0    , RRDR_OPTION_JSON_WRAP}
+        , {"min2max"         , 0    , RRDR_OPTION_MIN2MAX}
+        , {"ms"              , 0    , RRDR_OPTION_MILLISECONDS}
+        , {"milliseconds"    , 0    , RRDR_OPTION_MILLISECONDS}
+        , {"abs"             , 0    , RRDR_OPTION_ABSOLUTE}
+        , {"absolute"        , 0    , RRDR_OPTION_ABSOLUTE}
+        , {"absolute_sum"    , 0    , RRDR_OPTION_ABSOLUTE}
+        , {"absolute-sum"    , 0    , RRDR_OPTION_ABSOLUTE}
+        , {"display_absolute", 0    , RRDR_OPTION_DISPLAY_ABS}
+        , {"display-absolute", 0    , RRDR_OPTION_DISPLAY_ABS}
+        , {"seconds"         , 0    , RRDR_OPTION_SECONDS}
+        , {"null2zero"       , 0    , RRDR_OPTION_NULL2ZERO}
+        , {"objectrows"      , 0    , RRDR_OPTION_OBJECTSROWS}
+        , {"google_json"     , 0    , RRDR_OPTION_GOOGLE_JSON}
+        , {"google-json"     , 0    , RRDR_OPTION_GOOGLE_JSON}
+        , {"percentage"      , 0    , RRDR_OPTION_PERCENTAGE}
+        , {"unaligned"       , 0    , RRDR_OPTION_NOT_ALIGNED}
+        , {                  NULL, 0, 0}
+};
+
+static struct {
+    const char *name;
+    uint32_t hash;
+    uint32_t value;
+} api_v1_data_formats[] = {
+        {  DATASOURCE_FORMAT_DATATABLE_JSON , 0 , DATASOURCE_DATATABLE_JSON}
+        , {DATASOURCE_FORMAT_DATATABLE_JSONP, 0 , DATASOURCE_DATATABLE_JSONP}
+        , {DATASOURCE_FORMAT_JSON           , 0 , DATASOURCE_JSON}
+        , {DATASOURCE_FORMAT_JSONP          , 0 , DATASOURCE_JSONP}
+        , {DATASOURCE_FORMAT_SSV            , 0 , DATASOURCE_SSV}
+        , {DATASOURCE_FORMAT_CSV            , 0 , DATASOURCE_CSV}
+        , {DATASOURCE_FORMAT_TSV            , 0 , DATASOURCE_TSV}
+        , {"tsv-excel"                      , 0 , DATASOURCE_TSV}
+        , {DATASOURCE_FORMAT_HTML           , 0 , DATASOURCE_HTML}
+        , {DATASOURCE_FORMAT_JS_ARRAY       , 0 , DATASOURCE_JS_ARRAY}
+        , {DATASOURCE_FORMAT_SSV_COMMA      , 0 , DATASOURCE_SSV_COMMA}
+        , {DATASOURCE_FORMAT_CSV_JSON_ARRAY , 0 , DATASOURCE_CSV_JSON_ARRAY}
+        , {                                 NULL, 0, 0}
+};
+
+static struct {
+    const char *name;
+    uint32_t hash;
+    uint32_t value;
+} api_v1_data_google_formats[] = {
+        // this is not error - when google requests json, it expects javascript
+        // https://developers.google.com/chart/interactive/docs/dev/implementing_data_source#responseformat
+        {  "json"     , 0    , DATASOURCE_DATATABLE_JSONP}
+        , {"html"     , 0    , DATASOURCE_HTML}
+        , {"csv"      , 0    , DATASOURCE_CSV}
+        , {"tsv-excel", 0    , DATASOURCE_TSV}
+        , {           NULL, 0, 0}
+};
+
+void web_client_api_v1_init(void) {
+    int i;
+
+    for(i = 0; api_v1_data_groups[i].name ; i++)
+        api_v1_data_groups[i].hash = simple_hash(api_v1_data_groups[i].name);
+
+    for(i = 0; api_v1_data_options[i].name ; i++)
+        api_v1_data_options[i].hash = simple_hash(api_v1_data_options[i].name);
+
+    for(i = 0; api_v1_data_formats[i].name ; i++)
+        api_v1_data_formats[i].hash = simple_hash(api_v1_data_formats[i].name);
+
+    for(i = 0; api_v1_data_google_formats[i].name ; i++)
+        api_v1_data_google_formats[i].hash = simple_hash(api_v1_data_google_formats[i].name);
+}
+
 inline int web_client_api_request_v1_data_group(char *name, int def) {
-    if(!strcmp(name, "average"))
-        return GROUP_AVERAGE;
+    int i;
 
-    else if(!strcmp(name, "min"))
-        return GROUP_MIN;
-
-    else if(!strcmp(name, "max"))
-        return GROUP_MAX;
-
-    else if(!strcmp(name, "sum"))
-        return GROUP_SUM;
-
-    else if(!strcmp(name, "incremental-sum"))
-        return GROUP_INCREMENTAL_SUM;
+    uint32_t hash = simple_hash(name);
+    for(i = 0; api_v1_data_groups[i].name ; i++)
+        if(unlikely(hash == api_v1_data_groups[i].hash && !strcmp(name, api_v1_data_groups[i].name)))
+            return api_v1_data_groups[i].value;
 
     return def;
 }
@@ -26,84 +111,41 @@ inline uint32_t web_client_api_request_v1_data_options(char *o) {
     while(o && *o && (tok = mystrsep(&o, ", |"))) {
         if(!*tok) continue;
 
-        if(!strcmp(tok, "nonzero"))
-            ret |= RRDR_OPTION_NONZERO;
-        else if(!strcmp(tok, "flip") || !strcmp(tok, "reversed") || !strcmp(tok, "reverse"))
-            ret |= RRDR_OPTION_REVERSED;
-        else if(!strcmp(tok, "jsonwrap"))
-            ret |= RRDR_OPTION_JSON_WRAP;
-        else if(!strcmp(tok, "min2max"))
-            ret |= RRDR_OPTION_MIN2MAX;
-        else if(!strcmp(tok, "ms") || !strcmp(tok, "milliseconds"))
-            ret |= RRDR_OPTION_MILLISECONDS;
-        else if(!strcmp(tok, "abs") || !strcmp(tok, "absolute") || !strcmp(tok, "absolute_sum") || !strcmp(tok, "absolute-sum"))
-            ret |= RRDR_OPTION_ABSOLUTE;
-        else if(!strcmp(tok, "seconds"))
-            ret |= RRDR_OPTION_SECONDS;
-        else if(!strcmp(tok, "null2zero"))
-            ret |= RRDR_OPTION_NULL2ZERO;
-        else if(!strcmp(tok, "objectrows"))
-            ret |= RRDR_OPTION_OBJECTSROWS;
-        else if(!strcmp(tok, "google_json"))
-            ret |= RRDR_OPTION_GOOGLE_JSON;
-        else if(!strcmp(tok, "percentage"))
-            ret |= RRDR_OPTION_PERCENTAGE;
-        else if(!strcmp(tok, "unaligned"))
-            ret |= RRDR_OPTION_NOT_ALIGNED;
+        uint32_t hash = simple_hash(tok);
+        int i;
+        for(i = 0; api_v1_data_options[i].name ; i++) {
+            if (unlikely(hash == api_v1_data_options[i].hash && !strcmp(tok, api_v1_data_options[i].name))) {
+                ret |= api_v1_data_options[i].value;
+                break;
+            }
+        }
     }
 
     return ret;
 }
 
 inline uint32_t web_client_api_request_v1_data_format(char *name) {
-    if(!strcmp(name, DATASOURCE_FORMAT_DATATABLE_JSON)) // datatable
-        return DATASOURCE_DATATABLE_JSON;
+    uint32_t hash = simple_hash(name);
+    int i;
 
-    else if(!strcmp(name, DATASOURCE_FORMAT_DATATABLE_JSONP)) // datasource
-        return DATASOURCE_DATATABLE_JSONP;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_JSON)) // json
-        return DATASOURCE_JSON;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_JSONP)) // jsonp
-        return DATASOURCE_JSONP;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_SSV)) // ssv
-        return DATASOURCE_SSV;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_CSV)) // csv
-        return DATASOURCE_CSV;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_TSV) || !strcmp(name, "tsv-excel")) // tsv
-        return DATASOURCE_TSV;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_HTML)) // html
-        return DATASOURCE_HTML;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_JS_ARRAY)) // array
-        return DATASOURCE_JS_ARRAY;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_SSV_COMMA)) // ssvcomma
-        return DATASOURCE_SSV_COMMA;
-
-    else if(!strcmp(name, DATASOURCE_FORMAT_CSV_JSON_ARRAY)) // csvjsonarray
-        return DATASOURCE_CSV_JSON_ARRAY;
+    for(i = 0; api_v1_data_formats[i].name ; i++) {
+        if (unlikely(hash == api_v1_data_formats[i].hash && !strcmp(name, api_v1_data_formats[i].name))) {
+            return api_v1_data_formats[i].value;
+        }
+    }
 
     return DATASOURCE_JSON;
 }
 
 inline uint32_t web_client_api_request_v1_data_google_format(char *name) {
-    if(!strcmp(name, "json"))
-        return DATASOURCE_DATATABLE_JSONP;
+    uint32_t hash = simple_hash(name);
+    int i;
 
-    else if(!strcmp(name, "html"))
-        return DATASOURCE_HTML;
-
-    else if(!strcmp(name, "csv"))
-        return DATASOURCE_CSV;
-
-    else if(!strcmp(name, "tsv-excel"))
-        return DATASOURCE_TSV;
+    for(i = 0; api_v1_data_google_formats[i].name ; i++) {
+        if (unlikely(hash == api_v1_data_google_formats[i].hash && !strcmp(name, api_v1_data_google_formats[i].name))) {
+            return api_v1_data_google_formats[i].value;
+        }
+    }
 
     return DATASOURCE_JSON;
 }
@@ -371,7 +413,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
     if(!st) st = rrdset_find_byname(host, chart);
     if(!st) {
         buffer_no_cacheable(w->response.data);
-        buffer_svg(w->response.data, "chart not found", NAN, "", NULL, NULL, -1);
+        buffer_svg(w->response.data, "chart not found", NAN, "", NULL, NULL, -1, 0);
         ret = 200;
         goto cleanup;
     }
@@ -382,7 +424,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
         rc = rrdcalc_find(st, alarm);
         if (!rc) {
             buffer_no_cacheable(w->response.data);
-            buffer_svg(w->response.data, "alarm not found", NAN, "", NULL, NULL, -1);
+            buffer_svg(w->response.data, "alarm not found", NAN, "", NULL, NULL, -1, 0);
             ret = 200;
             goto cleanup;
         }
@@ -498,7 +540,9 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
                 units,
                 label_color,
                 value_color,
-                precision);
+                precision,
+                options
+        );
         ret = 200;
     }
     else {
@@ -532,7 +576,9 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
                 units,
                 label_color,
                 value_color,
-                precision);
+                precision,
+                options
+        );
     }
 
     cleanup:
@@ -816,55 +862,65 @@ inline int web_client_api_request_v1_registry(RRDHOST *host, struct web_client *
 #endif /* NETDATA_INTERNAL_CHECKS */
     }
 
-    if(respect_web_browser_do_not_track_policy && web_client_has_donottrack(w)) {
+    if(unlikely(respect_web_browser_do_not_track_policy && web_client_has_donottrack(w))) {
         buffer_flush(w->response.data);
         buffer_sprintf(w->response.data, "Your web browser is sending 'DNT: 1' (Do Not Track). The registry requires persistent cookies on your browser to work.");
         return 400;
     }
 
-    if(action == 'A' && (!machine_guid || !machine_url || !url_name)) {
-        error("Invalid registry request - access requires these parameters: machine ('%s'), url ('%s'), name ('%s')",
-                machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", url_name?url_name:"UNSET");
-        buffer_flush(w->response.data);
-        buffer_strcat(w->response.data, "Invalid registry Access request.");
-        return 400;
+    if(unlikely(action == 'H')) {
+        // HELLO request, dashboard ACL
+        if(unlikely(!web_client_can_access_dashboard(w)))
+            return web_client_permission_denied(w);
     }
-    else if(action == 'D' && (!machine_guid || !machine_url || !delete_url)) {
-        error("Invalid registry request - delete requires these parameters: machine ('%s'), url ('%s'), delete_url ('%s')",
-                machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", delete_url?delete_url:"UNSET");
-        buffer_flush(w->response.data);
-        buffer_strcat(w->response.data, "Invalid registry Delete request.");
-        return 400;
-    }
-    else if(action == 'S' && (!machine_guid || !machine_url || !search_machine_guid)) {
-        error("Invalid registry request - search requires these parameters: machine ('%s'), url ('%s'), for ('%s')",
-                machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", search_machine_guid?search_machine_guid:"UNSET");
-        buffer_flush(w->response.data);
-        buffer_strcat(w->response.data, "Invalid registry Search request.");
-        return 400;
-    }
-    else if(action == 'W' && (!machine_guid || !machine_url || !to_person_guid)) {
-        error("Invalid registry request - switching identity requires these parameters: machine ('%s'), url ('%s'), to ('%s')",
-                machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", to_person_guid?to_person_guid:"UNSET");
-        buffer_flush(w->response.data);
-        buffer_strcat(w->response.data, "Invalid registry Switch request.");
-        return 400;
+    else {
+        // everything else, registry ACL
+        if(unlikely(!web_client_can_access_registry(w)))
+            return web_client_permission_denied(w);
     }
 
     switch(action) {
         case 'A':
+            if(unlikely(!machine_guid || !machine_url || !url_name)) {
+                error("Invalid registry request - access requires these parameters: machine ('%s'), url ('%s'), name ('%s')", machine_guid ? machine_guid : "UNSET", machine_url ? machine_url : "UNSET", url_name ? url_name : "UNSET");
+                buffer_flush(w->response.data);
+                buffer_strcat(w->response.data, "Invalid registry Access request.");
+                return 400;
+            }
+
             web_client_enable_tracking_required(w);
             return registry_request_access_json(host, w, person_guid, machine_guid, machine_url, url_name, now_realtime_sec());
 
         case 'D':
+            if(unlikely(!machine_guid || !machine_url || !delete_url)) {
+                error("Invalid registry request - delete requires these parameters: machine ('%s'), url ('%s'), delete_url ('%s')", machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", delete_url?delete_url:"UNSET");
+                buffer_flush(w->response.data);
+                buffer_strcat(w->response.data, "Invalid registry Delete request.");
+                return 400;
+            }
+
             web_client_enable_tracking_required(w);
             return registry_request_delete_json(host, w, person_guid, machine_guid, machine_url, delete_url, now_realtime_sec());
 
         case 'S':
+            if(unlikely(!machine_guid || !machine_url || !search_machine_guid)) {
+                error("Invalid registry request - search requires these parameters: machine ('%s'), url ('%s'), for ('%s')", machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", search_machine_guid?search_machine_guid:"UNSET");
+                buffer_flush(w->response.data);
+                buffer_strcat(w->response.data, "Invalid registry Search request.");
+                return 400;
+            }
+
             web_client_enable_tracking_required(w);
             return registry_request_search_json(host, w, person_guid, machine_guid, machine_url, search_machine_guid, now_realtime_sec());
 
         case 'W':
+            if(unlikely(!machine_guid || !machine_url || !to_person_guid)) {
+                error("Invalid registry request - switching identity requires these parameters: machine ('%s'), url ('%s'), to ('%s')", machine_guid?machine_guid:"UNSET", machine_url?machine_url:"UNSET", to_person_guid?to_person_guid:"UNSET");
+                buffer_flush(w->response.data);
+                buffer_strcat(w->response.data, "Invalid registry Switch request.");
+                return 400;
+            }
+
             web_client_enable_tracking_required(w);
             return registry_request_switch_json(host, w, person_guid, machine_guid, machine_url, to_person_guid, now_realtime_sec());
 
@@ -878,19 +934,40 @@ inline int web_client_api_request_v1_registry(RRDHOST *host, struct web_client *
     }
 }
 
-inline int web_client_api_request_v1(RRDHOST *host, struct web_client *w, char *url) {
-    static uint32_t hash_data = 0, hash_chart = 0, hash_charts = 0, hash_registry = 0, hash_badge = 0, hash_alarms = 0, hash_alarm_log = 0, hash_alarm_variables = 0, hash_raw = 0;
+static struct api_command {
+    const char *command;
+    uint32_t hash;
+    WEB_CLIENT_ACL acl;
+    int (*callback)(RRDHOST *host, struct web_client *w, char *url);
+} api_commands[] = {
+        { "data",            0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_data            },
+        { "chart",           0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_chart           },
+        { "charts",          0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_charts          },
 
-    if(unlikely(hash_data == 0)) {
-        hash_data = simple_hash("data");
-        hash_chart = simple_hash("chart");
-        hash_charts = simple_hash("charts");
-        hash_registry = simple_hash("registry");
-        hash_badge = simple_hash("badge.svg");
-        hash_alarms = simple_hash("alarms");
-        hash_alarm_log = simple_hash("alarm_log");
-        hash_alarm_variables = simple_hash("alarm_variables");
-        hash_raw = simple_hash("allmetrics");
+        // registry checks the ACL by itself, so we allow everything
+        { "registry",        0, WEB_CLIENT_ACL_NOCHECK,   web_client_api_request_v1_registry        },
+
+        // badges can be fetched with both dashboard and badge permissions
+        { "badge.svg",       0, WEB_CLIENT_ACL_DASHBOARD|WEB_CLIENT_ACL_BADGE, web_client_api_request_v1_badge },
+
+        { "alarms",          0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_alarms          },
+        { "alarm_log",       0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_alarm_log       },
+        { "alarm_variables", 0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_alarm_variables },
+        { "allmetrics",      0, WEB_CLIENT_ACL_DASHBOARD, web_client_api_request_v1_allmetrics      },
+
+        // terminator
+        { NULL,              0, WEB_CLIENT_ACL_NONE,      NULL                                      },
+};
+
+inline int web_client_api_request_v1(RRDHOST *host, struct web_client *w, char *url) {
+    static int initialized = 0;
+    int i;
+
+    if(unlikely(initialized == 0)) {
+        initialized = 1;
+
+        for(i = 0; api_commands[i].command ; i++)
+            api_commands[i].hash = simple_hash(api_commands[i].command);
     }
 
     // get the command
@@ -899,39 +976,19 @@ inline int web_client_api_request_v1(RRDHOST *host, struct web_client *w, char *
         debug(D_WEB_CLIENT, "%llu: Searching for API v1 command '%s'.", w->id, tok);
         uint32_t hash = simple_hash(tok);
 
-        if(hash == hash_data && !strcmp(tok, "data"))
-            return web_client_api_request_v1_data(host, w, url);
+        for(i = 0; api_commands[i].command ;i++) {
+            if(unlikely(hash == api_commands[i].hash && !strcmp(tok, api_commands[i].command))) {
+                if(unlikely(api_commands[i].acl != WEB_CLIENT_ACL_NOCHECK) && !(w->acl & api_commands[i].acl))
+                    return web_client_permission_denied(w);
 
-        else if(hash == hash_chart && !strcmp(tok, "chart"))
-            return web_client_api_request_v1_chart(host, w, url);
-
-        else if(hash == hash_charts && !strcmp(tok, "charts"))
-            return web_client_api_request_v1_charts(host, w, url);
-
-        else if(hash == hash_registry && !strcmp(tok, "registry"))
-            return web_client_api_request_v1_registry(host, w, url);
-
-        else if(hash == hash_badge && !strcmp(tok, "badge.svg"))
-            return web_client_api_request_v1_badge(host, w, url);
-
-        else if(hash == hash_alarms && !strcmp(tok, "alarms"))
-            return web_client_api_request_v1_alarms(host, w, url);
-
-        else if(hash == hash_alarm_log && !strcmp(tok, "alarm_log"))
-            return web_client_api_request_v1_alarm_log(host, w, url);
-
-        else if(hash == hash_alarm_variables && !strcmp(tok, "alarm_variables"))
-            return web_client_api_request_v1_alarm_variables(host, w, url);
-
-        else if(hash == hash_raw && !strcmp(tok, "allmetrics"))
-            return web_client_api_request_v1_allmetrics(host, w, url);
-
-        else {
-            buffer_flush(w->response.data);
-            buffer_strcat(w->response.data, "Unsupported v1 API command: ");
-            buffer_strcat_htmlescape(w->response.data, tok);
-            return 404;
+                return api_commands[i].callback(host, w, url);
+            }
         }
+
+        buffer_flush(w->response.data);
+        buffer_strcat(w->response.data, "Unsupported v1 API command: ");
+        buffer_strcat_htmlescape(w->response.data, tok);
+        return 404;
     }
     else {
         buffer_flush(w->response.data);

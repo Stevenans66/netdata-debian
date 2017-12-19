@@ -857,7 +857,7 @@ int accept4(int sock, struct sockaddr *addr, socklen_t *addrlen, int flags) {
 // --------------------------------------------------------------------------------------------------------------------
 // accept_socket() - accept a socket and store client IP and port
 
-int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *client_port, size_t portsize) {
+int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *client_port, size_t portsize, SIMPLE_PATTERN *access_list) {
     struct sockaddr_storage sadr;
     socklen_t addrlen = sizeof(sadr);
 
@@ -873,6 +873,13 @@ int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *clien
         client_port[portsize - 1] = '\0';
 
         switch (((struct sockaddr *)&sadr)->sa_family) {
+            case AF_UNIX:
+                debug(D_LISTENER, "New UNIX domain web client from %s on socket %d.", client_ip, fd);
+                // set the port - certain versions of libc return garbage on unix sockets
+                strncpy(client_port, "UNIX", portsize);
+                client_port[portsize - 1] = '\0';
+                break;
+
             case AF_INET:
                 debug(D_LISTENER, "New IPv4 web client from %s port %s on socket %d.", client_ip, client_port, fd);
                 break;
@@ -881,13 +888,30 @@ int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *clien
                 if (strncmp(client_ip, "::ffff:", 7) == 0) {
                     memmove(client_ip, &client_ip[7], strlen(&client_ip[7]) + 1);
                     debug(D_LISTENER, "New IPv4 web client from %s port %s on socket %d.", client_ip, client_port, fd);
-                } else
+                }
+                else
                     debug(D_LISTENER, "New IPv6 web client from %s port %s on socket %d.", client_ip, client_port, fd);
                 break;
 
             default:
                 debug(D_LISTENER, "New UNKNOWN web client from %s port %s on socket %d.", client_ip, client_port, fd);
                 break;
+        }
+
+        if(access_list) {
+            if(!strcmp(client_ip, "127.0.0.1") || !strcmp(client_ip, "::1")) {
+                strncpy(client_ip, "localhost", ipsize);
+                client_ip[ipsize - 1] = '\0';
+            }
+
+            if(unlikely(!simple_pattern_matches(access_list, client_ip))) {
+                errno = 0;
+                debug(D_LISTENER, "Permission denied for client '%s', port '%s'", client_ip, client_port);
+                error("DENIED ACCESS to client '%s'", client_ip);
+                close(nfd);
+                nfd = -1;
+                errno = EPERM;
+            }
         }
     }
 #ifdef HAVE_ACCEPT4
@@ -928,8 +952,8 @@ struct poll {
     struct pollinfo *inf;
     struct pollinfo *first_free;
 
-    void *(*add_callback)(int fd, short int *events);
-    void  (*del_callback)(int fd, void *data);
+    void *(*add_callback)(int fd, int socktype, short int *events);
+    void  (*del_callback)(int fd, int socktype, void *data);
     int   (*rcv_callback)(int fd, int socktype, void *data, short int *events);
     int   (*snd_callback)(int fd, int socktype, void *data, short int *events);
 };
@@ -984,7 +1008,7 @@ static inline struct pollinfo *poll_add_fd(struct poll *p, int fd, int socktype,
         p->max = pi->slot;
 
     if(pi->flags & POLLINFO_FLAG_CLIENT_SOCKET) {
-        pi->data = p->add_callback(fd, &pf->events);
+        pi->data = p->add_callback(fd, pi->socktype, &pf->events);
     }
 
     if(pi->flags & POLLINFO_FLAG_SERVER_SOCKET) {
@@ -1003,7 +1027,7 @@ static inline void poll_close_fd(struct poll *p, struct pollinfo *pi) {
     if(unlikely(pf->fd == -1)) return;
 
     if(pi->flags & POLLINFO_FLAG_CLIENT_SOCKET) {
-        p->del_callback(pf->fd, pi->data);
+        p->del_callback(pf->fd, pi->socktype, pi->data);
     }
 
     close(pf->fd);
@@ -1036,14 +1060,16 @@ static inline void poll_close_fd(struct poll *p, struct pollinfo *pi) {
     debug(D_POLLFD, "POLLFD: DEL: completed, slots = %zu, used = %zu, min = %zu, max = %zu, next free = %zd", p->slots, p->used, p->min, p->max, p->first_free?(ssize_t)p->first_free->slot:(ssize_t)-1);
 }
 
-static void *add_callback_default(int fd, short int *events) {
+static void *add_callback_default(int fd, int socktype, short int *events) {
     (void)fd;
+    (void)socktype;
     (void)events;
 
     return NULL;
 }
-static void del_callback_default(int fd, void *data) {
+static void del_callback_default(int fd, int socktype, void *data) {
     (void)fd;
+    (void)socktype;
     (void)data;
 
     if(data)
@@ -1100,10 +1126,11 @@ void poll_events_cleanup(void *data) {
 }
 
 void poll_events(LISTEN_SOCKETS *sockets
-        , void *(*add_callback)(int fd, short int *events)
-        , void  (*del_callback)(int fd, void *data)
+        , void *(*add_callback)(int fd, int socktype, short int *events)
+        , void  (*del_callback)(int fd, int socktype, void *data)
         , int   (*rcv_callback)(int fd, int socktype, void *data, short int *events)
         , int   (*snd_callback)(int fd, int socktype, void *data, short int *events)
+        , SIMPLE_PATTERN *access_list
         , void *data
 ) {
     int retval;
@@ -1182,7 +1209,7 @@ void poll_events(LISTEN_SOCKETS *sockets
                                 char client_port[NI_MAXSERV + 1];
 
                                 debug(D_POLLFD, "POLLFD: LISTENER: calling accept4() slot %zu (fd %d)", i, fd);
-                                nfd = accept_socket(fd, SOCK_NONBLOCK, client_ip, NI_MAXHOST + 1, client_port, NI_MAXSERV + 1);
+                                nfd = accept_socket(fd, SOCK_NONBLOCK, client_ip, NI_MAXHOST + 1, client_port, NI_MAXSERV + 1, access_list);
                                 if (nfd < 0) {
                                     // accept failed
 
@@ -1211,6 +1238,8 @@ void poll_events(LISTEN_SOCKETS *sockets
                             // we read data from the server socket
 
                             debug(D_POLLFD, "POLLFD: LISTENER: reading data from UDP slot %zu (fd %d)", i, fd);
+
+                            // FIXME: access_list is not applied to UDP
 
                             p.rcv_callback(fd, pi->socktype, pi->data, &pf->events);
                             break;
