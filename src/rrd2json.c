@@ -13,6 +13,8 @@ void rrd_stats_api_v1_chart_with_data(RRDSET *st, BUFFER *wb, size_t *dimensions
         "\t\t\t\"context\": \"%s\",\n"
         "\t\t\t\"title\": \"%s (%s)\",\n"
         "\t\t\t\"priority\": %ld,\n"
+        "\t\t\t\"plugin\": \"%s\",\n"
+        "\t\t\t\"module\": \"%s\",\n"
         "\t\t\t\"enabled\": %s,\n"
         "\t\t\t\"units\": \"%s\",\n"
         "\t\t\t\"data_url\": \"/api/v1/data?chart=%s\",\n"
@@ -29,6 +31,8 @@ void rrd_stats_api_v1_chart_with_data(RRDSET *st, BUFFER *wb, size_t *dimensions
         , st->context
         , st->title, st->name
         , st->priority
+        , st->plugin_name?st->plugin_name:""
+        , st->module_name?st->module_name:""
         , rrdset_flag_check(st, RRDSET_FLAG_ENABLED)?"true":"false"
         , st->units
         , st->name
@@ -48,13 +52,14 @@ void rrd_stats_api_v1_chart_with_data(RRDSET *st, BUFFER *wb, size_t *dimensions
 
         memory += rd->memsize;
 
-        buffer_sprintf(wb,
-            "%s"
-            "\t\t\t\t\"%s\": { \"name\": \"%s\" }"
-            , dimensions?",\n":""
-            , rd->id
-            , rd->name
-            );
+        buffer_sprintf(
+                wb
+                , "%s"
+                        "\t\t\t\t\"%s\": { \"name\": \"%s\" }"
+                , dimensions ? ",\n" : ""
+                , rd->id
+                , rd->name
+        );
 
         dimensions++;
     }
@@ -67,8 +72,33 @@ void rrd_stats_api_v1_chart_with_data(RRDSET *st, BUFFER *wb, size_t *dimensions
     buffer_strcat(wb, ",\n\t\t\t\"red\": ");
     buffer_rrd_value(wb, st->red);
 
+    buffer_strcat(wb, ",\n\t\t\t\"alarms\": {\n");
+    size_t alarms = 0;
+    RRDCALC *rc;
+    for(rc = st->alarms; rc ; rc = rc->rrdset_next) {
+
+        buffer_sprintf(
+                wb
+                , "%s"
+                        "\t\t\t\t\"%s\": {\n"
+                        "\t\t\t\t\t\"id\": %u,\n"
+                        "\t\t\t\t\t\"status\": \"%s\",\n"
+                        "\t\t\t\t\t\"units\": \"%s\",\n"
+                        "\t\t\t\t\t\"update_every\": %d\n"
+                        "\t\t\t\t}"
+                , (alarms) ? ",\n" : ""
+                , rc->name
+                , rc->id
+                , rrdcalc_status2string(rc->status)
+                , rc->units
+                , rc->update_every
+        );
+
+        alarms++;
+    }
+
     buffer_sprintf(wb,
-        "\n\t\t}"
+        "\n\t\t\t}\n\t\t}"
         );
 
     rrdset_unlock(st);
@@ -92,6 +122,7 @@ void rrd_stats_api_v1_charts(RRDHOST *host, BUFFER *wb) {
            "\t\"hostname\": \"%s\""
         ",\n\t\"version\": \"%s\""
         ",\n\t\"os\": \"%s\""
+        ",\n\t\"timezone\": \"%s\""
         ",\n\t\"update_every\": %d"
         ",\n\t\"history\": %ld"
         ",\n\t\"custom_info\": \"%s\""
@@ -99,6 +130,7 @@ void rrd_stats_api_v1_charts(RRDHOST *host, BUFFER *wb) {
         , host->hostname
         , program_version
         , host->os
+        , host->timezone
         , host->rrd_update_every
         , host->rrd_history_entries
         , custom_dashboard_info_js_filename
@@ -126,7 +158,8 @@ void rrd_stats_api_v1_charts(RRDHOST *host, BUFFER *wb) {
     }
     rrdhost_unlock(host);
 
-    buffer_sprintf(wb, "\n\t}"
+    buffer_sprintf(wb
+                   , "\n\t}"
                     ",\n\t\"charts_count\": %zu"
                     ",\n\t\"dimensions_count\": %zu"
                     ",\n\t\"alarms_count\": %zu"
@@ -142,24 +175,31 @@ void rrd_stats_api_v1_charts(RRDHOST *host, BUFFER *wb) {
 
     if(unlikely(rrd_hosts_available > 1)) {
         rrd_rdlock();
+
+        size_t found = 0;
         RRDHOST *h;
         rrdhost_foreach_read(h) {
-            buffer_sprintf(wb,
-                   "%s\n\t\t{"
-                   "\n\t\t\t\"hostname\": \"%s\""
-                   "\n\t\t}"
-                   , (h != localhost) ? "," : ""
-                   , h->hostname
-            );
+            if(!rrdhost_should_be_removed(h, host, now)) {
+                buffer_sprintf(wb
+                               , "%s\n\t\t{"
+                                "\n\t\t\t\"hostname\": \"%s\""
+                                "\n\t\t}"
+                               , (found > 0) ? "," : ""
+                               , h->hostname
+                );
+
+                found++;
+            }
         }
+
         rrd_unlock();
     }
     else {
-        buffer_sprintf(wb,
-                "\n\t\t{"
-                "\n\t\t\t\"hostname\": \"%s\""
-                "\n\t\t}"
-                , host->hostname
+        buffer_sprintf(wb
+                       , "\n\t\t{"
+                        "\n\t\t\t\"hostname\": \"%s\""
+                        "\n\t\t}"
+                       , host->hostname
         );
     }
 

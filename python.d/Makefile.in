@@ -81,6 +81,7 @@ build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = $(top_srcdir)/build/subst.inc $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.am $(dist_python_SCRIPTS) \
+	$(dist_bases_DATA) $(dist_bases_framework_services_DATA) \
 	$(dist_python_DATA) $(dist_python_urllib3_DATA) \
 	$(dist_python_urllib3_backports_DATA) \
 	$(dist_python_urllib3_contrib_DATA) \
@@ -88,7 +89,8 @@ DIST_COMMON = $(top_srcdir)/build/subst.inc $(srcdir)/Makefile.in \
 	$(dist_python_urllib3_securetransport_DATA) \
 	$(dist_python_urllib3_ssl_match_hostname_DATA) \
 	$(dist_python_urllib3_util_DATA) $(dist_pythonmodules_DATA) \
-	$(dist_pythonyaml2_DATA) $(dist_pythonyaml3_DATA)
+	$(dist_pythonyaml2_DATA) $(dist_pythonyaml3_DATA) \
+	$(dist_third_party_DATA)
 subdir = python.d
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
@@ -132,8 +134,9 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" \
-	"$(DESTDIR)$(python_urllib3dir)" \
+am__installdirs = "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(basesdir)" \
+	"$(DESTDIR)$(bases_framework_servicesdir)" \
+	"$(DESTDIR)$(pythondir)" "$(DESTDIR)$(python_urllib3dir)" \
 	"$(DESTDIR)$(python_urllib3_backportsdir)" \
 	"$(DESTDIR)$(python_urllib3_contribdir)" \
 	"$(DESTDIR)$(python_urllib3_packagesdir)" \
@@ -141,7 +144,7 @@ am__installdirs = "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" \
 	"$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" \
 	"$(DESTDIR)$(python_urllib3_utildir)" \
 	"$(DESTDIR)$(pythonmodulesdir)" "$(DESTDIR)$(pythonyaml2dir)" \
-	"$(DESTDIR)$(pythonyaml3dir)"
+	"$(DESTDIR)$(pythonyaml3dir)" "$(DESTDIR)$(third_partydir)"
 SCRIPTS = $(dist_python_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -162,14 +165,16 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(dist_python_DATA) $(dist_python_urllib3_DATA) \
+DATA = $(dist_bases_DATA) $(dist_bases_framework_services_DATA) \
+	$(dist_python_DATA) $(dist_python_urllib3_DATA) \
 	$(dist_python_urllib3_backports_DATA) \
 	$(dist_python_urllib3_contrib_DATA) \
 	$(dist_python_urllib3_packages_DATA) \
 	$(dist_python_urllib3_securetransport_DATA) \
 	$(dist_python_urllib3_ssl_match_hostname_DATA) \
 	$(dist_python_urllib3_util_DATA) $(dist_pythonmodules_DATA) \
-	$(dist_pythonyaml2_DATA) $(dist_pythonyaml3_DATA)
+	$(dist_pythonyaml2_DATA) $(dist_pythonyaml3_DATA) \
+	$(dist_third_party_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
@@ -329,12 +334,14 @@ dist_python_SCRIPTS = \
 dist_python_DATA = \
     README.md \
     apache.chart.py \
-    apache_cache.chart.py \
+    beanstalk.chart.py \
     bind_rndc.chart.py \
     chrony.chart.py \
+    couchdb.chart.py \
     cpufreq.chart.py \
     cpuidle.chart.py \
     dns_query_time.chart.py \
+    dnsdist.chart.py \
     dovecot.chart.py \
     elasticsearch.chart.py \
     example.chart.py \
@@ -356,6 +363,7 @@ dist_python_DATA = \
     phpfpm.chart.py \
     postfix.chart.py \
     postgres.chart.py \
+    powerdns.chart.py \
     rabbitmq.chart.py \
     redis.chart.py \
     retroshare.chart.py \
@@ -372,8 +380,33 @@ pythonmodulesdir = $(pythondir)/python_modules
 dist_pythonmodules_DATA = \
     python_modules/__init__.py \
     python_modules/base.py \
-    python_modules/msg.py \
-    python_modules/lm_sensors.py \
+    $(NULL)
+
+basesdir = $(pythonmodulesdir)/bases
+dist_bases_DATA = \
+    python_modules/bases/__init__.py \
+    python_modules/bases/charts.py \
+    python_modules/bases/collection.py \
+    python_modules/bases/loaders.py \
+    python_modules/bases/loggers.py \
+    $(NULL)
+
+bases_framework_servicesdir = $(basesdir)/FrameworkServices
+dist_bases_framework_services_DATA = \
+    python_modules/bases/FrameworkServices/__init__.py \
+    python_modules/bases/FrameworkServices/ExecutableService.py \
+    python_modules/bases/FrameworkServices/LogService.py \
+    python_modules/bases/FrameworkServices/MySQLService.py \
+    python_modules/bases/FrameworkServices/SimpleService.py \
+    python_modules/bases/FrameworkServices/SocketService.py \
+    python_modules/bases/FrameworkServices/UrlService.py \
+    $(NULL)
+
+third_partydir = $(pythonmodulesdir)/third_party
+dist_third_party_DATA = \
+    python_modules/third_party/__init__.py \
+    python_modules/third_party/ordereddict.py \
+    python_modules/third_party/lm_sensors.py \
     $(NULL)
 
 pythonyaml2dir = $(pythonmodulesdir)/pyyaml2
@@ -552,6 +585,48 @@ uninstall-dist_pythonSCRIPTS:
 	files=`for p in $$list; do echo "$$p"; done | \
 	       sed -e 's,.*/,,;$(transform)'`; \
 	dir='$(DESTDIR)$(pythondir)'; $(am__uninstall_files_from_dir)
+install-dist_basesDATA: $(dist_bases_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_bases_DATA)'; test -n "$(basesdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(basesdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(basesdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(basesdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(basesdir)" || exit $$?; \
+	done
+
+uninstall-dist_basesDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_bases_DATA)'; test -n "$(basesdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(basesdir)'; $(am__uninstall_files_from_dir)
+install-dist_bases_framework_servicesDATA: $(dist_bases_framework_services_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_bases_framework_services_DATA)'; test -n "$(bases_framework_servicesdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(bases_framework_servicesdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(bases_framework_servicesdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(bases_framework_servicesdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(bases_framework_servicesdir)" || exit $$?; \
+	done
+
+uninstall-dist_bases_framework_servicesDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_bases_framework_services_DATA)'; test -n "$(bases_framework_servicesdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(bases_framework_servicesdir)'; $(am__uninstall_files_from_dir)
 install-dist_pythonDATA: $(dist_python_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_python_DATA)'; test -n "$(pythondir)" || list=; \
@@ -783,6 +858,27 @@ uninstall-dist_pythonyaml3DATA:
 	@list='$(dist_pythonyaml3_DATA)'; test -n "$(pythonyaml3dir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pythonyaml3dir)'; $(am__uninstall_files_from_dir)
+install-dist_third_partyDATA: $(dist_third_party_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_third_party_DATA)'; test -n "$(third_partydir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(third_partydir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(third_partydir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(third_partydir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(third_partydir)" || exit $$?; \
+	done
+
+uninstall-dist_third_partyDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_third_party_DATA)'; test -n "$(third_partydir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(third_partydir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -824,7 +920,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(python_urllib3dir)" "$(DESTDIR)$(python_urllib3_backportsdir)" "$(DESTDIR)$(python_urllib3_contribdir)" "$(DESTDIR)$(python_urllib3_packagesdir)" "$(DESTDIR)$(python_urllib3_securetransportdir)" "$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" "$(DESTDIR)$(python_urllib3_utildir)" "$(DESTDIR)$(pythonmodulesdir)" "$(DESTDIR)$(pythonyaml2dir)" "$(DESTDIR)$(pythonyaml3dir)"; do \
+	for dir in "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(basesdir)" "$(DESTDIR)$(bases_framework_servicesdir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(python_urllib3dir)" "$(DESTDIR)$(python_urllib3_backportsdir)" "$(DESTDIR)$(python_urllib3_contribdir)" "$(DESTDIR)$(python_urllib3_packagesdir)" "$(DESTDIR)$(python_urllib3_securetransportdir)" "$(DESTDIR)$(python_urllib3_ssl_match_hostnamedir)" "$(DESTDIR)$(python_urllib3_utildir)" "$(DESTDIR)$(pythonmodulesdir)" "$(DESTDIR)$(pythonyaml2dir)" "$(DESTDIR)$(pythonyaml3dir)" "$(DESTDIR)$(third_partydir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -879,7 +975,9 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_pythonDATA install-dist_pythonSCRIPTS \
+install-data-am: install-dist_basesDATA \
+	install-dist_bases_framework_servicesDATA \
+	install-dist_pythonDATA install-dist_pythonSCRIPTS \
 	install-dist_python_urllib3DATA \
 	install-dist_python_urllib3_backportsDATA \
 	install-dist_python_urllib3_contribDATA \
@@ -888,7 +986,7 @@ install-data-am: install-dist_pythonDATA install-dist_pythonSCRIPTS \
 	install-dist_python_urllib3_ssl_match_hostnameDATA \
 	install-dist_python_urllib3_utilDATA \
 	install-dist_pythonmodulesDATA install-dist_pythonyaml2DATA \
-	install-dist_pythonyaml3DATA
+	install-dist_pythonyaml3DATA install-dist_third_partyDATA
 
 install-dvi: install-dvi-am
 
@@ -932,38 +1030,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
-	uninstall-dist_python_urllib3DATA \
-	uninstall-dist_python_urllib3_backportsDATA \
-	uninstall-dist_python_urllib3_contribDATA \
-	uninstall-dist_python_urllib3_packagesDATA \
-	uninstall-dist_python_urllib3_securetransportDATA \
-	uninstall-dist_python_urllib3_ssl_match_hostnameDATA \
-	uninstall-dist_python_urllib3_utilDATA \
-	uninstall-dist_pythonmodulesDATA \
-	uninstall-dist_pythonyaml2DATA uninstall-dist_pythonyaml3DATA
-
-.MAKE: install-am install-strip
-
-.PHONY: all all-am check check-am clean clean-generic cscopelist-am \
-	ctags-am distclean distclean-generic distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dist_pythonDATA \
-	install-dist_pythonSCRIPTS install-dist_python_urllib3DATA \
-	install-dist_python_urllib3_backportsDATA \
-	install-dist_python_urllib3_contribDATA \
-	install-dist_python_urllib3_packagesDATA \
-	install-dist_python_urllib3_securetransportDATA \
-	install-dist_python_urllib3_ssl_match_hostnameDATA \
-	install-dist_python_urllib3_utilDATA \
-	install-dist_pythonmodulesDATA install-dist_pythonyaml2DATA \
-	install-dist_pythonyaml3DATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am tags-am uninstall uninstall-am \
+uninstall-am: uninstall-dist_basesDATA \
+	uninstall-dist_bases_framework_servicesDATA \
 	uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
 	uninstall-dist_python_urllib3DATA \
 	uninstall-dist_python_urllib3_backportsDATA \
@@ -973,7 +1041,45 @@ uninstall-am: uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
 	uninstall-dist_python_urllib3_ssl_match_hostnameDATA \
 	uninstall-dist_python_urllib3_utilDATA \
 	uninstall-dist_pythonmodulesDATA \
-	uninstall-dist_pythonyaml2DATA uninstall-dist_pythonyaml3DATA
+	uninstall-dist_pythonyaml2DATA uninstall-dist_pythonyaml3DATA \
+	uninstall-dist_third_partyDATA
+
+.MAKE: install-am install-strip
+
+.PHONY: all all-am check check-am clean clean-generic cscopelist-am \
+	ctags-am distclean distclean-generic distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dist_basesDATA \
+	install-dist_bases_framework_servicesDATA \
+	install-dist_pythonDATA install-dist_pythonSCRIPTS \
+	install-dist_python_urllib3DATA \
+	install-dist_python_urllib3_backportsDATA \
+	install-dist_python_urllib3_contribDATA \
+	install-dist_python_urllib3_packagesDATA \
+	install-dist_python_urllib3_securetransportDATA \
+	install-dist_python_urllib3_ssl_match_hostnameDATA \
+	install-dist_python_urllib3_utilDATA \
+	install-dist_pythonmodulesDATA install-dist_pythonyaml2DATA \
+	install-dist_pythonyaml3DATA install-dist_third_partyDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags-am \
+	uninstall uninstall-am uninstall-dist_basesDATA \
+	uninstall-dist_bases_framework_servicesDATA \
+	uninstall-dist_pythonDATA uninstall-dist_pythonSCRIPTS \
+	uninstall-dist_python_urllib3DATA \
+	uninstall-dist_python_urllib3_backportsDATA \
+	uninstall-dist_python_urllib3_contribDATA \
+	uninstall-dist_python_urllib3_packagesDATA \
+	uninstall-dist_python_urllib3_securetransportDATA \
+	uninstall-dist_python_urllib3_ssl_match_hostnameDATA \
+	uninstall-dist_python_urllib3_utilDATA \
+	uninstall-dist_pythonmodulesDATA \
+	uninstall-dist_pythonyaml2DATA uninstall-dist_pythonyaml3DATA \
+	uninstall-dist_third_partyDATA
 
 .in:
 	if sed \

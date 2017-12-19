@@ -9,6 +9,7 @@
 # Conditional build:
 %bcond_without  systemd  # systemd
 %bcond_with     nfacct   # build with nfacct plugin
+%bcond_with     freeipmi # build with freeipmi plugin
 
 %if 0%{?fedora} || 0%{?rhel} >= 7 || 0%{?suse_version} >= 1140
 %else
@@ -77,11 +78,11 @@ Recommends:	python2-psycopg2 \
 
 Summary:	Real-time performance monitoring, done right
 Name:		netdata
-Version:	1.8.0
+Version:	1.9.0
 Release:	1%{?dist}
 License:	GPLv3+
 Group:		Applications/System
-Source0:	https://github.com/firehol/%{name}/releases/download/v1.8.0/%{name}-1.8.0.tar.xz
+Source0:	https://github.com/firehol/%{name}/releases/download/v1.9.0/%{name}-1.9.0.tar.xz
 URL:		http://my-netdata.io
 BuildRequires:	pkgconfig
 BuildRequires:	xz
@@ -96,6 +97,11 @@ BuildRequires:	libmnl-devel
 BuildRequires:	libnetfilter_acct-devel
 Requires: libmnl
 Requires: libnetfilter_acct
+%endif
+
+%if %{with freeipmi}
+BuildRequires:	freeipmi-devel
+Requires: freeipmi
 %endif
 
 Requires(pre): /usr/sbin/groupadd
@@ -117,13 +123,14 @@ so that you can get insights of what is happening now and what just
 happened, on your systems and applications.
 
 %prep
-%setup -q -n netdata-1.8.0
+%setup -q -n netdata-1.9.0
 
 %build
 %configure \
 	--with-zlib \
 	--with-math \
 	%{?with_nfacct:--enable-plugin-nfacct} \
+	%{?with_freeipmi:--enable-plugin-freeipmi} \
 	--with-user=netdata
 %{__make} %{?_smp_mflags}
 
@@ -187,6 +194,16 @@ rm -rf "${RPM_BUILD_ROOT}"
 
 %caps(cap_dac_read_search,cap_sys_ptrace=ep) %attr(0555,root,root) %{_libexecdir}/%{name}/plugins.d/apps.plugin
 
+# cgroup-network detects the network interfaces of CGROUPs
+# it must be able to use setns() and run cgroup-network-helper.sh as root
+# the helper script reads /proc/PID/fdinfo/* files, runs virsh, etc.
+%caps(cap_setuid=ep) %attr(4555,root,root) %{_libexecdir}/%{name}/plugins.d/cgroup-network
+%attr(0555,root,root) %{_libexecdir}/%{name}/plugins.d/cgroup-network-helper.sh
+
+%if %{with freeipmi}
+%caps(cap_setuid=ep) %attr(4555,root,root) %{_libexecdir}/%{name}/plugins.d/freeipmi.plugin
+%endif
+
 %attr(0700,netdata,netdata) %dir %{_localstatedir}/cache/%{name}
 %attr(0700,netdata,netdata) %dir %{_localstatedir}/log/%{name}
 %attr(0700,netdata,netdata) %dir %{_localstatedir}/lib/%{name}
@@ -207,6 +224,9 @@ rm -rf "${RPM_BUILD_ROOT}"
 %{_datadir}/%{name}/web
 
 %changelog
+* Sun Dec 17 2017 Costa Tsaousis <costa@tsaousis.gr> - 1.9.0-1
+  Please check full changelog at github.
+  https://github.com/firehol/netdata/releases
 * Mon Sep 17 2017 Costa Tsaousis <costa@tsaousis.gr> - 1.8.0-1
   This is mainly a bugfix release.
   Please check full changelog at github.

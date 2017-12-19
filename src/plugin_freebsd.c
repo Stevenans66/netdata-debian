@@ -37,6 +37,7 @@ static struct freebsd_module {
         // CPU metrics
         { .name = "kern.cp_times",         .dim = "cp_times",       .enabled = 1, .func = do_kern_cp_times },
         { .name = "dev.cpu.temperature",   .dim = "cpu_temperature", .enabled = 1, .func = do_dev_cpu_temperature },
+        { .name = "dev.cpu.0.freq",        .dim = "cpu_frequency",  .enabled = 1, .func = do_dev_cpu_0_freq },
 
         // disk metrics
         { .name = "kern.devstat",          .dim = "kern_devstat",   .enabled = 1, .func = do_kern_devstat },
@@ -56,6 +57,7 @@ static struct freebsd_module {
 
         // ZFS metrics
         { .name = "kstat.zfs.misc.arcstats", .dim = "arcstats",   .enabled = 1, .func = do_kstat_zfs_misc_arcstats },
+        { .name = "kstat.zfs.misc.zio_trim", .dim = "trim",       .enabled = 1, .func = do_kstat_zfs_misc_zio_trim },
 
         // ipfw metrics
         { .name = "ipfw",                  .dim = "ipfw",         .enabled = 1, .func = do_ipfw },
@@ -127,9 +129,20 @@ void *freebsd_main(void *ptr) {
                 st = rrdset_find_bytype_localhost("netdata", "plugin_freebsd_modules");
 
                 if(!st) {
-                    st = rrdset_create_localhost("netdata", "plugin_freebsd_modules", NULL, "freebsd", NULL
-                    , "NetData FreeBSD Plugin Modules Durations", "milliseconds/run", 132001
-                    , localhost->rrd_update_every, RRDSET_TYPE_STACKED);
+                    st = rrdset_create_localhost(
+                            "netdata"
+                            , "plugin_freebsd_modules"
+                            , NULL
+                            , "freebsd"
+                            , NULL
+                            , "NetData FreeBSD Plugin Modules Durations"
+                            , "milliseconds/run"
+                            , "netdata"
+                            , "stats"
+                            , 132001
+                            , localhost->rrd_update_every
+                            , RRDSET_TYPE_STACKED
+                    );
 
                     for(i = 0 ; freebsd_modules[i].name ;i++) {
                         struct freebsd_module *pm = &freebsd_modules[i];

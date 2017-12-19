@@ -219,11 +219,13 @@ sendmail=
 
 # enable / disable features
 SEND_SLACK="YES"
+SEND_FLOCK="YES"
 SEND_DISCORD="YES"
 SEND_PUSHOVER="YES"
 SEND_TWILIO="YES"
 SEND_HIPCHAT="YES"
 SEND_MESSAGEBIRD="YES"
+SEND_KAVENEGAR="YES"
 SEND_TELEGRAM="YES"
 SEND_EMAIL="YES"
 SEND_PUSHBULLET="YES"
@@ -235,6 +237,11 @@ SEND_CUSTOM="YES"
 SLACK_WEBHOOK_URL=
 DEFAULT_RECIPIENT_SLACK=
 declare -A role_recipients_slack=()
+
+# flock configs
+FLOCK_WEBHOOK_URL=
+DEFAULT_RECIPIENT_FLOCK=
+declare -A role_recipients_flock=()
 
 # discord configs
 DISCORD_WEBHOOK_URL=
@@ -248,6 +255,7 @@ declare -A role_recipients_pushover=()
 
 # pushbullet configs
 PUSHBULLET_ACCESS_TOKEN=
+PUSHBULLET_SOURCE_DEVICE=
 DEFAULT_RECIPIENT_PUSHBULLET=
 declare -A role_recipients_pushbullet=()
 
@@ -269,6 +277,12 @@ MESSAGEBIRD_ACCESS_KEY=
 MESSAGEBIRD_NUMBER=
 DEFAULT_RECIPIENT_MESSAGEBIRD=
 declare -A role_recipients_messagebird=()
+
+# kavenegar configs
+KAVENEGAR_API_KEY=""
+KAVENEGAR_SENDER=""
+DEFAULT_RECIPIENT_KAVENEGAR=()
+declare -A role_recipients_kavenegar=""
 
 # telegram configs
 TELEGRAM_BOT_TOKEN=
@@ -372,6 +386,7 @@ filter_recipient_by_criticality() {
 # find the recipients' addresses per method
 
 declare -A arr_slack=()
+declare -A arr_flock=()
 declare -A arr_discord=()
 declare -A arr_pushover=()
 declare -A arr_pushbullet=()
@@ -382,6 +397,7 @@ declare -A arr_pd=()
 declare -A arr_email=()
 declare -A arr_custom=()
 declare -A arr_messagebird=()
+declare -A arr_kavenegar=()
 
 # netdata may call us with multiple roles, and roles may have multiple but
 # overlapping recipients - so, here we find the unique recipients.
@@ -439,6 +455,14 @@ do
         [ "${r}" != "disabled" ] && filter_recipient_by_criticality messagebird "${r}" && arr_messagebird[${r/|*/}]="1"
     done
 
+    # kavenegar
+    a="${role_recipients_kavenegar[${x}]}"
+    [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_KAVENEGAR}"
+    for r in ${a//,/ }
+    do
+        [ "${r}" != "disabled" ] && filter_recipient_by_criticality kavenegar "${r}" && arr_kavenegar[${r/|*/}]="1"
+    done
+
     # telegram
     a="${role_recipients_telegram[${x}]}"
     [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_TELEGRAM}"
@@ -453,6 +477,14 @@ do
     for r in ${a//,/ }
     do
         [ "${r}" != "disabled" ] && filter_recipient_by_criticality slack "${r}" && arr_slack[${r/|*/}]="1"
+    done
+
+    # flock
+    a="${role_recipients_flock[${x}]}"
+    [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_FLOCK}"
+    for r in ${a//,/ }
+    do
+        [ "${r}" != "disabled" ] && filter_recipient_by_criticality flock "${r}" && arr_flock[${r/|*/}]="1"
     done
 
     # discord
@@ -485,6 +517,10 @@ done
 to_slack="${!arr_slack[*]}"
 [ -z "${to_slack}" ] && SEND_SLACK="NO"
 
+# build the list of flock recipients (channels)
+to_flock="${!arr_flock[*]}"
+[ -z "${to_flock}" ] && SEND_FLOCK="NO"
+
 # build the list of discord recipients (channels)
 to_discord="${!arr_discord[*]}"
 [ -z "${to_discord}" ] && SEND_DISCORD="NO"
@@ -508,6 +544,10 @@ to_hipchat="${!arr_hipchat[*]}"
 # build the list of messagebird recipients (phone numbers)
 to_messagebird="${!arr_messagebird[*]}"
 [ -z "${to_messagebird}" ] && SEND_MESSAGEBIRD="NO"
+
+# build the list of kavenegar recipients (phone numbers)
+to_kavenegar="${!arr_kavenegar[*]}"
+[ -z "${to_kavenegar}" ] && SEND_KAVENEGAR="NO"
 
 # check array of telegram recipients (chat ids)
 to_telegram="${!arr_telegram[*]}"
@@ -537,6 +577,9 @@ done
 # check slack
 [ -z "${SLACK_WEBHOOK_URL}" ] && SEND_SLACK="NO"
 
+# check flock
+[ -z "${FLOCK_WEBHOOK_URL}" ] && SEND_FLOCK="NO"
+
 # check discord
 [ -z "${DISCORD_WEBHOOK_URL}" ] && SEND_DISCORD="NO"
 
@@ -554,6 +597,9 @@ done
 
 # check messagebird
 [ -z "${MESSAGEBIRD_ACCESS_KEY}" -o -z "${MESSAGEBIRD_NUMBER}" ] && SEND_MESSAGEBIRD="NO"
+
+# check kavenegar
+[ -z "${KAVENEGAR_API_KEY}" -o -z "${KAVENEGAR_SENDER}" ] && SEND_KAVENEGAR="NO"
 
 # check telegram
 [ -z "${TELEGRAM_BOT_TOKEN}" ] && SEND_TELEGRAM="NO"
@@ -578,13 +624,16 @@ fi
 if [ \( \
            "${SEND_PUSHOVER}"    = "YES" \
         -o "${SEND_SLACK}"       = "YES" \
+        -o "${SEND_FLOCK}"       = "YES" \
         -o "${SEND_DISCORD}"     = "YES" \
         -o "${SEND_HIPCHAT}"     = "YES" \
         -o "${SEND_TWILIO}"      = "YES" \
         -o "${SEND_MESSAGEBIRD}" = "YES" \
+        -o "${SEND_KAVENEGAR}"   = "YES" \
         -o "${SEND_TELEGRAM}"    = "YES" \
         -o "${SEND_PUSHBULLET}"  = "YES" \
         -o "${SEND_KAFKA}"       = "YES" \
+        -o "${SEND_CUSTOM}"      = "YES" \
     \) -a -z "${curl}" ]
     then
     curl="$(which curl 2>/dev/null || command -v curl 2>/dev/null)"
@@ -595,11 +644,14 @@ if [ \( \
         SEND_PUSHBULLET="NO"
         SEND_TELEGRAM="NO"
         SEND_SLACK="NO"
+        SEND_FLOCK="NO"
         SEND_DISCORD="NO"
         SEND_TWILIO="NO"
         SEND_HIPCHAT="NO"
         SEND_MESSAGEBIRD="NO"
+        SEND_KAVENEGAR="NO"
         SEND_KAFKA="NO"
+        SEND_CUSTOM="NO"
     fi
 fi
 
@@ -619,10 +671,12 @@ if [   "${SEND_EMAIL}"          != "YES" \
     -a "${SEND_PUSHOVER}"       != "YES" \
     -a "${SEND_TELEGRAM}"       != "YES" \
     -a "${SEND_SLACK}"          != "YES" \
+    -a "${SEND_FLOCK}"          != "YES" \
     -a "${SEND_DISCORD}"        != "YES" \
     -a "${SEND_TWILIO}"         != "YES" \
     -a "${SEND_HIPCHAT}"        != "YES" \
     -a "${SEND_MESSAGEBIRD}"    != "YES" \
+    -a "${SEND_KAVENEGAR}"      != "YES" \
     -a "${SEND_PUSHBULLET}"     != "YES" \
     -a "${SEND_KAFKA}"          != "YES" \
     -a "${SEND_PD}"             != "YES" \
@@ -783,7 +837,7 @@ send_pushover() {
         priority=-2
         case "${status}" in
             CLEAR) priority=-1;;   # low priority: no sound or vibration
-            WARNING) priotity=0;;  # normal priority: respect quiet hours
+            WARNING) priority=0;;  # normal priority: respect quiet hours
             CRITICAL) priority=1;; # high priority: bypass quiet hours
             *) priority=-2;;       # lowest priority: no notification at all
         esac
@@ -802,7 +856,7 @@ send_pushover() {
                 --form-string "priority=${priority}" \
                 https://api.pushover.net/1/messages.json)
 
-            if [ "${httpcode}" == "200" ]
+            if [ "${httpcode}" = "200" ]
             then
                 info "sent pushover notification for: ${host} ${chart}.${name} is ${status} to '${user}'"
                 sent=$((sent + 1))
@@ -821,7 +875,7 @@ send_pushover() {
 # pushbullet sender
 
 send_pushbullet() {
-    local userapikey="${1}" recipients="${2}"  title="${3}" message="${4}" httpcode sent=0 user
+    local userapikey="${1}" source_device="${2}" recipients="${3}" url="${4}" title="${5}" message="${6}" httpcode sent=0 user
     if [ "${SEND_PUSHBULLET}" = "YES" -a ! -z "${userapikey}" -a ! -z "${recipients}" -a ! -z "${message}" -a ! -z "${title}" ]
         then
         #https://docs.pushbullet.com/#create-push
@@ -832,13 +886,15 @@ send_pushbullet() {
               --header 'Content-Type: application/json' \
               --data-binary  @<(cat <<EOF
                               {"title": "${title}",
-                              "type": "note",
+                              "type": "link",
                               "email": "${user}",
-                              "body": "$( echo -n ${message})"}
+                              "body": "$( echo -n ${message})",
+                              "url": "${url}",
+                              "source_device_iden": "${source_device}"}
 EOF
                ) "https://api.pushbullet.com/v2/pushes" -X POST)
 
-            if [ "${httpcode}" == "200" ]
+            if [ "${httpcode}" = "200" ]
             then
                 info "sent pushbullet notification for: ${host} ${chart}.${name} is ${status} to '${user}'"
                 sent=$((sent + 1))
@@ -864,7 +920,7 @@ send_kafka() {
                 --data "{host_ip:\"${KAFKA_SENDER_IP}\",when:${when},name:\"${name}\",chart:\"${chart}\",family:\"${family}\",status:\"${status}\",old_status:\"${old_status}\",value:${value},old_value:${old_value},duration:${duration},non_clear_duration:${non_clear_duration},units:\"${units}\",info:\"${info}\"}" \
                 "${KAFKA_URL}")
 
-            if [ "${httpcode}" == "204" ]
+            if [ "${httpcode}" = "204" ]
             then
                 info "sent kafka data for: ${host} ${chart}.${name} is ${status} and ip '${KAFKA_SENDER_IP}'"
                 sent=$((sent + 1))
@@ -951,7 +1007,7 @@ send_twilio() {
                 -u "${accountsid}:${accounttoken}" \
                 "https://api.twilio.com/2010-04-01/Accounts/${accountsid}/Messages.json")
 
-            if [ "${httpcode}" == "201" ]
+            if [ "${httpcode}" = "201" ]
             then
                 info "sent Twilio SMS for: ${host} ${chart}.${name} is ${status} to '${user}'"
                 sent=$((sent + 1))
@@ -1004,7 +1060,7 @@ send_hipchat() {
                     -d "{\"color\": \"${color}\", \"from\": \"${host}\", \"message_format\": \"${msg_format}\", \"message\": \"${message}\", \"notify\": \"${notify}\"}" \
                     "https://${HIPCHAT_SERVER}/v2/room/${room}/notification")
  
-            if [ "${httpcode}" == "204" ]
+            if [ "${httpcode}" = "204" ]
             then
                 info "sent HipChat notification for: ${host} ${chart}.${name} is ${status} to '${room}'"
                 sent=$((sent + 1))
@@ -1038,12 +1094,42 @@ send_messagebird() {
                 -H "Authorization: AccessKey ${accesskey}" \
                 "https://rest.messagebird.com/messages")
 
-            if [ "${httpcode}" == "201" ]
+            if [ "${httpcode}" = "201" ]
             then
                 info "sent Messagebird SMS for: ${host} ${chart}.${name} is ${status} to '${user}'"
                 sent=$((sent + 1))
             else
                 error "failed to send Messagebird SMS for: ${host} ${chart}.${name} is ${status} to '${user}' with HTTP error code ${httpcode}."
+            fi
+        done
+
+        [ ${sent} -gt 0 ] && return 0
+    fi
+
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# kavenegar sender
+
+send_kavenegar() {
+    local API_KEY="${1}" kavenegarsender="${2}" recipients="${3}"  title="${4}" message="${5}" httpcode sent=0 user
+    if [ "${SEND_KAVENEGAR}" = "YES" -a ! -z "${API_KEY}" -a ! -z "${kavenegarsender}" -a ! -z "${recipients}" -a ! -z "${message}" -a ! -z "${title}" ]
+        then
+        # http://api.kavenegar.com/v1/{API-KEY}/sms/send.json
+        for user in ${recipients}
+        do
+            httpcode=$(docurl -X POST http://api.kavenegar.com/v1/${API_KEY}/sms/send.json \
+                --data-urlencode "sender=${kavenegarsender}" \
+                --data-urlencode "receptor=${user}" \
+                --data-urlencode "message=${title} ${message}")
+
+            if [ "${httpcode}" = "201" ]
+            then
+                info "sent Kavenegar SMS for: ${host} ${chart}.${name} is ${status} to '${user}'"
+                sent=$((sent + 1))
+            else
+                error "failed to send Kavenegar SMS for: ${host} ${chart}.${name} is ${status} to '${user}' with HTTP error code ${httpcode}."
             fi
         done
 
@@ -1079,11 +1165,11 @@ send_telegram() {
                 --data-urlencode "text=${emoji} ${message}" \
                 "https://api.telegram.org/bot${bottoken}/sendMessage?chat_id=${chatid}")
 
-            if [ "${httpcode}" == "200" ]
+            if [ "${httpcode}" = "200" ]
             then
                 info "sent telegram notification for: ${host} ${chart}.${name} is ${status} to '${chatid}'"
                 sent=$((sent + 1))
-            elif [ "${httpcode}" == "401" ]
+            elif [ "${httpcode}" = "401" ]
             then
                 error "failed to send telegram notification for: ${host} ${chart}.${name} is ${status} to '${chatid}': Wrong bot token."
             else
@@ -1147,12 +1233,67 @@ EOF
         )"
 
         httpcode=$(docurl -X POST --data-urlencode "payload=${payload}" "${webhook}")
-        if [ "${httpcode}" == "200" ]
+        if [ "${httpcode}" = "200" ]
         then
             info "sent slack notification for: ${host} ${chart}.${name} is ${status} to '${channel}'"
             sent=$((sent + 1))
         else
             error "failed to send slack notification for: ${host} ${chart}.${name} is ${status} to '${channel}', with HTTP error code ${httpcode}."
+        fi
+    done
+
+    [ ${sent} -gt 0 ] && return 0
+
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# flock sender
+
+send_flock() {
+    local webhook="${1}" channels="${2}" httpcode sent=0 channel color payload
+
+    [ "${SEND_FLOCK}" != "YES" ] && return 1
+
+    case "${status}" in
+        WARNING)  color="warning" ;;
+        CRITICAL) color="danger" ;;
+        CLEAR)    color="good" ;;
+        *)        color="#777777" ;;
+    esac
+
+    for channel in ${channels}
+    do
+        httpcode=$(docurl -X POST "${webhook}" -H "Content-Type: application/json" -d "{
+            \"sendAs\": {
+                \"name\" : \"netdata on ${host}\",
+                \"profileImage\" : \"${images_base_url}/images/seo-performance-128.png\"
+            },
+            \"text\": \"${host} *${status_message}*\",
+            \"timestamp\": \"${when}\",
+            \"attachments\": [
+                {
+                    \"description\": \"${chart} (${family}) - ${info}\",
+                    \"color\": \"${color}\",
+                    \"title\": \"${alarm}\",
+                    \"url\": \"${goto_url}\",
+                    \"text\": \"${info}\",
+                    \"views\": {
+                        \"image\": {
+                            \"original\": { \"src\": \"${image}\", \"width\": 400, \"height\": 400 },
+                            \"thumbnail\": { \"src\": \"${image}\", \"width\": 50, \"height\": 50 },
+                            \"filename\": \"${image}\"
+                            }
+                    }
+                }
+            ]
+        }" )
+        if [ "${httpcode}" = "200" ]
+        then
+            info "sent flock notification for: ${host} ${chart}.${name} is ${status} to '${channel}'"
+            sent=$((sent + 1))
+        else
+            error "failed to send flock notification for: ${host} ${chart}.${name} is ${status} to '${channel}', with HTTP error code ${httpcode}."
         fi
     done
 
@@ -1210,7 +1351,7 @@ EOF
         )"
 
         httpcode=$(docurl -X POST --data-urlencode "payload=${payload}" "${webhook}")
-        if [ "${httpcode}" == "200" ]
+        if [ "${httpcode}" = "200" ]
         then
             info "sent discord notification for: ${host} ${chart}.${name} is ${status} to '${channel}'"
             sent=$((sent + 1))
@@ -1266,7 +1407,7 @@ case "${status}" in
     WARNING)
         image="${images_base_url}/images/alert-128-orange.png"
         status_message="needs attention"
-        color="#caca4b"
+        color="#ffc107"
 		;;
 
 	CLEAR)
@@ -1325,6 +1466,15 @@ send_slack "${SLACK_WEBHOOK_URL}" "${to_slack}"
 SENT_SLACK=$?
 
 # -----------------------------------------------------------------------------
+# send the flock notification
+
+# flock aggregates posts from the same username
+# so we use "${host} ${status}" as the bot username, to make them diff
+
+send_flock "${FLOCK_WEBHOOK_URL}" "${to_flock}"
+SENT_FLOCK=$?
+
+# -----------------------------------------------------------------------------
 # send the discord notification
 
 # discord aggregates posts from the same username
@@ -1351,11 +1501,11 @@ SENT_PUSHOVER=$?
 # -----------------------------------------------------------------------------
 # send the pushbullet notification
 
-send_pushbullet "${PUSHBULLET_ACCESS_TOKEN}" "${to_pushbullet}" "${host} ${status_message} - ${name//_/ } - ${chart}" "${alarm}\n
+send_pushbullet "${PUSHBULLET_ACCESS_TOKEN}" "${PUSHBULLET_SOURCE_DEVICE}" "${to_pushbullet}" "${goto_url}" "${host} ${status_message} - ${name//_/ } - ${chart}" "${alarm}\n
 Severity: ${severity}\n
 Chart: ${chart}\n
 Family: ${family}\n
-To View Netdata go to: ${goto_url}\n
+$(date -d @${when})\n
 The source of this alarm is line ${src}"
 
 SENT_PUSHBULLET=$?
@@ -1381,6 +1531,18 @@ Family: ${family}
 ${info}"
 
 SENT_MESSAGEBIRD=$?
+
+
+# -----------------------------------------------------------------------------
+# send the kavenegar SMS
+
+send_kavenegar "${KAVENEGAR_API_KEY}" "${KAVENEGAR_SENDER}" "${to_kavenegar}" "${host} ${status_message} - ${name//_/ } - ${chart}" "${alarm} 
+Severity: ${severity}
+Chart: ${chart}
+Family: ${family}
+${info}"
+
+SENT_KAVENEGAR=$?
 
 
 # -----------------------------------------------------------------------------
@@ -1559,6 +1721,7 @@ Content-Transfer-Encoding: 8bit
 </table>
 </body>
 </html>
+--multipart-boundary--
 EOF
 
 SENT_EMAIL=$?
@@ -1570,10 +1733,12 @@ if [   ${SENT_EMAIL}        -eq 0 \
     -o ${SENT_PUSHOVER}     -eq 0 \
     -o ${SENT_TELEGRAM}     -eq 0 \
     -o ${SENT_SLACK}        -eq 0 \
+    -o ${SENT_FLOCK}        -eq 0 \
     -o ${SENT_DISCORD}      -eq 0 \
     -o ${SENT_TWILIO}       -eq 0 \
     -o ${SENT_HIPCHAT}      -eq 0 \
     -o ${SENT_MESSAGEBIRD}  -eq 0 \
+    -o ${SENT_KAVENEGAR}    -eq 0 \
     -o ${SENT_PUSHBULLET}   -eq 0 \
     -o ${SENT_KAFKA}        -eq 0 \
     -o ${SENT_PD}           -eq 0 \
@@ -1586,4 +1751,3 @@ fi
 
 # we did not send anything
 exit 1
-

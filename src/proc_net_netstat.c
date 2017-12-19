@@ -22,7 +22,9 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
     (void)dt;
 
     static int do_bandwidth = -1, do_inerrors = -1, do_mcast = -1, do_bcast = -1, do_mcast_p = -1, do_bcast_p = -1, do_ecn = -1, \
-        do_tcpext_reorder = -1, do_tcpext_syscookies = -1, do_tcpext_ofo = -1, do_tcpext_connaborts = -1, do_tcpext_memory = -1;
+        do_tcpext_reorder = -1, do_tcpext_syscookies = -1, do_tcpext_ofo = -1, do_tcpext_connaborts = -1, do_tcpext_memory = -1,
+        do_tcpext_listen = -1;
+
     static uint32_t hash_ipext = 0, hash_tcpext = 0;
     static procfile *ff = NULL;
 
@@ -93,6 +95,10 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
     static unsigned long long tcpext_TCPAbortOnLinger = 0;  // connections aborted after user close in linger timeout
     static unsigned long long tcpext_TCPAbortFailed = 0;    // times unable to send RST due to no memory
 
+    // https://perfchron.com/2015/12/26/investigating-linux-network-issues-with-netstat-and-nstat/
+    static unsigned long long tcpext_ListenOverflows = 0;   // times the listen queue of a socket overflowed
+    static unsigned long long tcpext_ListenDrops = 0;       // SYNs to LISTEN sockets ignored
+
     // IPv4 TCP memory pressures
     static unsigned long long tcpext_TCPMemoryPressures = 0;
 
@@ -116,6 +122,7 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
         do_tcpext_ofo        = config_get_boolean_ondemand("plugin:proc:/proc/net/netstat", "TCP out-of-order queue", CONFIG_BOOLEAN_AUTO);
         do_tcpext_connaborts = config_get_boolean_ondemand("plugin:proc:/proc/net/netstat", "TCP connection aborts", CONFIG_BOOLEAN_AUTO);
         do_tcpext_memory     = config_get_boolean_ondemand("plugin:proc:/proc/net/netstat", "TCP memory pressures", CONFIG_BOOLEAN_AUTO);
+        do_tcpext_listen     = config_get_boolean_ondemand("plugin:proc:/proc/net/netstat", "TCP listen issues", CONFIG_BOOLEAN_AUTO);
 
         arl_ipext  = arl_create("netstat/ipext", NULL, 60);
         arl_tcpext = arl_create("netstat/tcpext", NULL, 60);
@@ -197,6 +204,11 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
             arl_expect(arl_tcpext, "TCPMemoryPressures", &tcpext_TCPMemoryPressures);
         }
 
+        if(do_tcpext_listen != CONFIG_BOOLEAN_NO) {
+            arl_expect(arl_tcpext, "ListenOverflows", &tcpext_ListenOverflows);
+            arl_expect(arl_tcpext, "ListenDrops",     &tcpext_ListenDrops);
+        }
+
         // shared metrics
         arl_expect(arl_tcpext, "TCPSynRetrans", &tcpext_TCPSynRetrans);
     }
@@ -248,7 +260,9 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 Bandwidth"
                             , "kilobits/s"
-                            , 500
+                            , "proc"
+                            , "net/netstat"
+                            , 501
                             , update_every
                             , RRDSET_TYPE_AREA
                     );
@@ -281,6 +295,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 Input Errors"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 4000
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -318,6 +334,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 Multicast Bandwidth"
                             , "kilobits/s"
+                            , "proc"
+                            , "net/netstat"
                             , 9000
                             , update_every
                             , RRDSET_TYPE_AREA
@@ -354,6 +372,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 Broadcast Bandwidth"
                             , "kilobits/s"
+                            , "proc"
+                            , "net/netstat"
                             , 8000
                             , update_every
                             , RRDSET_TYPE_AREA
@@ -390,6 +410,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 Multicast Packets"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 8600
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -425,6 +447,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 Broadcast Packets"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 8500
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -461,6 +485,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "IPv4 ECN Statistics"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 8700
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -511,6 +537,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "TCP Memory Pressures"
                             , "events/s"
+                            , "proc"
+                            , "net/netstat"
                             , 3000
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -543,6 +571,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "TCP Connection Aborts"
                             , "connections/s"
+                            , "proc"
+                            , "net/netstat"
                             , 3010
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -585,6 +615,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "TCP Reordered Packets by Detection Method"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 3020
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -624,6 +656,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "TCP Out-Of-Order Queue"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 3050
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -663,6 +697,8 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                             , NULL
                             , "TCP SYN Cookies"
                             , "packets/s"
+                            , "proc"
+                            , "net/netstat"
                             , 3100
                             , update_every
                             , RRDSET_TYPE_LINE
@@ -682,6 +718,42 @@ int do_proc_net_netstat(int update_every, usec_t dt) {
                 rrdset_done(st_syncookies);
             }
 
+            // --------------------------------------------------------------------
+
+            if(do_tcpext_listen == CONFIG_BOOLEAN_YES || (do_tcpext_listen == CONFIG_BOOLEAN_AUTO && (tcpext_ListenOverflows || tcpext_ListenDrops))) {
+                do_tcpext_listen = CONFIG_BOOLEAN_YES;
+
+                static RRDSET *st_listen = NULL;
+                static RRDDIM *rd_overflows = NULL, *rd_drops = NULL;
+
+                if(unlikely(!st_listen)) {
+
+                    st_listen = rrdset_create_localhost(
+                            "ipv4"
+                            , "tcplistenissues"
+                            , NULL
+                            , "tcp"
+                            , NULL
+                            , "TCP Listen Socket Issues"
+                            , "packets/s"
+                            , "proc"
+                            , "net/netstat"
+                            , 3015
+                            , update_every
+                            , RRDSET_TYPE_LINE
+                    );
+
+                    rd_overflows = rrddim_add(st_listen, "ListenOverflows", "overflows",  1, 1, RRD_ALGORITHM_INCREMENTAL);
+                    rd_drops     = rrddim_add(st_listen, "ListenDrops",     "drops",      1, 1, RRD_ALGORITHM_INCREMENTAL);
+                }
+                else
+                    rrdset_next(st_listen);
+
+                rrddim_set_by_pointer(st_listen, rd_overflows, tcpext_ListenOverflows);
+                rrddim_set_by_pointer(st_listen, rd_drops,     tcpext_ListenDrops);
+
+                rrdset_done(st_listen);
+            }
         }
     }
 

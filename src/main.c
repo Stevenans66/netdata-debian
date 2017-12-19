@@ -32,24 +32,34 @@ void netdata_cleanup_and_exit(int ret) {
 }
 
 struct netdata_static_thread static_threads[] = {
+
 #ifdef INTERNAL_PLUGIN_NFACCT
-// nfacct requires root access
+    // nfacct requires root access
     // so, we build it as an external plugin with setuid to root
     {"nfacct",              CONFIG_SECTION_PLUGINS,  "nfacct",     1, NULL, NULL, nfacct_main},
 #endif
 
-    {"tc",                  CONFIG_SECTION_PLUGINS,  "tc",         1, NULL, NULL, tc_main},
-    {"idlejitter",          CONFIG_SECTION_PLUGINS,  "idlejitter", 1, NULL, NULL, cpuidlejitter_main},
+#ifdef NETDATA_INTERNAL_CHECKS
+    // debugging plugin
+    {"check",               CONFIG_SECTION_PLUGINS,  "checks",     0, NULL, NULL, checks_main},
+#endif
+
 #if defined(__FreeBSD__)
+    // FreeBSD internal plugins
     {"freebsd",             CONFIG_SECTION_PLUGINS,  "freebsd",    1, NULL, NULL, freebsd_main},
 #elif defined(__APPLE__)
+    // macOS internal plugins
     {"macos",               CONFIG_SECTION_PLUGINS,  "macos",      1, NULL, NULL, macos_main},
 #else
+    // linux internal plugins
     {"proc",                CONFIG_SECTION_PLUGINS,  "proc",       1, NULL, NULL, proc_main},
     {"diskspace",           CONFIG_SECTION_PLUGINS,  "diskspace",  1, NULL, NULL, proc_diskspace_main},
     {"cgroups",             CONFIG_SECTION_PLUGINS,  "cgroups",    1, NULL, NULL, cgroups_main},
+    {"tc",                  CONFIG_SECTION_PLUGINS,  "tc",         1, NULL, NULL, tc_main},
 #endif /* __FreeBSD__, __APPLE__*/
-    {"check",               CONFIG_SECTION_PLUGINS,  "checks",     0, NULL, NULL, checks_main},
+
+    // common plugins for all systems
+    {"idlejitter",          CONFIG_SECTION_PLUGINS,  "idlejitter", 1, NULL, NULL, cpuidlejitter_main},
     {"backends",            NULL,                    NULL,         1, NULL, NULL, backends_main},
     {"health",              NULL,                    NULL,         1, NULL, NULL, health_main},
     {"plugins.d",           NULL,                    NULL,         1, NULL, NULL, pluginsd_main},
@@ -57,6 +67,7 @@ struct netdata_static_thread static_threads[] = {
     {"web-single-threaded", NULL,                    NULL,         0, NULL, NULL, socket_listen_main_single_threaded},
     {"push-metrics",        NULL,                    NULL,         0, NULL, NULL, rrdpush_sender_thread},
     {"statsd",              NULL,                    NULL,         1, NULL, NULL, statsd_main},
+
     {NULL,                  NULL,                    NULL,         0, NULL, NULL, NULL}
 };
 
@@ -82,6 +93,13 @@ void web_server_config_options(void) {
     respect_web_browser_do_not_track_policy = config_get_boolean(CONFIG_SECTION_WEB, "respect do not track policy", respect_web_browser_do_not_track_policy);
     web_x_frame_options = config_get(CONFIG_SECTION_WEB, "x-frame-options response header", "");
     if(!*web_x_frame_options) web_x_frame_options = NULL;
+
+    web_allow_connections_from = simple_pattern_create(config_get(CONFIG_SECTION_WEB, "allow connections from", "localhost *"), SIMPLE_PATTERN_EXACT);
+    web_allow_dashboard_from   = simple_pattern_create(config_get(CONFIG_SECTION_WEB, "allow dashboard from", "localhost *"), SIMPLE_PATTERN_EXACT);
+    web_allow_badges_from      = simple_pattern_create(config_get(CONFIG_SECTION_WEB, "allow badges from", "*"), SIMPLE_PATTERN_EXACT);
+    web_allow_registry_from    = simple_pattern_create(config_get(CONFIG_SECTION_REGISTRY, "allow from", "*"), SIMPLE_PATTERN_EXACT);
+    web_allow_streaming_from   = simple_pattern_create(config_get(CONFIG_SECTION_WEB, "allow streaming from", "*"), SIMPLE_PATTERN_EXACT);
+    web_allow_netdataconf_from = simple_pattern_create(config_get(CONFIG_SECTION_WEB, "allow netdata.conf from", "localhost fd* 10.* 192.168.* 172.16.* 172.17.* 172.18.* 172.19.* 172.20.* 172.21.* 172.22.* 172.23.* 172.24.* 172.25.* 172.26.* 172.27.* 172.28.* 172.29.* 172.30.* 172.31.*"), SIMPLE_PATTERN_EXACT);
 
 #ifdef NETDATA_WITH_ZLIB
     web_enable_gzip = config_get_boolean(CONFIG_SECTION_WEB, "enable gzip compression", web_enable_gzip);
@@ -195,23 +213,8 @@ void kill_childs()
         tc_child_pid = 0;
     }
 
-    struct plugind *cd;
-    for(cd = pluginsd_root ; cd ; cd = cd->next) {
-        if(cd->enabled && !cd->obsolete) {
-            info("Stopping %s plugin thread", cd->id);
-            pthread_cancel(cd->thread);
-
-            if(cd->pid) {
-                info("killing %s plugin child process pid %d", cd->id, cd->pid);
-                if(killpid(cd->pid, SIGTERM) != -1)
-                    waitid(P_PID, (id_t) cd->pid, &info, WEXITED);
-
-                cd->pid = 0;
-            }
-
-            cd->obsolete = 1;
-        }
-    }
+    // stop all running plugins
+    pluginsd_stop_all_external_plugins();
 
     // if, for any reason there is any child exited
     // catch it here
@@ -221,7 +224,7 @@ void kill_childs()
     info("All threads/childs stopped.");
 }
 
-struct option_def options[] = {
+struct option_def option_definitions[] = {
     // opt description                                    arg name       default value
     { 'c', "Configuration file to load.",                 "filename",    CONFIG_DIR "/" CONFIG_FILENAME},
     { 'D', "Do not fork. Run in the foreground.",         NULL,          "run in the background"},
@@ -237,21 +240,21 @@ struct option_def options[] = {
     { 'W', "See Advanced options below.",                 "options",     NULL},
 };
 
-void help(int exitcode) {
+int help(int exitcode) {
     FILE *stream;
     if(exitcode == 0)
         stream = stdout;
     else
         stream = stderr;
 
-    int num_opts = sizeof(options) / sizeof(struct option_def);
+    int num_opts = sizeof(option_definitions) / sizeof(struct option_def);
     int i;
     int max_len_arg = 0;
 
     // Compute maximum argument length
     for( i = 0; i < num_opts; i++ ) {
-        if(options[i].arg_name) {
-            int len_arg = (int)strlen(options[i].arg_name);
+        if(option_definitions[i].arg_name) {
+            int len_arg = (int)strlen(option_definitions[i].arg_name);
             if(len_arg > max_len_arg) max_len_arg = len_arg;
         }
     }
@@ -289,9 +292,9 @@ void help(int exitcode) {
 
     // Output options description.
     for( i = 0; i < num_opts; i++ ) {
-        fprintf(stream, "  -%c %-*s  %s", options[i].val, max_len_arg, options[i].arg_name ? options[i].arg_name : "", options[i].description);
-        if(options[i].default_value) {
-            fprintf(stream, "\n   %c %-*s  Default: %s\n", ' ', max_len_arg, "", options[i].default_value);
+        fprintf(stream, "  -%c %-*s  %s", option_definitions[i].val, max_len_arg, option_definitions[i].arg_name ? option_definitions[i].arg_name : "", option_definitions[i].description);
+        if(option_definitions[i].default_value) {
+            fprintf(stream, "\n   %c %-*s  Default: %s\n", ' ', max_len_arg, "", option_definitions[i].default_value);
         } else {
             fprintf(stream, "\n");
         }
@@ -316,7 +319,7 @@ void help(int exitcode) {
     );
 
     fflush(stream);
-    exit(exitcode);
+    return exitcode;
 }
 
 // TODO: Remove this function with the nix major release.
@@ -454,16 +457,22 @@ static void get_netdata_configured_variables() {
     }
 
     // ------------------------------------------------------------------------
-    // let the plugins know the min update_every
-
     // get system paths
+
     netdata_configured_config_dir  = config_get(CONFIG_SECTION_GLOBAL, "config directory",    CONFIG_DIR);
     netdata_configured_log_dir     = config_get(CONFIG_SECTION_GLOBAL, "log directory",       LOG_DIR);
-    netdata_configured_plugins_dir = config_get(CONFIG_SECTION_GLOBAL, "plugins directory",   PLUGINS_DIR);
     netdata_configured_web_dir     = config_get(CONFIG_SECTION_GLOBAL, "web files directory", WEB_DIR);
     netdata_configured_cache_dir   = config_get(CONFIG_SECTION_GLOBAL, "cache directory",     CACHE_DIR);
     netdata_configured_varlib_dir  = config_get(CONFIG_SECTION_GLOBAL, "lib directory",       VARLIB_DIR);
     netdata_configured_home_dir    = config_get(CONFIG_SECTION_GLOBAL, "home directory",      CACHE_DIR);
+
+    {
+        char plugins_dirs[(FILENAME_MAX * 2) + 1];
+        snprintfz(plugins_dirs, FILENAME_MAX * 2, "\"%s\" \"%s/custom-plugins.d\"", PLUGINS_DIR, CONFIG_DIR);
+        netdata_configured_plugins_dir_base = strdupz(config_get(CONFIG_SECTION_GLOBAL, "plugins directory",  plugins_dirs));
+        quoted_strings_splitter(netdata_configured_plugins_dir_base, plugin_directories, PLUGINSD_MAX_DIRECTORIES, config_isspace);
+        netdata_configured_plugins_dir = plugin_directories[0];
+    }
 
     // ------------------------------------------------------------------------
     // get default memory mode for the database
@@ -489,6 +498,95 @@ static void get_netdata_configured_variables() {
     get_system_pid_max();
 }
 
+static void get_system_timezone(void) {
+    // avoid flood calls to stat(/etc/localtime)
+    // http://stackoverflow.com/questions/4554271/how-to-avoid-excessive-stat-etc-localtime-calls-in-strftime-on-linux
+    const char *tz = getenv("TZ");
+    if(!tz || !*tz)
+        setenv("TZ", config_get(CONFIG_SECTION_GLOBAL, "TZ environment variable", ":/etc/localtime"), 0);
+
+    char buffer[FILENAME_MAX + 1] = "";
+    const char *timezone = NULL;
+    ssize_t ret;
+
+    // use the TZ variable
+    if(tz && *tz && *tz != ':') {
+        timezone = tz;
+        // info("TIMEZONE: using TZ variable '%s'", timezone);
+    }
+
+    // use the contents of /etc/timezone
+    if(!timezone && !read_file("/etc/timezone", buffer, FILENAME_MAX)) {
+        timezone = buffer;
+        // info("TIMEZONE: using the contents of /etc/timezone: '%s'", timezone);
+    }
+
+    // read the link /etc/localtime
+    if(!timezone) {
+        ret = readlink("/etc/localtime", buffer, FILENAME_MAX);
+
+        if(ret > 0) {
+            buffer[ret] = '\0';
+
+            char   *cmp    = "/usr/share/zoneinfo/";
+            size_t cmp_len = strlen(cmp);
+
+            char *s = strstr(buffer, cmp);
+            if (s && s[cmp_len]) {
+                timezone = &s[cmp_len];
+                // info("TIMEZONE: using the link of /etc/localtime: '%s'", timezone);
+            }
+        }
+        else
+            buffer[0] = '\0';
+    }
+
+    // find the timezone from strftime()
+    if(!timezone) {
+        time_t t;
+        struct tm *tmp, tmbuf;
+
+        t = now_realtime_sec();
+        tmp = localtime_r(&t, &tmbuf);
+
+        if (tmp != NULL) {
+            if(strftime(buffer, FILENAME_MAX, "%Z", tmp) == 0)
+                buffer[0] = '\0';
+            else {
+                buffer[FILENAME_MAX] = '\0';
+                timezone = buffer;
+                // info("TIMEZONE: using strftime(): '%s'", timezone);
+            }
+        }
+    }
+
+    if(timezone && *timezone) {
+        // make sure it does not have illegal characters
+        // info("TIMEZONE: fixing '%s'", timezone);
+
+        size_t len = strlen(timezone);
+        char tmp[len + 1];
+        char *d = tmp;
+        *d = '\0';
+
+        while(*timezone) {
+            if(isalnum(*timezone) || *timezone == '_' || *timezone == '/')
+                *d++ = *timezone++;
+            else
+                timezone++;
+        }
+        *d = '\0';
+        strncpyz(buffer, tmp, len);
+        timezone = buffer;
+        // info("TIMEZONE: fixed as '%s'", timezone);
+    }
+
+    if(!timezone || !*timezone)
+        timezone = "unknown";
+
+    netdata_configured_timezone = config_get(CONFIG_SECTION_GLOBAL, "timezone", timezone);
+}
+
 void set_global_environment() {
     {
         char b[16];
@@ -506,11 +604,7 @@ void set_global_environment() {
     setenv("HOME"               , verify_required_directory(netdata_configured_home_dir),    1);
     setenv("NETDATA_HOST_PREFIX", netdata_configured_host_prefix, 1);
 
-    // avoid flood calls to stat(/etc/localtime)
-    // http://stackoverflow.com/questions/4554271/how-to-avoid-excessive-stat-etc-localtime-calls-in-strftime-on-linux
-    const char *tz = getenv("TZ");
-    if(!tz || !*tz)
-        setenv("TZ", config_get(CONFIG_SECTION_GLOBAL, "TZ environment variable", ":/etc/localtime"), 0);
+    get_system_timezone();
 
     // set the path we need
     char path[1024 + 1], *p = getenv("PATH");
@@ -571,14 +665,14 @@ int main(int argc, char **argv) {
 
     // parse options
     {
-        int num_opts = sizeof(options) / sizeof(struct option_def);
+        int num_opts = sizeof(option_definitions) / sizeof(struct option_def);
         char optstring[(num_opts * 2) + 1];
 
         int string_i = 0;
         for( i = 0; i < num_opts; i++ ) {
-            optstring[string_i] = options[i].val;
+            optstring[string_i] = option_definitions[i].val;
             string_i++;
-            if(options[i].arg_name) {
+            if(option_definitions[i].arg_name) {
                 optstring[string_i] = ':';
                 string_i++;
             }
@@ -593,7 +687,7 @@ int main(int argc, char **argv) {
                 case 'c':
                     if(config_load(optarg, 1) != 1) {
                         error("Cannot load configuration file %s.", optarg);
-                        exit(1);
+                        return 1;
                     }
                     else {
                         debug(D_OPTIONS, "Configuration loaded from %s.", optarg);
@@ -604,8 +698,7 @@ int main(int argc, char **argv) {
                     dont_fork = 1;
                     break;
                 case 'h':
-                    help(0);
-                    break;
+                    return help(0);
                 case 'i':
                     config_set(CONFIG_SECTION_WEB, "bind to", optarg);
                     break;
@@ -635,8 +728,8 @@ int main(int argc, char **argv) {
                         char* debug_flags_string = "debug_flags=";
 
                         if(strcmp(optarg, "unittest") == 0) {
-                            if(unit_test_buffer()) exit(1);
-                            if(unit_test_str2ld()) exit(1);
+                            if(unit_test_buffer()) return 1;
+                            if(unit_test_str2ld()) return 1;
                             //default_rrd_update_every = 1;
                             //default_rrd_memory_mode = RRD_MEMORY_MODE_RAM;
                             //if(!config_loaded) config_load(NULL, 0);
@@ -646,10 +739,10 @@ int main(int argc, char **argv) {
                             default_health_enabled = 0;
                             rrd_init("unittest");
                             default_rrdpush_enabled = 0;
-                            if(run_all_mockup_tests()) exit(1);
-                            if(unit_test_storage()) exit(1);
+                            if(run_all_mockup_tests()) return 1;
+                            if(unit_test_storage()) return 1;
                             fprintf(stderr, "\n\nALL TESTS PASSED\n\n");
-                            exit(0);
+                            return 0;
                         }
                         else if(strcmp(optarg, "simple-pattern") == 0) {
                             if(optind + 2 > argc) {
@@ -673,24 +766,25 @@ int main(int argc, char **argv) {
                                         "   -W simple-pattern '!/path/*/*.ext /path/*.ext' '/path/test.ext'\n"
                                         "\n"
                                 );
-                                exit(1);
+                                return 1;
                             }
 
                             const char *heystack = argv[optind];
                             const char *needle = argv[optind + 1];
+                            size_t len = strlen(needle) + 1;
+                            char wildcarded[len];
 
-                            SIMPLE_PATTERN *p = simple_pattern_create(heystack
-                                                                      , SIMPLE_PATTERN_EXACT);
-                            int ret = simple_pattern_matches(p, needle);
+                            SIMPLE_PATTERN *p = simple_pattern_create(heystack, SIMPLE_PATTERN_EXACT);
+                            int ret = simple_pattern_matches_extract(p, needle, wildcarded, len);
                             simple_pattern_free(p);
 
                             if(ret) {
-                                fprintf(stdout, "RESULT: MATCHED - pattern '%s' matches '%s'\n", heystack, needle);
-                                exit(0);
+                                fprintf(stdout, "RESULT: MATCHED - pattern '%s' matches '%s', wildcarded '%s'\n", heystack, needle, wildcarded);
+                                return 0;
                             }
                             else {
-                                fprintf(stdout, "RESULT: NOT MATCHED - pattern '%s' does not match '%s'\n", heystack, needle);
-                                exit(1);
+                                fprintf(stdout, "RESULT: NOT MATCHED - pattern '%s' does not match '%s', wildcarded '%s'\n", heystack, needle, wildcarded);
+                                return 1;
                             }
                         }
                         else if(strncmp(optarg, stacksize_string, strlen(stacksize_string)) == 0) {
@@ -716,7 +810,7 @@ int main(int argc, char **argv) {
                                         " parameters."
                                         "\n"
                                 );
-                                exit(1);
+                                return 1;
                             }
                             const char *section = argv[optind];
                             const char *key = argv[optind + 1];
@@ -741,7 +835,7 @@ int main(int argc, char **argv) {
                                         " -c netdata.conf has to be given before -W get.\n"
                                         "\n"
                                 );
-                                exit(1);
+                                return 1;
                             }
 
                             if(!config_loaded) {
@@ -757,18 +851,18 @@ int main(int argc, char **argv) {
                             const char *def = argv[optind + 2];
                             const char *value = config_get(section, key, def);
                             printf("%s\n", value);
-                            exit(0);
+                            return 0;
                         }
                         else {
                             fprintf(stderr, "Unknown -W parameter '%s'\n", optarg);
-                            help(1);
+                            return help(1);
                         }
                     }
                     break;
+
                 default: /* ? */
                     fprintf(stderr, "Unknown parameter '%c'\n", opt);
-                    help(1);
-                    break;
+                    return help(1);
             }
         }
     }
@@ -906,6 +1000,7 @@ int main(int argc, char **argv) {
         // --------------------------------------------------------------------
         // create the listening sockets
 
+        web_client_api_v1_init();
         web_server_threading_selection();
 
         if(web_server_mode != WEB_SERVER_MODE_NONE)
@@ -997,4 +1092,8 @@ int main(int argc, char **argv) {
     // Handle signals
 
     signals_handle();
+
+    // should never reach this point
+    // but we need it for rpmlint #2752
+    return 1;
 }

@@ -87,7 +87,7 @@ struct rrdfamily {
 
     size_t use_count;
 
-    avl_tree_lock variables_root_index;
+    avl_tree_lock rrdvar_root_index;
 };
 typedef struct rrdfamily RRDFAMILY;
 
@@ -266,9 +266,9 @@ struct rrdset {
     char *units;                                    // units of measurement
 
     char *context;                                  // the template of this data set
-    uint32_t hash_context;
+    uint32_t hash_context;                          // the hash of the chart's context
 
-    RRDSET_TYPE chart_type;
+    RRDSET_TYPE chart_type;                         // line, area, stacked
 
     int update_every;                               // every how many seconds is this updated?
 
@@ -282,7 +282,7 @@ struct rrdset {
     int gap_when_lost_iterations_above;             // after how many lost iterations a gap should be stored
                                                     // netdata will interpolate values for gaps lower than this
 
-    long priority;
+    long priority;                                  // the sorting priority of this chart
 
 
     // ------------------------------------------------------------------------
@@ -300,7 +300,11 @@ struct rrdset {
 
     time_t last_accessed_time;                      // the last time this RRDSET has been accessed
     time_t upstream_resync_time;                    // the timestamp up to which we should resync clock upstream
-    size_t unused[8];
+
+    char *plugin_name;                              // the name of the plugin that generated this
+    char *module_name;                              // the name of the plugin module that generated this
+
+    size_t unused[6];
 
     uint32_t hash;                                  // a simple hash on the id, to speed up searching
                                                     // we first compare hashes, and only if the hashes are equal we do string comparisons
@@ -315,20 +319,20 @@ struct rrdset {
     total_number collected_total;                   // used internally to calculate percentages
     total_number last_collected_total;              // used internally to calculate percentages
 
-    RRDFAMILY *rrdfamily;
-    struct rrdhost *rrdhost;
+    RRDFAMILY *rrdfamily;                           // pointer to RRDFAMILY this chart belongs to
+    struct rrdhost *rrdhost;                        // pointer to RRDHOST this chart belongs to
 
     struct rrdset *next;                            // linking of rrdsets
 
     // ------------------------------------------------------------------------
     // local variables
 
-    calculated_number green;
-    calculated_number red;
+    calculated_number green;                        // green threshold for this chart
+    calculated_number red;                          // red threshold for this chart
 
-    avl_tree_lock variables_root_index;
-    RRDSETVAR *variables;
-    RRDCALC *alarms;
+    avl_tree_lock rrdvar_root_index;                // RRDVAR index for this chart
+    RRDSETVAR *variables;                           // RRDSETVAR linked list for this chart (one RRDSETVAR, many RRDVARs)
+    RRDCALC *alarms;                                // RRDCALC linked list for this chart
 
     // ------------------------------------------------------------------------
     // members for checking the data when loading from disk
@@ -368,9 +372,9 @@ typedef struct rrdset RRDSET;
 // and may lead to missing information.
 
 typedef enum rrdhost_flags {
-    RRDHOST_ORPHAN                 = 1 << 0, // this host is orphan (not receiving data)
-    RRDHOST_DELETE_OBSOLETE_CHARTS = 1 << 1, // delete files of obsolete charts
-    RRDHOST_DELETE_ORPHAN_HOST     = 1 << 2  // delete the entire host when orphan
+    RRDHOST_FLAG_ORPHAN                 = 1 << 0, // this host is orphan (not receiving data)
+    RRDHOST_FLAG_DELETE_OBSOLETE_CHARTS = 1 << 1, // delete files of obsolete charts
+    RRDHOST_FLAG_DELETE_ORPHAN_HOST     = 1 << 2  // delete the entire host when orphan
 } RRDHOST_FLAGS;
 
 #ifdef HAVE_C___ATOMIC
@@ -410,6 +414,7 @@ struct rrdhost {
 
     const char *os;                                 // the O/S type of the host
     const char *tags;                               // tags for this host
+    const char *timezone;                           // the timezone of the host
 
     uint32_t flags;                                 // flags about this RRDHOST
 
@@ -424,17 +429,26 @@ struct rrdhost {
     // ------------------------------------------------------------------------
     // streaming of data to remote hosts - rrdpush
 
-    int rrdpush_enabled:1;                          // 1 when this host sends metrics to another netdata
-    char *rrdpush_destination;                      // where to send metrics to
-    char *rrdpush_api_key;                          // the api key at the receiving netdata
-    volatile int rrdpush_connected:1;               // 1 when the sender is ready to push metrics
-    volatile int rrdpush_spawn:1;                   // 1 when the sender thread has been spawn
-    volatile int rrdpush_error_shown:1;             // 1 when we have logged a communication error
-    int rrdpush_socket;                             // the fd of the socket to the remote host, or -1
-    pthread_t rrdpush_thread;                       // the sender thread
-    netdata_mutex_t rrdpush_mutex;                  // exclusive access to rrdpush_buffer
-    int rrdpush_pipe[2];                            // collector to sender thread communication
-    BUFFER *rrdpush_buffer;                         // collector fills it, sender sends them
+    int rrdpush_send_enabled:1;                     // 1 when this host sends metrics to another netdata
+    char *rrdpush_send_destination;                 // where to send metrics to
+    char *rrdpush_send_api_key;                     // the api key at the receiving netdata
+
+    // the following are state information for the threading
+    // streaming metrics from this netdata to an upstream netdata
+    volatile int rrdpush_sender_spawn:1;            // 1 when the sender thread has been spawn
+    pthread_t rrdpush_sender_thread;                // the sender thread
+
+    volatile int rrdpush_sender_connected:1;        // 1 when the sender is ready to push metrics
+    int rrdpush_sender_socket;                      // the fd of the socket to the remote host, or -1
+
+    volatile int rrdpush_sender_error_shown:1;      // 1 when we have logged a communication error
+    volatile int rrdpush_sender_join:1;             // 1 when we have to join the sending thread
+
+    // metrics may be collected asynchronously
+    // these synchronize all the threads willing the write to our sending buffer
+    netdata_mutex_t rrdpush_sender_buffer_mutex;    // exclusive access to rrdpush_sender_buffer
+    int rrdpush_sender_pipe[2];                     // collector to sender thread signaling
+    BUFFER *rrdpush_sender_buffer;                  // collector fills it, sender sends it
 
 
     // ------------------------------------------------------------------------
@@ -483,11 +497,14 @@ struct rrdhost {
 
     netdata_rwlock_t rrdhost_rwlock;                // lock for this RRDHOST (protects rrdset_root linked list)
 
+    // ------------------------------------------------------------------------
+    // indexes
+
     avl_tree_lock rrdset_root_index;                // the host's charts index (by id)
     avl_tree_lock rrdset_root_index_name;           // the host's charts index (by name)
 
     avl_tree_lock rrdfamily_root_index;             // the host's chart families index
-    avl_tree_lock variables_root_index;             // the host's chart variables index
+    avl_tree_lock rrdvar_root_index;                // the host's chart variables index
 
     struct rrdhost *next;
 };
@@ -532,6 +549,7 @@ extern RRDHOST *rrdhost_find_or_create(
         , const char *registry_hostname
         , const char *guid
         , const char *os
+        , const char *timezone
         , const char *tags
         , int update_every
         , long history
@@ -560,8 +578,8 @@ extern void __rrd_check_wrlock(const char *file, const char *function, const uns
 #else
 #define rrdhost_check_rdlock(host) (void)0
 #define rrdhost_check_wrlock(host) (void)0
-#define rrdset_check_rdlock(host) (void)0
-#define rrdset_check_wrlock(host) (void)0
+#define rrdset_check_rdlock(st) (void)0
+#define rrdset_check_wrlock(st) (void)0
 #define rrd_check_rdlock() (void)0
 #define rrd_check_wrlock() (void)0
 #endif
@@ -569,7 +587,7 @@ extern void __rrd_check_wrlock(const char *file, const char *function, const uns
 // ----------------------------------------------------------------------------
 // RRDSET functions
 
-extern void rrdset_set_name(RRDSET *st, const char *name);
+extern int rrdset_set_name(RRDSET *st, const char *name);
 
 extern RRDSET *rrdset_create_custom(RRDHOST *host
                              , const char *type
@@ -579,26 +597,30 @@ extern RRDSET *rrdset_create_custom(RRDHOST *host
                              , const char *context
                              , const char *title
                              , const char *units
+                             , const char *plugin
+                             , const char *module
                              , long priority
                              , int update_every
                              , RRDSET_TYPE chart_type
                              , RRD_MEMORY_MODE memory_mode
                              , long history_entries);
 
-#define rrdset_create(host, type, id, name, family, context, title, units, priority, update_every, chart_type) \
-    rrdset_create_custom(host, type, id, name, family, context, title, units, priority, update_every, chart_type, (host)->rrd_memory_mode, (host)->rrd_history_entries)
+#define rrdset_create(host, type, id, name, family, context, title, units, plugin, module, priority, update_every, chart_type) \
+    rrdset_create_custom(host, type, id, name, family, context, title, units, plugin, module, priority, update_every, chart_type, (host)->rrd_memory_mode, (host)->rrd_history_entries)
 
-#define rrdset_create_localhost(type, id, name, family, context, title, units, priority, update_every, chart_type) \
-    rrdset_create(localhost, type, id, name, family, context, title, units, priority, update_every, chart_type)
+#define rrdset_create_localhost(type, id, name, family, context, title, units, plugin, module, priority, update_every, chart_type) \
+    rrdset_create(localhost, type, id, name, family, context, title, units, plugin, module, priority, update_every, chart_type)
 
 extern void rrdhost_free_all(void);
 extern void rrdhost_save_all(void);
 extern void rrdhost_cleanup_all(void);
 
-extern void rrdhost_cleanup_orphan_hosts(RRDHOST *protected);
+extern void rrdhost_cleanup_orphan_hosts_nolock(RRDHOST *protected);
 extern void rrdhost_free(RRDHOST *host);
-extern void rrdhost_save(RRDHOST *host);
-extern void rrdhost_delete(RRDHOST *host);
+extern void rrdhost_save_charts(RRDHOST *host);
+extern void rrdhost_delete_charts(RRDHOST *host);
+
+extern int rrdhost_should_be_removed(RRDHOST *host, RRDHOST *protected, time_t now);
 
 extern void rrdset_update_heterogeneous_flag(RRDSET *st);
 
@@ -677,7 +699,6 @@ extern collected_number rrddim_set_by_pointer(RRDSET *st, RRDDIM *rd, collected_
 extern collected_number rrddim_set(RRDSET *st, const char *id, collected_number value);
 
 extern long align_entries_to_pagesize(RRD_MEMORY_MODE mode, long entries);
-
 
 // ----------------------------------------------------------------------------
 // RRD internal functions
