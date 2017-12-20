@@ -6,11 +6,9 @@ Subject: Debianize path to exim4 binary
  conf.d/python.d/exim.conf | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/conf.d/python.d/exim.conf b/conf.d/python.d/exim.conf
-index 07d72c5..dd2663d 100644
 --- a/conf.d/python.d/exim.conf
 +++ b/conf.d/python.d/exim.conf
-@@ -83,4 +83,4 @@ update_every: 10
+@@ -90,4 +90,4 @@
  # AUTO-DETECTION JOBS
  
  local:

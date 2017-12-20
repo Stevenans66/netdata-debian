@@ -7,13 +7,11 @@ Subject: python libraries removed from make
  web/Makefile.am      |  35 -----------------
  2 files changed, 142 deletions(-)
 
-diff --git a/python.d/Makefile.am b/python.d/Makefile.am
-index 84c2aea..2996a53 100644
 --- a/python.d/Makefile.am
 +++ b/python.d/Makefile.am
-@@ -60,110 +60,3 @@ dist_pythonmodules_DATA = \
-     python_modules/msg.py \
-     python_modules/lm_sensors.py \
+@@ -88,110 +88,3 @@
+     python_modules/third_party/ordereddict.py \
+     python_modules/third_party/lm_sensors.py \
      $(NULL)
 -
 -pythonyaml2dir=$(pythonmodulesdir)/pyyaml2
@@ -122,8 +120,6 @@ index 84c2aea..2996a53 100644
 -    python_modules/urllib3/contrib/_securetransport/low_level.py \
 -    $(NULL)
 -
-diff --git a/web/Makefile.am b/web/Makefile.am
-index b587f5a..9f33500 100644
 --- a/web/Makefile.am
 +++ b/web/Makefile.am
 @@ -4,10 +4,6 @@
@@ -137,7 +133,7 @@ index b587f5a..9f33500 100644
  	dashboard.html \
  	dashboard.js \
  	dashboard_info.js \
-@@ -27,15 +23,6 @@ dist_web_DATA = \
+@@ -27,15 +23,6 @@
  	version.txt \
  	$(NULL)
  
@@ -153,31 +149,7 @@ index b587f5a..9f33500 100644
  weblibdir=$(webdir)/lib
  dist_weblib_DATA = \
  	lib/bootstrap-3.3.7.min.js \
-@@ -64,23 +51,11 @@ dist_webcss_DATA = \
- 	css/bootstrap-theme-3.3.7.min.css \
- 	css/bootstrap-slate-flat-3.3.7.css \
- 	css/bootstrap-toggle-2.2.2.min.css \
--	css/font-awesome.min.css \
- 	css/c3-0.4.11.min.css \
- 	$(NULL)
- 
- webfontsdir=$(webdir)/fonts
- dist_webfonts_DATA = \
--	fonts/glyphicons-halflings-regular.eot \
--	fonts/glyphicons-halflings-regular.svg \
--	fonts/glyphicons-halflings-regular.ttf \
--	fonts/glyphicons-halflings-regular.woff \
--	fonts/glyphicons-halflings-regular.woff2 \
--	fonts/FontAwesome.otf \
--	fonts/fontawesome-webfont.eot \
--	fonts/fontawesome-webfont.svg \
--	fonts/fontawesome-webfont.ttf \
--	fonts/fontawesome-webfont.woff \
--	fonts/fontawesome-webfont.woff2 \
- 	$(NULL)
- 
- webimagesdir=$(webdir)/images
-@@ -107,16 +82,6 @@ dist_webimages_DATA = \
+@@ -105,16 +92,6 @@
  	images/seo-performance-multi-size.icns \
  	$(NULL)
  
