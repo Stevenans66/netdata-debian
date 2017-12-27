@@ -1,15 +1,55 @@
 From: Lennart Weller <lhw@ring0.de>
 Date: Mon, 18 Sep 2017 13:05:36 +0200
-Subject: python libraries removed from make
+Subject: python libraries removed from make remove unused contrib files
+ remove linked web files
 
 ---
+ contrib/Makefile.am  |  30 ---------------
  python.d/Makefile.am | 107 ---------------------------------------------------
- web/Makefile.am      |  35 -----------------
- 2 files changed, 142 deletions(-)
+ web/Makefile.am      |  32 ---------------
+ 3 files changed, 169 deletions(-)
 
+diff --git a/contrib/Makefile.am b/contrib/Makefile.am
+index 15e9c00..5df6933 100644
+--- a/contrib/Makefile.am
++++ b/contrib/Makefile.am
+@@ -1,31 +1 @@
+ MAINTAINERCLEANFILES= $(srcdir)/Makefile.in
+-
+-dist_noinst_DATA = \
+-	README.md \
+-	debian/copyright \
+-	debian/netdata.conf \
+-	debian/source/format \
+-	debian/control.wheezy \
+-	debian/compat \
+-	debian/netdata.install \
+-	debian/netdata.lintian-overrides \
+-	debian/rules \
+-	debian/netdata.docs \
+-	debian/netdata.default \
+-	debian/control \
+-	debian/netdata.postinst.in \
+-	debian/netdata.service \
+-	debian/changelog \
+-	debian/netdata.postrm \
+-	$(NULL)
+-
+-dist_noinst_SCRIPTS = \
+-	debian/netdata.init \
+-	nc-backend.sh \
+-	$(NULL)
+-
+-debian/changelog:
+-	echo "netdata ($(PACKAGE_VERSION)) UNRELEASED; urgency=medium" | \
+-		tr '_' '~' > $@
+-	echo "  * Latest release" >> $@
+-	echo " -- Netdata Team <>  `date -R`" >> $@
+diff --git a/python.d/Makefile.am b/python.d/Makefile.am
+index 1c84cdd..63c2c04 100644
 --- a/python.d/Makefile.am
 +++ b/python.d/Makefile.am
-@@ -88,110 +88,3 @@
+@@ -88,110 +88,3 @@ dist_third_party_DATA = \
      python_modules/third_party/ordereddict.py \
      python_modules/third_party/lm_sensors.py \
      $(NULL)
@@ -120,6 +160,8 @@ Subject: python libraries removed from make
 -    python_modules/urllib3/contrib/_securetransport/low_level.py \
 -    $(NULL)
 -
+diff --git a/web/Makefile.am b/web/Makefile.am
+index 02d8931..38e8f48 100644
 --- a/web/Makefile.am
 +++ b/web/Makefile.am
 @@ -4,10 +4,6 @@
@@ -133,7 +175,7 @@ Subject: python libraries removed from make
  	dashboard.html \
  	dashboard.js \
  	dashboard_info.js \
-@@ -27,15 +23,6 @@
+@@ -27,15 +23,6 @@ dist_web_DATA = \
  	version.txt \
  	$(NULL)
  
@@ -149,7 +191,23 @@ Subject: python libraries removed from make
  weblibdir=$(webdir)/lib
  dist_weblib_DATA = \
  	lib/bootstrap-3.3.7.min.js \
-@@ -105,16 +92,6 @@
+@@ -72,15 +59,6 @@ dist_webcss_DATA = \
+ 	css/c3-0.4.11.min.css \
+ 	$(NULL)
+ 
+-webfontsdir=$(webdir)/fonts
+-dist_webfonts_DATA = \
+-	fonts/glyphicons-halflings-regular.eot \
+-	fonts/glyphicons-halflings-regular.svg \
+-	fonts/glyphicons-halflings-regular.ttf \
+-	fonts/glyphicons-halflings-regular.woff \
+-	fonts/glyphicons-halflings-regular.woff2 \
+-	$(NULL)
+-
+ webimagesdir=$(webdir)/images
+ dist_webimages_DATA = \
+ 	images/alert-128-orange.png \
+@@ -105,16 +83,6 @@ dist_webimages_DATA = \
  	images/seo-performance-multi-size.icns \
  	$(NULL)
  
