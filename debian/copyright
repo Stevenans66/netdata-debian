@@ -3,8 +3,6 @@ Upstream-Name: netdata
 Upstream-Contact: Costa Tsaousis <costa@tsaousis.gr>
 Source: https://github.com/firehol/netdata
 Files-Excluded:
- python.d/python_modules/pyyaml2
- python.d/python_modules/pyyaml3
  web/old
  web/fonts
  web/.well-known
@@ -163,7 +161,7 @@ Copyright: 2016 Dmitry Baranovskiy
 License: Expat
 
 Files:
- python.d/python_modules/lm_sensors.py
+ python.d/python_modules/third_party/lm_sensors.py
 Copyright: 2015 Pavel Rojtberg
 License: LGPL-2.1
 
