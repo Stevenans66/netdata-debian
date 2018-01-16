@@ -1,6 +1,7 @@
 netdata (1.9.0+dfsg-1) UNRELEASED; urgency=medium
 
-  * New upstream release
+  [ Lennart Weller ]
+  * New upstream release (Closes: #885634)
 
  -- Federico Ceratto <federico@debian.org>  Wed, 20 Dec 2017 00:04:36 +0000
 
