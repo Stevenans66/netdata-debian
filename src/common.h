@@ -5,6 +5,7 @@
 #include <config.h>
 #endif
 
+
 // ----------------------------------------------------------------------------
 // system include files for all netdata C programs
 
@@ -99,6 +100,7 @@
 
 #ifdef STORAGE_WITH_MATH
 #include <math.h>
+#include <float.h>
 #endif
 
 #if defined(HAVE_INTTYPES_H)
@@ -114,6 +116,28 @@
 #ifdef HAVE_CAPABILITY
 #include <sys/capability.h>
 #endif
+
+// ----------------------------------------------------------------------------
+// netdata chart priorities
+
+// This is a work in progress - to scope is to collect here all chart priorities.
+// These should be based on the CONTEXT of the charts + the chart id when needed
+// - for each SECTION +1000 (or +X000 for big sections)
+// - for each FAMILY  +100
+// - for each CHART   +10
+
+// Memory Section - 1xxx
+#define NETDATA_CHART_PRIO_MEM_SYSTEM              1000
+#define NETDATA_CHART_PRIO_MEM_SYSTEM_AVAILABLE    1010
+#define NETDATA_CHART_PRIO_MEM_SYSTEM_COMMITTED    1020
+#define NETDATA_CHART_PRIO_MEM_SYSTEM_PGFAULTS     1030
+#define NETDATA_CHART_PRIO_MEM_KERNEL              1100
+#define NETDATA_CHART_PRIO_MEM_SLAB                1200
+#define NETDATA_CHART_PRIO_MEM_HUGEPAGES           1250
+#define NETDATA_CHART_PRIO_MEM_KSM                 1300
+#define NETDATA_CHART_PRIO_MEM_NUMA                1400
+#define NETDATA_CHART_PRIO_MEM_HW                  1500
+
 
 // ----------------------------------------------------------------------------
 // netdata common definitions
@@ -134,6 +158,12 @@
 #define NEVERNULL __attribute__((returns_nonnull))
 #else
 #define NEVERNULL
+#endif
+
+#ifdef HAVE_FUNC_ATTRIBUTE_NOINLINE
+#define NOINLINE __attribute__((noinline))
+#else
+#define NOINLINE
 #endif
 
 #ifdef HAVE_FUNC_ATTRIBUTE_MALLOC
@@ -163,7 +193,7 @@
 #ifdef abs
 #undef abs
 #endif
-#define abs(x) ((x < 0)? -x : x)
+#define abs(x) (((x) < 0)? (-(x)) : (x))
 
 #define GUID_LEN 36
 
@@ -172,6 +202,7 @@
 
 #include "clocks.h"
 #include "log.h"
+#include "threads.h"
 #include "locks.h"
 #include "simple_pattern.h"
 #include "avl.h"
@@ -292,9 +323,9 @@ extern int memory_file_save(const char *filename, void *mem, size_t size);
 
 extern int fd_is_valid(int fd);
 
-extern int enable_ksm;
+extern struct rlimit rlimit_nofile;
 
-extern pid_t gettid(void);
+extern int enable_ksm;
 
 extern int sleep_usec(usec_t usec);
 

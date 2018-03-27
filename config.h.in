@@ -46,6 +46,9 @@
 /* Define to 1 if the system has the `malloc' function attribute */
 #undef HAVE_FUNC_ATTRIBUTE_MALLOC
 
+/* Define to 1 if the system has the `noinline' function attribute */
+#undef HAVE_FUNC_ATTRIBUTE_NOINLINE
+
 /* Define to 1 if the system has the `noreturn' function attribute */
 #undef HAVE_FUNC_ATTRIBUTE_NORETURN
 

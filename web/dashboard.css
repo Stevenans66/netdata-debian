@@ -147,6 +147,12 @@ body {
     z-index: 20;
     padding: 0px;
     margin: 0px;
+
+    /* prevent text selection after double click */
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
 }
 
 .netdata-legend-toolbox-button {
@@ -165,6 +171,12 @@ body {
     padding: 0px;
     margin: 0px;
     cursor: pointer;
+
+    /* prevent text selection after double click */
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
 }
 
 .netdata-message {
@@ -213,12 +225,18 @@ body {
     font-size: 10px;
     font-weight: normal;
     margin-top: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .netdata-legend-title-time {
     font-size: 11px;
     font-weight: bold;
     margin-top: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .netdata-legend-title-units {
@@ -229,6 +247,9 @@ body {
     vertical-align: top;
     font-weight: normal;
     margin-top: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .netdata-legend-series {
@@ -371,6 +392,10 @@ body {
 .dygraph-ylabel {
 }
 
+.dygraph-axis-label-x {
+    overflow-x: hidden;
+}
+
 .dygraph-label-rotate-left {
     text-align: center;
     /* See http://caniuse.com/#feat=transforms2d */
@@ -441,7 +466,7 @@ body {
     float: left;
     left: 0;
     width: 64%;
-    margin-left: 18%;
+    margin-left: 18% !important;
     text-align: center;
     color: #999999;
     font-weight: bold;
@@ -453,7 +478,7 @@ body {
     float: left;
     left: 0;
     width: 60%;
-    margin-left: 20%;
+    margin-left: 20% !important;
     text-align: center;
     color: #999999;
     font-weight: normal;

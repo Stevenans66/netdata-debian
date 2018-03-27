@@ -19,6 +19,7 @@ char *netdata_configured_home_dir    = NULL;
 char *netdata_configured_host_prefix = NULL;
 char *netdata_configured_timezone    = NULL;
 
+struct rlimit rlimit_nofile = { .rlim_cur = 1024, .rlim_max = 1024 };
 int enable_ksm = 1;
 
 volatile sig_atomic_t netdata_exit = 0;
@@ -904,6 +905,30 @@ void strreverse(char *begin, char *end) {
     }
 }
 
+char *strsep_on_1char(char **ptr, char c) {
+    if(unlikely(!ptr || !*ptr))
+        return NULL;
+
+    // remember the position we started
+    char *s = *ptr;
+
+    // skip separators in front
+    while(*s == c) s++;
+    char *ret = s;
+
+    // find the next separator
+    while(*s++) {
+        if(unlikely(*s == c)) {
+            *s++ = '\0';
+            *ptr = s;
+            return ret;
+        }
+    }
+
+    *ptr = NULL;
+    return ret;
+}
+
 char *mystrsep(char **ptr, char *s) {
     char *p = "";
     while (p && !p[0] && *ptr) p = strsep(ptr, s);
@@ -1114,22 +1139,6 @@ int memory_file_save(const char *filename, void *mem, size_t size) {
 
 int fd_is_valid(int fd) {
     return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-}
-
-pid_t gettid(void) {
-#ifdef __FreeBSD__
-    return (pid_t)pthread_getthreadid_np();
-#elif defined(__APPLE__)
-#if (defined __MAC_OS_X_VERSION_MIN_REQUIRED && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1060)
-    uint64_t curthreadid;
-    pthread_threadid_np(NULL, &curthreadid);
-    return (pid_t)curthreadid;
-#else /* __MAC_OS_X_VERSION_MIN_REQUIRED */
-    return (pid_t)pthread_self;
-#endif /* __MAC_OS_X_VERSION_MIN_REQUIRED */
-#else /* __APPLE__*/
-    return (pid_t)syscall(SYS_gettid);
-#endif /* __FreeBSD__, __APPLE__*/
 }
 
 char *fgets_trim_len(char *buf, size_t buf_size, FILE *fp, size_t *len) {

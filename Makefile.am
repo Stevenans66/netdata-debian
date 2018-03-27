@@ -61,9 +61,13 @@ SUBDIRS = \
 	$(NULL)
 
 dist_noinst_DATA= \
+	cppcheck.sh \
 	configs.signatures \
 	Dockerfile \
+	Dockerfile.alpine \
+	Dockerfile.aarch64 \
 	Dockerfile.armv7hf \
+	netdata.cppcheck \
 	netdata.spec \
 	package.json \
 	$(NULL)

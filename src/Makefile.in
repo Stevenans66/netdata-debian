@@ -108,10 +108,14 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @FREEBSD_FALSE@@MACOS_FALSE@am__append_6 = \
 @FREEBSD_FALSE@@MACOS_FALSE@	ipc.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	ipc.h \
+@FREEBSD_FALSE@@MACOS_FALSE@	plugin_nfacct.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	plugin_nfacct.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc_diskspace.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc_diskspace.h \
+@FREEBSD_FALSE@@MACOS_FALSE@	plugin_tc.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	plugin_tc.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_diskstats.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_interrupts.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_softirqs.c \
@@ -129,6 +133,8 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_softnet_stat.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_conntrack.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_synproxy.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_self_mountinfo.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_self_mountinfo.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	zfs_common.c \
 @FREEBSD_FALSE@@MACOS_FALSE@    zfs_common.h \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_spl_kstat_zfs.c \
@@ -137,12 +143,20 @@ plugins_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_vmstat.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_uptime.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	sys_kernel_mm_ksm.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_devices_system_edac_mc.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_devices_system_node.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_cgroup.c \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_btrfs.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	$(NULL)
 
 @FREEBSD_TRUE@am__append_7 = \
 @FREEBSD_TRUE@	plugin_freebsd.h \
 @FREEBSD_TRUE@	$(NULL)
+
+@FREEBSD_FALSE@am__append_8 = \
+@FREEBSD_FALSE@	adaptive_resortable_list.c \
+@FREEBSD_FALSE@	adaptive_resortable_list.h \
+@FREEBSD_FALSE@	$(NULL)
 
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -172,24 +186,29 @@ am__installdirs = "$(DESTDIR)$(pluginsdir)" "$(DESTDIR)$(sbindir)" \
 	"$(DESTDIR)$(registrydir)" "$(DESTDIR)$(varlibdir)"
 PROGRAMS = $(plugins_PROGRAMS) $(sbin_PROGRAMS)
 am__apps_plugin_SOURCES_DIST = apps_plugin.c avl.c avl.h clocks.c \
-	clocks.h common.c common.h inlined.h log.c log.h procfile.c \
-	procfile.h web_buffer.c web_buffer.h plugin_freebsd.h
+	clocks.h common.c common.h inlined.h locks.c locks.h log.c \
+	log.h procfile.c procfile.h threads.c threads.h web_buffer.c \
+	web_buffer.h plugin_freebsd.h adaptive_resortable_list.c \
+	adaptive_resortable_list.h
 am__objects_1 =
+@FREEBSD_FALSE@am__objects_2 = adaptive_resortable_list.$(OBJEXT)
 am_apps_plugin_OBJECTS = apps_plugin.$(OBJEXT) avl.$(OBJEXT) \
-	clocks.$(OBJEXT) common.$(OBJEXT) log.$(OBJEXT) \
-	procfile.$(OBJEXT) web_buffer.$(OBJEXT) $(am__objects_1)
+	clocks.$(OBJEXT) common.$(OBJEXT) locks.$(OBJEXT) \
+	log.$(OBJEXT) procfile.$(OBJEXT) threads.$(OBJEXT) \
+	web_buffer.$(OBJEXT) $(am__objects_1) $(am__objects_2)
 apps_plugin_OBJECTS = $(am_apps_plugin_OBJECTS)
 am__DEPENDENCIES_1 =
 apps_plugin_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_cgroup_network_OBJECTS = cgroup-network.$(OBJEXT) clocks.$(OBJEXT) \
-	common.$(OBJEXT) log.$(OBJEXT) procfile.$(OBJEXT) \
-	popen.$(OBJEXT) signals.$(OBJEXT)
+	common.$(OBJEXT) locks.$(OBJEXT) log.$(OBJEXT) \
+	procfile.$(OBJEXT) popen.$(OBJEXT) signals.$(OBJEXT) \
+	threads.$(OBJEXT)
 cgroup_network_OBJECTS = $(am_cgroup_network_OBJECTS)
 cgroup_network_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_freeipmi_plugin_OBJECTS = freeipmi_plugin.$(OBJEXT) \
-	clocks.$(OBJEXT) common.$(OBJEXT) log.$(OBJEXT) \
-	procfile.$(OBJEXT)
+	clocks.$(OBJEXT) common.$(OBJEXT) locks.$(OBJEXT) \
+	log.$(OBJEXT) procfile.$(OBJEXT) threads.$(OBJEXT)
 freeipmi_plugin_OBJECTS = $(am_freeipmi_plugin_OBJECTS)
 freeipmi_plugin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
@@ -198,55 +217,57 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 	backends.h clocks.c clocks.h common.c common.h daemon.c \
 	daemon.h dictionary.c dictionary.h eval.c eval.h \
 	global_statistics.c global_statistics.h health.c health.h \
-	health_config.c health_json.c health_log.c inlined.h locks.h \
-	log.c log.h main.c main.h plugin_checks.c plugin_checks.h \
-	plugin_idlejitter.c plugin_idlejitter.h plugin_nfacct.c \
-	plugin_nfacct.h plugin_tc.c plugin_tc.h plugins_d.c \
-	plugins_d.h popen.c popen.h proc_self_mountinfo.c \
-	proc_self_mountinfo.h procfile.c procfile.h registry.c \
-	registry.h registry_db.c registry_init.c registry_internals.c \
-	registry_internals.h registry_log.c registry_machine.c \
-	registry_machine.h registry_person.c registry_person.h \
-	registry_url.c registry_url.h rrd.c rrd.h rrd2json.c \
-	rrd2json.h rrd2json_api_old.c rrd2json_api_old.h rrdcalc.c \
-	rrdcalctemplate.c rrddim.c rrddimvar.c rrdfamily.c rrdhost.c \
-	rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c signals.c \
-	signals.h simple_pattern.c simple_pattern.h socket.c socket.h \
-	statistical.c statistical.h statsd.c statsd.h storage_number.c \
-	storage_number.h sys_devices_system_edac_mc.c \
-	sys_devices_system_node.c unit_test.c unit_test.h url.c url.h \
-	web_api_old.c web_api_old.h web_api_v1.c web_api_v1.h \
-	web_buffer.c web_buffer.h web_buffer_svg.c web_buffer_svg.h \
-	web_client.c web_client.h web_server.c web_server.h \
-	plugin_freebsd.c plugin_freebsd.h freebsd_sysctl.c \
-	freebsd_getmntinfo.c freebsd_getifaddrs.c freebsd_devstat.c \
-	zfs_common.c zfs_common.h freebsd_kstat_zfs.c freebsd_ipfw.c \
-	plugin_macos.c plugin_macos.h macos_sysctl.c macos_mach_smi.c \
-	macos_fw.c ipc.c ipc.h plugin_proc.c plugin_proc.h \
-	plugin_proc_diskspace.c plugin_proc_diskspace.h \
-	proc_diskstats.c proc_interrupts.c proc_softirqs.c \
-	proc_loadavg.c proc_meminfo.c proc_net_dev.c \
+	health_config.c health_json.c health_log.c inlined.h locks.c \
+	locks.h log.c log.h main.c main.h plugin_checks.c \
+	plugin_checks.h plugin_idlejitter.c plugin_idlejitter.h \
+	plugins_d.c plugins_d.h popen.c popen.h procfile.c procfile.h \
+	registry.c registry.h registry_db.c registry_init.c \
+	registry_internals.c registry_internals.h registry_log.c \
+	registry_machine.c registry_machine.h registry_person.c \
+	registry_person.h registry_url.c registry_url.h rrd.c rrd.h \
+	rrd2json.c rrd2json.h rrd2json_api_old.c rrd2json_api_old.h \
+	rrdcalc.c rrdcalctemplate.c rrddim.c rrddimvar.c rrdfamily.c \
+	rrdhost.c rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c \
+	signals.c signals.h simple_pattern.c simple_pattern.h socket.c \
+	socket.h statistical.c statistical.h statsd.c statsd.h \
+	storage_number.c storage_number.h threads.c threads.h \
+	unit_test.c unit_test.h url.c url.h web_api_old.c \
+	web_api_old.h web_api_v1.c web_api_v1.h web_buffer.c \
+	web_buffer.h web_buffer_svg.c web_buffer_svg.h web_client.c \
+	web_client.h web_server.c web_server.h plugin_freebsd.c \
+	plugin_freebsd.h freebsd_sysctl.c freebsd_getmntinfo.c \
+	freebsd_getifaddrs.c freebsd_devstat.c zfs_common.c \
+	zfs_common.h freebsd_kstat_zfs.c freebsd_ipfw.c plugin_macos.c \
+	plugin_macos.h macos_sysctl.c macos_mach_smi.c macos_fw.c \
+	ipc.c ipc.h plugin_nfacct.c plugin_nfacct.h plugin_proc.c \
+	plugin_proc.h plugin_proc_diskspace.c plugin_proc_diskspace.h \
+	plugin_tc.c plugin_tc.h proc_diskstats.c proc_interrupts.c \
+	proc_softirqs.c proc_loadavg.c proc_meminfo.c proc_net_dev.c \
 	proc_net_ip_vs_stats.c proc_net_netstat.c proc_net_rpc_nfs.c \
 	proc_net_rpc_nfsd.c proc_net_snmp.c proc_net_snmp6.c \
 	proc_net_sockstat.c proc_net_sockstat6.c \
 	proc_net_softnet_stat.c proc_net_stat_conntrack.c \
-	proc_net_stat_synproxy.c proc_spl_kstat_zfs.c proc_stat.c \
+	proc_net_stat_synproxy.c proc_self_mountinfo.c \
+	proc_self_mountinfo.h proc_spl_kstat_zfs.c proc_stat.c \
 	proc_sys_kernel_random_entropy_avail.c proc_vmstat.c \
-	proc_uptime.c sys_kernel_mm_ksm.c sys_fs_cgroup.c
-@FREEBSD_TRUE@am__objects_2 = plugin_freebsd.$(OBJEXT) \
+	proc_uptime.c sys_kernel_mm_ksm.c sys_devices_system_edac_mc.c \
+	sys_devices_system_node.c sys_fs_cgroup.c sys_fs_btrfs.c
+@FREEBSD_TRUE@am__objects_3 = plugin_freebsd.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_sysctl.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_getmntinfo.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_getifaddrs.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_devstat.$(OBJEXT) zfs_common.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_kstat_zfs.$(OBJEXT) \
 @FREEBSD_TRUE@	freebsd_ipfw.$(OBJEXT)
-@FREEBSD_FALSE@@MACOS_TRUE@am__objects_3 = plugin_macos.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_TRUE@am__objects_4 = plugin_macos.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_TRUE@	macos_sysctl.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_TRUE@	macos_mach_smi.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_TRUE@	macos_fw.$(OBJEXT)
-@FREEBSD_FALSE@@MACOS_FALSE@am__objects_4 = ipc.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@am__objects_5 = ipc.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	plugin_nfacct.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	plugin_proc_diskspace.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	plugin_tc.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_diskstats.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_interrupts.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_softirqs.$(OBJEXT) \
@@ -264,6 +285,7 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_softnet_stat.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_conntrack.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_net_stat_synproxy.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	proc_self_mountinfo.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	zfs_common.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_spl_kstat_zfs.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_stat.$(OBJEXT) \
@@ -271,34 +293,35 @@ am__netdata_SOURCES_DIST = adaptive_resortable_list.c \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_vmstat.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	proc_uptime.$(OBJEXT) \
 @FREEBSD_FALSE@@MACOS_FALSE@	sys_kernel_mm_ksm.$(OBJEXT) \
-@FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_cgroup.$(OBJEXT)
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_devices_system_edac_mc.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_devices_system_node.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_cgroup.$(OBJEXT) \
+@FREEBSD_FALSE@@MACOS_FALSE@	sys_fs_btrfs.$(OBJEXT)
 am_netdata_OBJECTS = adaptive_resortable_list.$(OBJEXT) \
 	appconfig.$(OBJEXT) avl.$(OBJEXT) backend_prometheus.$(OBJEXT) \
 	backends.$(OBJEXT) clocks.$(OBJEXT) common.$(OBJEXT) \
 	daemon.$(OBJEXT) dictionary.$(OBJEXT) eval.$(OBJEXT) \
 	global_statistics.$(OBJEXT) health.$(OBJEXT) \
 	health_config.$(OBJEXT) health_json.$(OBJEXT) \
-	health_log.$(OBJEXT) log.$(OBJEXT) main.$(OBJEXT) \
-	plugin_checks.$(OBJEXT) plugin_idlejitter.$(OBJEXT) \
-	plugin_nfacct.$(OBJEXT) plugin_tc.$(OBJEXT) \
-	plugins_d.$(OBJEXT) popen.$(OBJEXT) \
-	proc_self_mountinfo.$(OBJEXT) procfile.$(OBJEXT) \
-	registry.$(OBJEXT) registry_db.$(OBJEXT) \
-	registry_init.$(OBJEXT) registry_internals.$(OBJEXT) \
-	registry_log.$(OBJEXT) registry_machine.$(OBJEXT) \
-	registry_person.$(OBJEXT) registry_url.$(OBJEXT) rrd.$(OBJEXT) \
-	rrd2json.$(OBJEXT) rrd2json_api_old.$(OBJEXT) \
-	rrdcalc.$(OBJEXT) rrdcalctemplate.$(OBJEXT) rrddim.$(OBJEXT) \
-	rrddimvar.$(OBJEXT) rrdfamily.$(OBJEXT) rrdhost.$(OBJEXT) \
-	rrdpush.$(OBJEXT) rrdset.$(OBJEXT) rrdsetvar.$(OBJEXT) \
-	rrdvar.$(OBJEXT) signals.$(OBJEXT) simple_pattern.$(OBJEXT) \
-	socket.$(OBJEXT) statistical.$(OBJEXT) statsd.$(OBJEXT) \
-	storage_number.$(OBJEXT) sys_devices_system_edac_mc.$(OBJEXT) \
-	sys_devices_system_node.$(OBJEXT) unit_test.$(OBJEXT) \
+	health_log.$(OBJEXT) locks.$(OBJEXT) log.$(OBJEXT) \
+	main.$(OBJEXT) plugin_checks.$(OBJEXT) \
+	plugin_idlejitter.$(OBJEXT) plugins_d.$(OBJEXT) \
+	popen.$(OBJEXT) procfile.$(OBJEXT) registry.$(OBJEXT) \
+	registry_db.$(OBJEXT) registry_init.$(OBJEXT) \
+	registry_internals.$(OBJEXT) registry_log.$(OBJEXT) \
+	registry_machine.$(OBJEXT) registry_person.$(OBJEXT) \
+	registry_url.$(OBJEXT) rrd.$(OBJEXT) rrd2json.$(OBJEXT) \
+	rrd2json_api_old.$(OBJEXT) rrdcalc.$(OBJEXT) \
+	rrdcalctemplate.$(OBJEXT) rrddim.$(OBJEXT) rrddimvar.$(OBJEXT) \
+	rrdfamily.$(OBJEXT) rrdhost.$(OBJEXT) rrdpush.$(OBJEXT) \
+	rrdset.$(OBJEXT) rrdsetvar.$(OBJEXT) rrdvar.$(OBJEXT) \
+	signals.$(OBJEXT) simple_pattern.$(OBJEXT) socket.$(OBJEXT) \
+	statistical.$(OBJEXT) statsd.$(OBJEXT) \
+	storage_number.$(OBJEXT) threads.$(OBJEXT) unit_test.$(OBJEXT) \
 	url.$(OBJEXT) web_api_old.$(OBJEXT) web_api_v1.$(OBJEXT) \
 	web_buffer.$(OBJEXT) web_buffer_svg.$(OBJEXT) \
-	web_client.$(OBJEXT) web_server.$(OBJEXT) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_4)
+	web_client.$(OBJEXT) web_server.$(OBJEXT) $(am__objects_3) \
+	$(am__objects_4) $(am__objects_5)
 netdata_OBJECTS = $(am_netdata_OBJECTS)
 netdata_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -567,27 +590,25 @@ netdata_SOURCES = adaptive_resortable_list.c \
 	backends.h clocks.c clocks.h common.c common.h daemon.c \
 	daemon.h dictionary.c dictionary.h eval.c eval.h \
 	global_statistics.c global_statistics.h health.c health.h \
-	health_config.c health_json.c health_log.c inlined.h locks.h \
-	log.c log.h main.c main.h plugin_checks.c plugin_checks.h \
-	plugin_idlejitter.c plugin_idlejitter.h plugin_nfacct.c \
-	plugin_nfacct.h plugin_tc.c plugin_tc.h plugins_d.c \
-	plugins_d.h popen.c popen.h proc_self_mountinfo.c \
-	proc_self_mountinfo.h procfile.c procfile.h registry.c \
-	registry.h registry_db.c registry_init.c registry_internals.c \
-	registry_internals.h registry_log.c registry_machine.c \
-	registry_machine.h registry_person.c registry_person.h \
-	registry_url.c registry_url.h rrd.c rrd.h rrd2json.c \
-	rrd2json.h rrd2json_api_old.c rrd2json_api_old.h rrdcalc.c \
-	rrdcalctemplate.c rrddim.c rrddimvar.c rrdfamily.c rrdhost.c \
-	rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c signals.c \
-	signals.h simple_pattern.c simple_pattern.h socket.c socket.h \
-	statistical.c statistical.h statsd.c statsd.h storage_number.c \
-	storage_number.h sys_devices_system_edac_mc.c \
-	sys_devices_system_node.c unit_test.c unit_test.h url.c url.h \
-	web_api_old.c web_api_old.h web_api_v1.c web_api_v1.h \
-	web_buffer.c web_buffer.h web_buffer_svg.c web_buffer_svg.h \
-	web_client.c web_client.h web_server.c web_server.h $(NULL) \
-	$(am__append_4) $(am__append_5) $(am__append_6)
+	health_config.c health_json.c health_log.c inlined.h locks.c \
+	locks.h log.c log.h main.c main.h plugin_checks.c \
+	plugin_checks.h plugin_idlejitter.c plugin_idlejitter.h \
+	plugins_d.c plugins_d.h popen.c popen.h procfile.c procfile.h \
+	registry.c registry.h registry_db.c registry_init.c \
+	registry_internals.c registry_internals.h registry_log.c \
+	registry_machine.c registry_machine.h registry_person.c \
+	registry_person.h registry_url.c registry_url.h rrd.c rrd.h \
+	rrd2json.c rrd2json.h rrd2json_api_old.c rrd2json_api_old.h \
+	rrdcalc.c rrdcalctemplate.c rrddim.c rrddimvar.c rrdfamily.c \
+	rrdhost.c rrdpush.c rrdpush.h rrdset.c rrdsetvar.c rrdvar.c \
+	signals.c signals.h simple_pattern.c simple_pattern.h socket.c \
+	socket.h statistical.c statistical.h statsd.c statsd.h \
+	storage_number.c storage_number.h threads.c threads.h \
+	unit_test.c unit_test.h url.c url.h web_api_old.c \
+	web_api_old.h web_api_v1.c web_api_v1.h web_buffer.c \
+	web_buffer.h web_buffer_svg.c web_buffer_svg.h web_client.c \
+	web_client.h web_server.c web_server.h $(NULL) $(am__append_4) \
+	$(am__append_5) $(am__append_6)
 netdata_LDADD = \
 	$(OPTIONAL_MATH_LIBS) \
 	$(OPTIONAL_NFACCT_LIBS) \
@@ -596,8 +617,9 @@ netdata_LDADD = \
 	$(NULL)
 
 apps_plugin_SOURCES = apps_plugin.c avl.c avl.h clocks.c clocks.h \
-	common.c common.h inlined.h log.c log.h procfile.c procfile.h \
-	web_buffer.c web_buffer.h $(NULL) $(am__append_7)
+	common.c common.h inlined.h locks.c locks.h log.c log.h \
+	procfile.c procfile.h threads.c threads.h web_buffer.c \
+	web_buffer.h $(NULL) $(am__append_7) $(am__append_8)
 apps_plugin_LDADD = \
 	$(OPTIONAL_MATH_LIBS) \
 	$(OPTIONAL_LIBCAP_LIBS) \
@@ -605,11 +627,18 @@ apps_plugin_LDADD = \
 
 freeipmi_plugin_SOURCES = \
 	freeipmi_plugin.c \
-	clocks.c clocks.h \
-	common.c common.h \
+	clocks.c \
+	clocks.h \
+	common.c \
+	common.h \
 	inlined.h \
+	locks.c \
+	locks.h \
 	log.c log.h \
-	procfile.c procfile.h \
+	procfile.c \
+	procfile.h \
+	threads.c \
+	threads.h \
 	$(NULL)
 
 freeipmi_plugin_LDADD = \
@@ -618,13 +647,23 @@ freeipmi_plugin_LDADD = \
 
 cgroup_network_SOURCES = \
     cgroup-network.c \
-	clocks.c clocks.h \
-    common.c common.h \
+	clocks.c \
+	clocks.h \
+    common.c \
+    common.h \
     inlined.h \
-    log.c log.h \
-	procfile.c procfile.h \
-	popen.c popen.h \
-	signals.c signals.h \
+	locks.c \
+	locks.h \
+    log.c \
+    log.h \
+	procfile.c \
+	procfile.h \
+	popen.c \
+	popen.h \
+	signals.c \
+	signals.h \
+	threads.c \
+	threads.h \
     $(NULL)
 
 cgroup_network_LDADD = \
@@ -798,6 +837,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/health_json.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/health_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locks.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/macos_fw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/macos_mach_smi.Po@am__quote@
@@ -866,8 +906,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/storage_number.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sys_devices_system_edac_mc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sys_devices_system_node.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sys_fs_btrfs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sys_fs_cgroup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sys_kernel_mm_ksm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/threads.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/url.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/web_api_old.Po@am__quote@

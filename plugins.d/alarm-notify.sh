@@ -16,6 +16,7 @@
 # Supported notification methods:
 #  - emails by @ktsaou
 #  - slack.com notifications by @ktsaou
+#  - alerta.io notifications by @kattunga
 #  - discordapp.com notifications by @lowfive
 #  - pushover.net notifications by @ktsaou
 #  - pushbullet.com push notifications by Tiago Peralta @tperalta82 #1070
@@ -119,7 +120,7 @@ docurl() {
         echo >&2 "--- END curl command ---"
 
         local out=$(mktemp /tmp/netdata-health-alarm-notify-XXXXXXXX)
-        local code=$(${curl} --write-out %{http_code} --output "${out}" --silent --show-error "${@}")
+        local code=$(${curl} ${curl_options} --write-out %{http_code} --output "${out}" --silent --show-error "${@}")
         local ret=$?
         echo >&2 "--- BEGIN received response ---"
         cat >&2 "${out}"
@@ -131,7 +132,7 @@ docurl() {
         return ${ret}
     fi
 
-    ${curl} --write-out %{http_code} --output /dev/null --silent --show-error "${@}"
+    ${curl} ${curl_options} --write-out %{http_code} --output /dev/null --silent --show-error "${@}"
     return $?
 }
 
@@ -212,6 +213,9 @@ fi
 # This can be overwritten at the configuration file.
 images_base_url="https://registry.my-netdata.io"
 
+# curl options to use
+curl_options=
+
 # needed commands
 # if empty they will be searched in the system path
 curl=
@@ -219,6 +223,7 @@ sendmail=
 
 # enable / disable features
 SEND_SLACK="YES"
+SEND_ALERTA="YES"
 SEND_FLOCK="YES"
 SEND_DISCORD="YES"
 SEND_PUSHOVER="YES"
@@ -231,12 +236,19 @@ SEND_EMAIL="YES"
 SEND_PUSHBULLET="YES"
 SEND_KAFKA="YES"
 SEND_PD="YES"
+SEND_IRC="YES"
 SEND_CUSTOM="YES"
 
 # slack configs
 SLACK_WEBHOOK_URL=
 DEFAULT_RECIPIENT_SLACK=
 declare -A role_recipients_slack=()
+
+# alerta configs
+ALERTA_WEBHOOK_URL=
+ALERTA_API_KEY=
+DEFAULT_RECIPIENT_ALERTA=
+declare -A role_recipients_alerta=()
 
 # flock configs
 FLOCK_WEBHOOK_URL=
@@ -307,6 +319,13 @@ EMAIL_SENDER=
 DEFAULT_RECIPIENT_EMAIL="root"
 EMAIL_CHARSET=$(locale charmap 2>/dev/null)
 declare -A role_recipients_email=()
+
+# irc configs
+IRC_NICKNAME=
+IRC_REALNAME=
+DEFAULT_RECIPIENT_IRC=
+IRC_NETWORK=
+declare -A role_recipients_irc=()
 
 # load the user configuration
 # this will overwrite the variables above
@@ -386,6 +405,7 @@ filter_recipient_by_criticality() {
 # find the recipients' addresses per method
 
 declare -A arr_slack=()
+declare -A arr_alerta=()
 declare -A arr_flock=()
 declare -A arr_discord=()
 declare -A arr_pushover=()
@@ -398,6 +418,7 @@ declare -A arr_email=()
 declare -A arr_custom=()
 declare -A arr_messagebird=()
 declare -A arr_kavenegar=()
+declare -A arr_irc=()
 
 # netdata may call us with multiple roles, and roles may have multiple but
 # overlapping recipients - so, here we find the unique recipients.
@@ -479,6 +500,14 @@ do
         [ "${r}" != "disabled" ] && filter_recipient_by_criticality slack "${r}" && arr_slack[${r/|*/}]="1"
     done
 
+    # alerta
+    a="${role_recipients_alerta[${x}]}"
+    [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_ALERTA}"
+    for r in ${a//,/ }
+    do
+        [ "${r}" != "disabled" ] && filter_recipient_by_criticality alerta "${r}" && arr_alerta[${r/|*/}]="1"
+    done
+
     # flock
     a="${role_recipients_flock[${x}]}"
     [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_FLOCK}"
@@ -502,6 +531,14 @@ do
     do
         [ "${r}" != "disabled" ] && filter_recipient_by_criticality pd "${r}" && arr_pd[${r/|*/}]="1"
     done
+    
+    # irc
+    a="${role_recipients_irc[${x}]}"
+    [ -z "${a}" ] && a="${DEFAULT_RECIPIENT_IRC}"
+    for r in ${a//,/ }
+    do
+        [ "${r}" != "disabled" ] && filter_recipient_by_criticality irc "${r}" && arr_irc[${r/|*/}]="1"
+    done
 
     # custom
     a="${role_recipients_custom[${x}]}"
@@ -516,6 +553,10 @@ done
 # build the list of slack recipients (channels)
 to_slack="${!arr_slack[*]}"
 [ -z "${to_slack}" ] && SEND_SLACK="NO"
+
+# build the list of alerta recipients (channels)
+to_alerta="${!arr_alerta[*]}"
+[ -z "${to_alerta}" ] && SEND_ALERTA="NO"
 
 # build the list of flock recipients (channels)
 to_flock="${!arr_flock[*]}"
@@ -570,12 +611,18 @@ do
 done
 [ -z "${to_email}" ] && SEND_EMAIL="NO"
 
+# build the list of irc recipients (channels)
+to_irc="${!arr_irc[*]}"
+[ -z "${to_irc}" ] && SEND_IRC="NO"
 
 # -----------------------------------------------------------------------------
 # verify the delivery methods supported
 
 # check slack
 [ -z "${SLACK_WEBHOOK_URL}" ] && SEND_SLACK="NO"
+
+# check alerta
+[ -z "${ALERTA_WEBHOOK_URL}" ] && SEND_ALERTA="NO"
 
 # check flock
 [ -z "${FLOCK_WEBHOOK_URL}" ] && SEND_FLOCK="NO"
@@ -607,6 +654,9 @@ done
 # check kafka
 [ -z "${KAFKA_URL}" -o -z "${KAFKA_SENDER_IP}" ] && SEND_KAFKA="NO"
 
+# check irc
+[ -z "${IRC_NETWORK}" ] && SEND_IRC="NO"
+
 # check pagerduty.com
 # if we need pd-send, check for the pd-send command
 # https://www.pagerduty.com/docs/guides/agent-install-guide/
@@ -624,6 +674,7 @@ fi
 if [ \( \
            "${SEND_PUSHOVER}"    = "YES" \
         -o "${SEND_SLACK}"       = "YES" \
+        -o "${SEND_ALERTA}"      = "YES" \
         -o "${SEND_FLOCK}"       = "YES" \
         -o "${SEND_DISCORD}"     = "YES" \
         -o "${SEND_HIPCHAT}"     = "YES" \
@@ -644,6 +695,7 @@ if [ \( \
         SEND_PUSHBULLET="NO"
         SEND_TELEGRAM="NO"
         SEND_SLACK="NO"
+        SEND_ALERTA="NO"
         SEND_FLOCK="NO"
         SEND_DISCORD="NO"
         SEND_TWILIO="NO"
@@ -671,6 +723,7 @@ if [   "${SEND_EMAIL}"          != "YES" \
     -a "${SEND_PUSHOVER}"       != "YES" \
     -a "${SEND_TELEGRAM}"       != "YES" \
     -a "${SEND_SLACK}"          != "YES" \
+    -a "${SEND_ALERTA}"         != "YES" \
     -a "${SEND_FLOCK}"          != "YES" \
     -a "${SEND_DISCORD}"        != "YES" \
     -a "${SEND_TWILIO}"         != "YES" \
@@ -681,6 +734,7 @@ if [   "${SEND_EMAIL}"          != "YES" \
     -a "${SEND_KAFKA}"          != "YES" \
     -a "${SEND_PD}"             != "YES" \
     -a "${SEND_CUSTOM}"         != "YES" \
+    -a "${SEND_IRC}"            != "YES" \
     ]
     then
     fatal "All notification methods are disabled. Not sending notification for host '${host}', chart '${chart}' to '${roles}' for '${name}' = '${value}' for status '${status}'."
@@ -954,7 +1008,7 @@ send_pd() {
             ${pd_send} -k ${PD_SERVICE_KEY} \
                        -t ${t} \
                        -d "${d}" \
-                       -i ${alarm_id} \
+                       -i ${host}:${chart}:${name} \
                        -f 'info'="${info}" \
                        -f 'value_w_units'="${value_string}" \
                        -f 'when'="${when}" \
@@ -1028,6 +1082,10 @@ send_twilio() {
 
 send_hipchat() {
     local authtoken="${1}" recipients="${2}" message="${3}" httpcode sent=0 room color sender msg_format notify
+
+    # remove <small></small> from the message
+    message="${message//<small>/}"
+    message="${message//<\/small>/}"
 
     if [ "${SEND_HIPCHAT}" = "YES" -a ! -z "${HIPCHAT_SERVER}" -a ! -z "${authtoken}" -a ! -z "${recipients}" -a ! -z "${message}" ]
     then
@@ -1248,6 +1306,53 @@ EOF
 }
 
 # -----------------------------------------------------------------------------
+# alerta sender
+
+send_alerta() {
+    local webhook="${1}" channels="${2}" httpcode sent=0 channel severity content
+
+    [ "${SEND_ALERTA}" != "YES" ] && return 1
+
+    case "${status}" in
+        WARNING)  severity="warning" ;;
+        CRITICAL) severity="critical" ;;
+        CLEAR)    severity="cleared" ;;
+        *)        severity="unknown" ;;
+    esac
+
+    info=$( echo -n ${info})
+
+    # the "event" property must be unique and repetible between states to let alerta do automatic correlation using severity value
+    for channel in ${channels}
+    do
+        content="{"
+        content="$content \"environment\": \"${channel}\","
+        content="$content \"service\": [\"${host}\"],"
+        content="$content \"resource\": \"${host}\","
+        content="$content \"event\": \"${name}.${chart} (${family})\","
+        content="$content \"severity\": \"${severity}\","
+        content="$content \"value\": \"${alarm}\","
+        content="$content \"text\": \"${info}\""
+        content="$content }"
+
+
+        httpcode=$(docurl -X POST "${webhook}/alert" -H "Content-Type: application/json" -H "Authorization: Key $ALERTA_API_KEY" -d "$content" )
+
+        if [[ "${httpcode}" = "200" || "${httpcode}" = "201" ]]
+        then
+            info "sent alerta notification for: ${host} ${chart}.${name} is ${status} to '${channel}'"
+            sent=$((sent + 1))
+        else
+            error "failed to send alerta notification for: ${host} ${chart}.${name} is ${status} to '${channel}', with HTTP error code ${httpcode}."
+        fi
+    done
+
+    [ ${sent} -gt 0 ] && return 0
+
+    return 1
+}
+
+# -----------------------------------------------------------------------------
 # flock sender
 
 send_flock() {
@@ -1365,6 +1470,46 @@ EOF
     return 1
 }
 
+# -----------------------------------------------------------------------------
+# irc sender
+
+send_irc() {
+    local NICKNAME="${1}" REALNAME="${2}" CHANNELS="${3}" NETWORK="${4}" SERVERNAME="${5}" MESSAGE="${6}" sent=0 channel color send_alarm reply_codes error
+    
+    if [ "${SEND_IRC}" = "YES" -a ! -z "${NICKNAME}" -a ! -z "${REALNAME}" -a ! -z "${CHANNELS}" -a ! -z "${NETWORK}" -a ! -z "${SERVERNAME}" ]
+    then
+        case "${status}" in
+            WARNING)  color="warning" ;;
+            CRITICAL) color="danger" ;;
+            CLEAR)    color="good" ;;
+            *)        color="#777777" ;;
+        esac
+
+        for CHANNEL in ${CHANNELS}
+        do
+            error=0
+            send_alarm=$(echo -e "USER ${NICKNAME} guest ${REALNAME} ${SERVERNAME}\nNICK ${NICKNAME}\nJOIN ${CHANNEL}\nPRIVMSG ${CHANNEL} :${MESSAGE}\nQUIT\n" \ | nc ${NETWORK} 6667)
+            reply_codes=$(echo ${send_alarm} | cut -d ' ' -f 2 | grep -o '[0-9]*')
+            for code in ${reply_codes}
+            do
+                [ "${code}" -ge 400 -a "${code}" -le 599 ] && error=1 && break
+            done
+
+            if [ "${error}" -eq 0 ]
+            then
+                info "sent irc notification for: ${host} ${chart}.${name} is ${status} to '${CHANNEL}'"
+                sent=$((sent + 1))
+            else
+                error "failed to send irc notification for: ${host} ${chart}.${name} is ${status} to '${CHANNEL}', with error code ${code}." 
+            fi
+        done
+    fi
+    
+    [ ${sent} -gt 0 ] && return 0
+    
+    return 1
+}
+
 
 # -----------------------------------------------------------------------------
 # prepare the content of the notification
@@ -1464,6 +1609,15 @@ raised_for_html=
 
 send_slack "${SLACK_WEBHOOK_URL}" "${to_slack}"
 SENT_SLACK=$?
+
+# -----------------------------------------------------------------------------
+# send the alerta notification
+
+# alerta aggregates posts from the same username
+# so we use "${host} ${status}" as the bot username, to make them diff
+
+send_alerta "${ALERTA_WEBHOOK_URL}" "${to_alerta}"
+SENT_ALERTA=$?
 
 # -----------------------------------------------------------------------------
 # send the flock notification
@@ -1570,6 +1724,16 @@ SENT_KAFKA=$?
 send_pd "${to_pd}"
 SENT_PD=$?
 
+# -----------------------------------------------------------------------------
+# send the irc message
+
+send_irc "${IRC_NICKNAME}" "${IRC_REALNAME}" "${to_irc}" "${IRC_NETWORK}" "${host}" "${host} ${status_message} - ${name//_/ } - ${chart} ----- ${alarm} 
+Severity: ${severity}
+Chart: ${chart}
+Family: ${family}
+${info}"
+
+SENT_IRC=$?
 
 # -----------------------------------------------------------------------------
 # send the custom message
@@ -1733,6 +1897,7 @@ if [   ${SENT_EMAIL}        -eq 0 \
     -o ${SENT_PUSHOVER}     -eq 0 \
     -o ${SENT_TELEGRAM}     -eq 0 \
     -o ${SENT_SLACK}        -eq 0 \
+    -o ${SENT_ALERTA}       -eq 0 \
     -o ${SENT_FLOCK}        -eq 0 \
     -o ${SENT_DISCORD}      -eq 0 \
     -o ${SENT_TWILIO}       -eq 0 \
@@ -1742,6 +1907,7 @@ if [   ${SENT_EMAIL}        -eq 0 \
     -o ${SENT_PUSHBULLET}   -eq 0 \
     -o ${SENT_KAFKA}        -eq 0 \
     -o ${SENT_PD}           -eq 0 \
+    -o ${SENT_IRC}          -eq 0 \
     -o ${SENT_CUSTOM}       -eq 0 \
     ]
     then
