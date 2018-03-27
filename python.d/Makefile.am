@@ -16,6 +16,7 @@ dist_python_DATA = \
     apache.chart.py \
     beanstalk.chart.py \
     bind_rndc.chart.py \
+    ceph.chart.py \
     chrony.chart.py \
     couchdb.chart.py \
     cpufreq.chart.py \
@@ -31,6 +32,8 @@ dist_python_DATA = \
     go_expvar.chart.py \
     haproxy.chart.py \
     hddtemp.chart.py \
+    httpcheck.chart.py \
+    icecast.chart.py \
     ipfs.chart.py \
     isc_dhcpd.chart.py \
     mdstat.chart.py \
@@ -38,9 +41,12 @@ dist_python_DATA = \
     mongodb.chart.py \
     mysql.chart.py \
     nginx.chart.py \
+    nginx_plus.chart.py \
     nsd.chart.py \
+    ntpd.chart.py \
     ovpn_status_log.chart.py \
     phpfpm.chart.py \
+    portcheck.chart.py \
     postfix.chart.py \
     postgres.chart.py \
     powerdns.chart.py \
@@ -49,9 +55,11 @@ dist_python_DATA = \
     retroshare.chart.py \
     samba.chart.py \
     sensors.chart.py \
+    springboot.chart.py \
     squid.chart.py \
     smartd_log.chart.py \
     tomcat.chart.py \
+    traefik.chart.py \
     varnish.chart.py \
     web_log.chart.py \
     $(NULL)
@@ -194,4 +202,3 @@ dist_python_urllib3_securetransport_DATA = \
     python_modules/urllib3/contrib/_securetransport/bindings.py \
     python_modules/urllib3/contrib/_securetransport/low_level.py \
     $(NULL)
-

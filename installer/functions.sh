@@ -142,6 +142,40 @@ service() {
 }
 
 # -----------------------------------------------------------------------------
+# portable pidof
+
+pidof_cmd="$(which_cmd pidof)"
+pidof() {
+    if [ ! -z "${pidof_cmd}" ]
+    then
+        ${pidof_cmd} "${@}"
+        return $?
+    else
+        ps -acxo pid,comm |\
+            sed "s/^ *//g" |\
+            grep netdata |\
+            cut -d ' ' -f 1
+        return $?
+    fi
+}
+
+# -----------------------------------------------------------------------------
+
+export SYSTEM_CPUS=1
+portable_find_processors() {
+    if [ -f "/proc/cpuinfo" ]
+    then
+        # linux
+        SYSTEM_CPUS=$(grep -c ^processor /proc/cpuinfo)
+    else
+        # freebsd
+        SYSTEM_CPUS=$(sysctl hw.ncpu 2>/dev/null | grep ^hw.ncpu | cut -d ' ' -f 2)
+    fi
+    [ -z "${SYSTEM_CPUS}" -o $(( SYSTEM_CPUS )) -lt 1 ] && SYSTEM_CPUS=1
+}
+portable_find_processors
+
+# -----------------------------------------------------------------------------
 
 run_ok() {
     printf >&2 "${TPUT_BGGREEN}${TPUT_WHITE}${TPUT_BOLD} OK ${TPUT_RESET} ${*} \n\n"
@@ -244,31 +278,33 @@ portable_check_user_in_group() {
 }
 
 portable_add_user() {
-    local username="${1}"
+    local username="${1}" homedir="${2}"
+
+    [ -z "${homedir}" ] && homedir="/tmp"
 
     portable_check_user_exists "${username}"
     [ $? -eq 0 ] && echo >&2 "User '${username}' already exists." && return 0
 
-    echo >&2 "Adding ${username} user account ..."
+    echo >&2 "Adding ${username} user account with home ${homedir} ..."
 
     local nologin="$(which nologin 2>/dev/null || command -v nologin 2>/dev/null || echo '/bin/false')"
 
     # Linux
     if check_cmd useradd
     then
-        run useradd -r -g "${username}" -c "${username}" -s "${nologin}" -d / "${username}" && return 0
+        run useradd -r -g "${username}" -c "${username}" -s "${nologin}" --no-create-home -d "${homedir}" "${username}" && return 0
     fi
 
     # FreeBSD
     if check_cmd pw
     then
-        run pw useradd "${username}" -d / -g "${username}" -s "${nologin}" && return 0
+        run pw useradd "${username}" -d "${homedir}" -g "${username}" -s "${nologin}" && return 0
     fi
 
     # BusyBox
     if check_cmd adduser
     then
-        run adduser -D -G "${username}" "${username}" && return 0
+        run adduser -h "${homedir}" -s "${nologin}" -D -G "${username}" "${username}" && return 0
     fi
 
     echo >&2 "Failed to add ${username} user account !"
@@ -468,9 +504,25 @@ NETDATA_START_CMD="netdata"
 NETDATA_STOP_CMD="killall netdata"
 
 install_netdata_service() {
+    local uname="$(uname 2>/dev/null)"
+
     if [ "${UID}" -eq 0 ]
     then
-        if issystemd
+        if [ "${uname}" = "Darwin" ]
+        then
+
+            echo >&2 "hm... I don't know how to install a startup script for MacOS X"
+            return 1
+
+        elif [ "${uname}" = "FreeBSD" ]
+        then
+
+            run cp system/netdata-freebsd /etc/rc.d/netdata && \
+                NETDATA_START_CMD="service netdata start" && \
+                NETDATA_STOP_CMD="service netdata stop" && \
+                return 0
+
+        elif issystemd
         then
             # systemd is running on this system
             NETDATA_START_CMD="systemctl start netdata"
@@ -558,7 +610,7 @@ stop_netdata_on_pid() {
     return 0
 }
 
-stop_all_netdata() {
+netdata_pids() {
     local p myns ns
 
     myns="$(readlink /proc/self/ns/pid 2>/dev/null)"
@@ -574,8 +626,16 @@ stop_all_netdata() {
 
         if [ -z "${myns}" -o -z "${ns}" -o "${myns}" = "${ns}" ]
             then
-            stop_netdata_on_pid ${p}
+            pidisnetdata ${p} && echo "${p}"
         fi
+    done
+}
+
+stop_all_netdata() {
+    local p
+    for p in $(netdata_pids)
+    do
+        stop_netdata_on_pid ${p}
     done
 }
 
@@ -596,10 +656,22 @@ restart_netdata() {
         stop_all_netdata
         service netdata restart && started=1
 
+        if [ ${started} -eq 1 -a -z "$(netdata_pids)" ]
+        then
+            echo >&2 "Ooops! it seems netdata is not started."
+            started=0
+        fi
+
         if [ ${started} -eq 0 ]
         then
             service netdata start && started=1
         fi
+    fi
+
+    if [ ${started} -eq 1 -a -z "$(netdata_pids)" ]
+    then
+        echo >&2 "Hm... it seems netdata is still not started."
+        started=0
     fi
 
     if [ ${started} -eq 0 ]
@@ -728,11 +800,14 @@ NETDATA_ADDED_TO_ADM=0
 NETDATA_ADDED_TO_NSD=0
 NETDATA_ADDED_TO_PROXY=0
 NETDATA_ADDED_TO_SQUID=0
+NETDATA_ADDED_TO_CEPH=0
 add_netdata_user_and_group() {
+    local homedir="${1}"
+
     if [ ${UID} -eq 0 ]
         then
         portable_add_group netdata || return 1
-        portable_add_user netdata  || return 1
+        portable_add_user netdata "${homedir}"  || return 1
         portable_add_user_to_group docker   netdata && NETDATA_ADDED_TO_DOCKER=1
         portable_add_user_to_group nginx    netdata && NETDATA_ADDED_TO_NGINX=1
         portable_add_user_to_group varnish  netdata && NETDATA_ADDED_TO_VARNISH=1
@@ -741,6 +816,16 @@ add_netdata_user_and_group() {
         portable_add_user_to_group nsd      netdata && NETDATA_ADDED_TO_NSD=1
         portable_add_user_to_group proxy    netdata && NETDATA_ADDED_TO_PROXY=1
         portable_add_user_to_group squid    netdata && NETDATA_ADDED_TO_SQUID=1
+        portable_add_user_to_group ceph     netdata && NETDATA_ADDED_TO_CEPH=1
+
+        [ ~netdata = / ] && cat <<USERMOD
+
+The netdata user has its home directory set to /
+You may want to change it, using this command:
+
+# usermod -d "${homedir}" netdata
+
+USERMOD
         return 0
     fi
 

@@ -40,6 +40,10 @@ static struct {
         , {"google-json"     , 0    , RRDR_OPTION_GOOGLE_JSON}
         , {"percentage"      , 0    , RRDR_OPTION_PERCENTAGE}
         , {"unaligned"       , 0    , RRDR_OPTION_NOT_ALIGNED}
+        , {"match_ids"       , 0    , RRDR_OPTION_MATCH_IDS}
+        , {"match-ids"       , 0    , RRDR_OPTION_MATCH_IDS}
+        , {"match_names"     , 0    , RRDR_OPTION_MATCH_NAMES}
+        , {"match-names"     , 0    , RRDR_OPTION_MATCH_NAMES}
         , {                  NULL, 0, 0}
 };
 
@@ -250,7 +254,7 @@ inline int web_client_api_request_v1_charts(RRDHOST *host, struct web_client *w,
 
 inline int web_client_api_request_v1_allmetrics(RRDHOST *host, struct web_client *w, char *url) {
     int format = ALLMETRICS_SHELL;
-    int help = 0, types = 0, names = backend_send_names; // prometheus options
+    int help = 0, types = 0, timestamps = 1, names = backend_send_names; // prometheus options
     const char *prometheus_server = w->client_ip;
     uint32_t prometheus_options = backend_options;
     const char *prometheus_prefix = backend_prefix;
@@ -293,6 +297,12 @@ inline int web_client_api_request_v1_allmetrics(RRDHOST *host, struct web_client
             else
                 names = 0;
         }
+        else if(!strcmp(name, "timestamps")) {
+            if(!strcmp(value, "yes"))
+                timestamps = 1;
+            else
+                timestamps = 0;
+        }
         else if(!strcmp(name, "server")) {
             prometheus_server = value;
         }
@@ -320,12 +330,12 @@ inline int web_client_api_request_v1_allmetrics(RRDHOST *host, struct web_client
 
         case ALLMETRICS_PROMETHEUS:
             w->response.data->contenttype = CT_PROMETHEUS;
-            rrd_stats_api_v1_charts_allmetrics_prometheus_single_host(host, w->response.data, prometheus_server, prometheus_prefix, prometheus_options, help, types, names);
+            rrd_stats_api_v1_charts_allmetrics_prometheus_single_host(host, w->response.data, prometheus_server, prometheus_prefix, prometheus_options, help, types, names, timestamps);
             return 200;
 
         case ALLMETRICS_PROMETHEUS_ALL_HOSTS:
             w->response.data->contenttype = CT_PROMETHEUS;
-            rrd_stats_api_v1_charts_allmetrics_prometheus_all_hosts(host, w->response.data, prometheus_server, prometheus_prefix, prometheus_options, help, types, names);
+            rrd_stats_api_v1_charts_allmetrics_prometheus_all_hosts(host, w->response.data, prometheus_server, prometheus_prefix, prometheus_options, help, types, names, timestamps);
             return 200;
 
         default:
@@ -357,6 +367,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
     , *value_color = NULL
     , *refresh_str = NULL
     , *precision_str = NULL
+    , *scale_str = NULL
     , *alarm = NULL;
 
     int group = GROUP_AVERAGE;
@@ -400,6 +411,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
         else if(!strcmp(name, "divide")) divide_str = value;
         else if(!strcmp(name, "refresh")) refresh_str = value;
         else if(!strcmp(name, "precision")) precision_str = value;
+        else if(!strcmp(name, "scale")) scale_str = value;
         else if(!strcmp(name, "alarm")) alarm = value;
     }
 
@@ -409,11 +421,13 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
         goto cleanup;
     }
 
+    int scale = (scale_str && *scale_str)?str2i(scale_str):100;
+
     RRDSET *st = rrdset_find(host, chart);
     if(!st) st = rrdset_find_byname(host, chart);
     if(!st) {
         buffer_no_cacheable(w->response.data);
-        buffer_svg(w->response.data, "chart not found", NAN, "", NULL, NULL, -1, 0);
+        buffer_svg(w->response.data, "chart not found", NAN, "", NULL, NULL, -1, scale, 0);
         ret = 200;
         goto cleanup;
     }
@@ -424,7 +438,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
         rc = rrdcalc_find(st, alarm);
         if (!rc) {
             buffer_no_cacheable(w->response.data);
-            buffer_svg(w->response.data, "alarm not found", NAN, "", NULL, NULL, -1, 0);
+            buffer_svg(w->response.data, "alarm not found", NAN, "", NULL, NULL, -1, scale, 0);
             ret = 200;
             goto cleanup;
         }
@@ -541,6 +555,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
                 label_color,
                 value_color,
                 precision,
+                scale,
                 options
         );
         ret = 200;
@@ -554,7 +569,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
         // if the collected value is too old, don't calculate its value
         if (rrdset_last_entry_t(st) >= (now_realtime_sec() - (st->update_every * st->gap_when_lost_iterations_above)))
             ret = rrdset2value_api_v1(st, w->response.data, &n, (dimensions) ? buffer_tostring(dimensions) : NULL
-                                      , points, after, before, group, options, NULL, &latest_timestamp, &value_is_null);
+                                      , points, after, before, group, 0, options, NULL, &latest_timestamp, &value_is_null);
 
         // if the value cannot be calculated, show empty badge
         if (ret != 200) {
@@ -577,6 +592,7 @@ int web_client_api_request_v1_badge(RRDHOST *host, struct web_client *w, char *u
                 label_color,
                 value_color,
                 precision,
+                scale,
                 options
         );
     }
@@ -607,6 +623,7 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
     char *chart = NULL
     , *before_str = NULL
     , *after_str = NULL
+    , *group_time_str = NULL
     , *points_str = NULL;
 
     int group = GROUP_AVERAGE;
@@ -635,6 +652,7 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
         else if(!strcmp(name, "after")) after_str = value;
         else if(!strcmp(name, "before")) before_str = value;
         else if(!strcmp(name, "points")) points_str = value;
+        else if(!strcmp(name, "gtime")) group_time_str = value;
         else if(!strcmp(name, "group")) {
             group = web_client_api_request_v1_data_group(value, GROUP_AVERAGE);
         }
@@ -701,6 +719,7 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
     long long before = (before_str && *before_str)?str2l(before_str):0;
     long long after  = (after_str  && *after_str) ?str2l(after_str):0;
     int       points = (points_str && *points_str)?str2i(points_str):0;
+    long      group_time = (group_time_str && *group_time_str)?str2l(group_time_str):0;
 
     debug(D_WEB_CLIENT, "%llu: API command 'data' for chart '%s', dimensions '%s', after '%lld', before '%lld', points '%d', group '%d', format '%u', options '0x%08x'"
           , w->id
@@ -739,8 +758,8 @@ inline int web_client_api_request_v1_data(RRDHOST *host, struct web_client *w, c
         buffer_strcat(w->response.data, "(");
     }
 
-    ret = rrdset2anything_api_v1(st, w->response.data, dimensions, format, points, after, before, group, options
-                                 , &last_timestamp_in_data);
+    ret = rrdset2anything_api_v1(st, w->response.data, dimensions, format, points, after, before, group, group_time
+                                 , options, &last_timestamp_in_data);
 
     if(format == DATASOURCE_DATATABLE_JSONP) {
         if(google_timestamp < last_timestamp_in_data)
