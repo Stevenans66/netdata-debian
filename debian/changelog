@@ -5,6 +5,7 @@ netdata (1.10.0+dfsg-1) UNRELEASED; urgency=medium
 
   [ Lennart Weller ]
   * Patch by Daniel Baumann to enable SEND_EMAILS configuration (Closes: #888815)
+  * Patch by Simon Deziel to fallback to suid in containers (Closes: #890139)
 
  -- Federico Ceratto <federico@debian.org>  Tue, 27 Mar 2018 22:28:59 +0100
 
