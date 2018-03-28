@@ -170,6 +170,16 @@ Files:
 Copyright: 2016 Pawel Krupa
 License: GPL-3+
 
+Files:
+ python.d/python_modules/pyyaml*
+Copyright: 2006 Kirill Simonov
+License: Expat
+
+Files:
+ python.d/python_modules/urllib3
+Copyright: 2008-2016 Andrey Petrov and others
+License: Expat
+
 License: LGPL-3+
  This library is free software; you can redistribute it and/or modify it under
  the terms of the GNU Lesser General Public License as published by the Free
