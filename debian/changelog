@@ -1,6 +1,10 @@
 netdata (1.10.0+dfsg-1) UNRELEASED; urgency=medium
 
+  [ Federico Ceratto ]
   * New upstream release
+
+  [ Lennart Weller ]
+  * Patch by Daniel Baumann to enable SEND_EMAILS configuration (Closes: #888815)
 
  -- Federico Ceratto <federico@debian.org>  Tue, 27 Mar 2018 22:28:59 +0100
 
