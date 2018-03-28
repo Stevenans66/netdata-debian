@@ -16,7 +16,7 @@ MULTIARCH_INSTALL = debian/netdata.postinst
 %:
 	# For jessie and beyond
 	#
-	dh $@ --with autoreconf,systemd
+	dh $@ --with autoreconf
 
 	# For wheezy or other non-systemd distributions use the following. You
 	# should also see contrib/README.md which gives details of updates to
