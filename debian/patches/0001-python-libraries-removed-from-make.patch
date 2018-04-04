@@ -1,59 +1,21 @@
 From: Lennart Weller <lhw@ring0.de>
-Date: Mon, 18 Sep 2017 13:05:36 +0200
-Subject: python libraries removed from make remove unused contrib files
- remove linked web files
+Date: Wed, 4 Apr 2018 14:22:34 +0200
+Subject: python libraries removed from make. remove unused contrib files
 
 ---
- contrib/Makefile.am  |  30 ---------------
- python.d/Makefile.am | 107 ---------------------------------------------------
- web/Makefile.am      |  32 ---------------
- 3 files changed, 169 deletions(-)
+ python.d/Makefile.am                     | 42 --------------------------------
+ python.d/python_modules/bases/loaders.py |  4 +--
+ web/Makefile.am                          | 32 ------------------------
+ 3 files changed, 2 insertions(+), 76 deletions(-)
 
-diff --git a/contrib/Makefile.am b/contrib/Makefile.am
-index 15e9c00..5df6933 100644
---- a/contrib/Makefile.am
-+++ b/contrib/Makefile.am
-@@ -1,31 +1 @@
- MAINTAINERCLEANFILES= $(srcdir)/Makefile.in
--
--dist_noinst_DATA = \
--	README.md \
--	debian/copyright \
--	debian/netdata.conf \
--	debian/source/format \
--	debian/control.wheezy \
--	debian/compat \
--	debian/netdata.install \
--	debian/netdata.lintian-overrides \
--	debian/rules \
--	debian/netdata.docs \
--	debian/netdata.default \
--	debian/control \
--	debian/netdata.postinst.in \
--	debian/netdata.service \
--	debian/changelog \
--	debian/netdata.postrm \
--	$(NULL)
--
--dist_noinst_SCRIPTS = \
--	debian/netdata.init \
--	nc-backend.sh \
--	$(NULL)
--
--debian/changelog:
--	echo "netdata ($(PACKAGE_VERSION)) UNRELEASED; urgency=medium" | \
--		tr '_' '~' > $@
--	echo "  * Latest release" >> $@
--	echo " -- Netdata Team <>  `date -R`" >> $@
 diff --git a/python.d/Makefile.am b/python.d/Makefile.am
-index 1c84cdd..63c2c04 100644
+index a5fcc73..29d8c45 100644
 --- a/python.d/Makefile.am
 +++ b/python.d/Makefile.am
-@@ -88,110 +88,3 @@ dist_third_party_DATA = \
-     python_modules/third_party/ordereddict.py \
+@@ -97,48 +97,6 @@ dist_third_party_DATA = \
      python_modules/third_party/lm_sensors.py \
      $(NULL)
--
+ 
 -pythonyaml2dir=$(pythonmodulesdir)/pyyaml2
 -dist_pythonyaml2_DATA = \
 -    python_modules/pyyaml2/__init__.py \
@@ -96,72 +58,29 @@ index 1c84cdd..63c2c04 100644
 -    python_modules/pyyaml3/tokens.py \
 -    $(NULL)
 -
--python_urllib3dir=$(pythonmodulesdir)/urllib3
--dist_python_urllib3_DATA = \
--    python_modules/urllib3/__init__.py \
--    python_modules/urllib3/_collections.py \
--    python_modules/urllib3/connection.py \
--    python_modules/urllib3/connectionpool.py \
--    python_modules/urllib3/exceptions.py \
--    python_modules/urllib3/fields.py \
--    python_modules/urllib3/filepost.py \
--    python_modules/urllib3/response.py \
--    python_modules/urllib3/poolmanager.py \
--    python_modules/urllib3/request.py \
--    $(NULL)
--
--python_urllib3_utildir=$(python_urllib3dir)/util
--dist_python_urllib3_util_DATA = \
--    python_modules/urllib3/util/__init__.py \
--    python_modules/urllib3/util/connection.py \
--    python_modules/urllib3/util/request.py \
--    python_modules/urllib3/util/response.py \
--    python_modules/urllib3/util/retry.py \
--    python_modules/urllib3/util/selectors.py \
--    python_modules/urllib3/util/ssl_.py \
--    python_modules/urllib3/util/timeout.py \
--    python_modules/urllib3/util/url.py \
--    python_modules/urllib3/util/wait.py \
--    $(NULL)
--
--python_urllib3_packagesdir=$(python_urllib3dir)/packages
--dist_python_urllib3_packages_DATA = \
--    python_modules/urllib3/packages/__init__.py \
--    python_modules/urllib3/packages/ordered_dict.py \
--    python_modules/urllib3/packages/six.py \
--    $(NULL)
--
--python_urllib3_backportsdir=$(python_urllib3_packagesdir)/backports
--dist_python_urllib3_backports_DATA = \
--    python_modules/urllib3/packages/backports/__init__.py \
--    python_modules/urllib3/packages/backports/makefile.py \
--    $(NULL)
--
--python_urllib3_ssl_match_hostnamedir=$(python_urllib3_packagesdir)/ssl_match_hostname
--dist_python_urllib3_ssl_match_hostname_DATA = \
--    python_modules/urllib3/packages/ssl_match_hostname/__init__.py \
--    python_modules/urllib3/packages/ssl_match_hostname/_implementation.py \
--    $(NULL)
--
--python_urllib3_contribdir=$(python_urllib3dir)/contrib
--dist_python_urllib3_contrib_DATA = \
--    python_modules/urllib3/contrib/__init__.py \
--    python_modules/urllib3/contrib/appengine.py \
--    python_modules/urllib3/contrib/ntlmpool.py \
--    python_modules/urllib3/contrib/pyopenssl.py \
--    python_modules/urllib3/contrib/securetransport.py \
--    python_modules/urllib3/contrib/socks.py \
--    $(NULL)
--
--python_urllib3_securetransportdir=$(python_urllib3_contribdir)/_securetransport
--dist_python_urllib3_securetransport_DATA = \
--    python_modules/urllib3/contrib/_securetransport/__init__.py \
--    python_modules/urllib3/contrib/_securetransport/bindings.py \
--    python_modules/urllib3/contrib/_securetransport/low_level.py \
--    $(NULL)
--
+ python_urllib3dir=$(pythonmodulesdir)/urllib3
+ dist_python_urllib3_DATA = \
+     python_modules/urllib3/__init__.py \
+diff --git a/python.d/python_modules/bases/loaders.py b/python.d/python_modules/bases/loaders.py
+index d18b9dc..71ba221 100644
+--- a/python.d/python_modules/bases/loaders.py
++++ b/python.d/python_modules/bases/loaders.py
+@@ -8,11 +8,11 @@ from sys import version_info
+ PY_VERSION = version_info[:2]
+ 
+ if PY_VERSION > (3, 1):
+-    from pyyaml3 import SafeLoader as YamlSafeLoader
++    from yaml import SafeLoader as YamlSafeLoader
+     from importlib.machinery import SourceFileLoader
+     DEFAULT_MAPPING_TAG = 'tag:yaml.org,2002:map'
+ else:
+-    from pyyaml2 import SafeLoader as YamlSafeLoader
++    from yaml import SafeLoader as YamlSafeLoader
+     from imp import load_source as SourceFileLoader
+     DEFAULT_MAPPING_TAG = u'tag:yaml.org,2002:map'
+ 
 diff --git a/web/Makefile.am b/web/Makefile.am
-index 02d8931..38e8f48 100644
+index ac92287..57595fc 100644
 --- a/web/Makefile.am
 +++ b/web/Makefile.am
 @@ -4,10 +4,6 @@
@@ -175,7 +94,7 @@ index 02d8931..38e8f48 100644
  	dashboard.html \
  	dashboard.js \
  	dashboard_info.js \
-@@ -27,15 +23,6 @@ dist_web_DATA = \
+@@ -28,15 +24,6 @@ dist_web_DATA = \
  	version.txt \
  	$(NULL)
  
@@ -191,8 +110,8 @@ index 02d8931..38e8f48 100644
  weblibdir=$(webdir)/lib
  dist_weblib_DATA = \
  	lib/bootstrap-3.3.7.min.js \
-@@ -72,15 +59,6 @@ dist_webcss_DATA = \
- 	css/c3-0.4.11.min.css \
+@@ -75,15 +62,6 @@ dist_webcss_DATA = \
+ 	css/c3-0.4.18.min.css \
  	$(NULL)
  
 -webfontsdir=$(webdir)/fonts
@@ -207,7 +126,7 @@ index 02d8931..38e8f48 100644
  webimagesdir=$(webdir)/images
  dist_webimages_DATA = \
  	images/alert-128-orange.png \
-@@ -105,16 +83,6 @@ dist_webimages_DATA = \
+@@ -108,16 +86,6 @@ dist_webimages_DATA = \
  	images/seo-performance-multi-size.icns \
  	$(NULL)
  

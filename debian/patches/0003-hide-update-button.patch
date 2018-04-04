@@ -1,11 +1,13 @@
 From: Federico Ceratto <federico.ceratto@gmail.com>
-Date: Mon, 18 Sep 2017 13:10:09 +0200
+Date: Wed, 4 Apr 2018 14:26:21 +0200
 Subject: hide update button
 
 ---
  web/index.html | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/web/index.html b/web/index.html
+index ea146fc..bc7964c 100644
 --- a/web/index.html
 +++ b/web/index.html
 @@ -4522,7 +4522,7 @@
