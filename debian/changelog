@@ -1,4 +1,4 @@
-netdata (1.10.0+dfsg-1) UNRELEASED; urgency=medium
+netdata (1.10.0+dfsg-1) unstable; urgency=medium
 
   [ Federico Ceratto ]
   * New upstream release
@@ -9,7 +9,7 @@ netdata (1.10.0+dfsg-1) UNRELEASED; urgency=medium
   * Patch by Simon Deziel to fallback to suid in containers (Closes: #890139)
   * Added Daniel Baumann <daniel@debian.org> to Uploaders
 
- -- Federico Ceratto <federico@debian.org>  Tue, 27 Mar 2018 22:28:59 +0100
+ -- Federico Ceratto <federico@debian.org>  Thu, 03 May 2018 11:40:30 +0100
 
 netdata (1.9.0+dfsg-1) unstable; urgency=medium
 
