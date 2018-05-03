@@ -1,8 +1,8 @@
 Source: netdata
 Section: net
 Priority: optional
-Maintainer: Lennart Weller <lhw@ring0.de>, Daniel Baumann <daniel@debian.org>
-Uploaders: Federico Ceratto <federico@debian.org>
+Maintainer: Lennart Weller <lhw@ring0.de>
+Uploaders: Federico Ceratto <federico@debian.org>, Daniel Baumann <daniel@debian.org>
 Build-Depends: debhelper (>= 11~),
                dh-autoreconf,
                dpkg-dev (>= 1.13.19),
