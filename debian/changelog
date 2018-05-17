@@ -9,6 +9,8 @@ netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
     <dogsleg@debian.org> (Closes: #898185).
   * Adding initial Portuguese debconf translations from Rui Branco
     <ruipb@debianpt.org> (Closes: #898291).
+  * Adding initial French debconf translations from Alban Vidal
+    <alban.vidal@zordhak.fr> (Closes: #898829).
 
  -- Lennart Weller <lhw@ring0.de>  Tue, 15 May 2018 14:58:06 +0200
 
