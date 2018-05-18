@@ -14,6 +14,8 @@ netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
   * Updating year in copyright for current upstream version.
   * Adding initial Dutch debconf translations from Frans Spiesschaert
     <Frans.Spiesschaert@yucom.be> (Closes: #899023).
+  * Removing explicit use of --parallel in rules, this is already used by
+    default with the currently used debhelper version.
 
  -- Lennart Weller <lhw@ring0.de>  Tue, 15 May 2018 14:58:06 +0200
 
