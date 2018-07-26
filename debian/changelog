@@ -19,6 +19,8 @@ netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
   * Updating watch file to version 4, no changes required.
   * Adding Rules-Requires-Root filed in control.
   * Updating standards version to 4.1.5, no changes required.
+  * Adding patch from Sander Klein <debian-bugs@roedie.nl> to fix the
+    python config directory path (Closes: #904134).
 
  -- Lennart Weller <lhw@ring0.de>  Tue, 15 May 2018 14:58:06 +0200
 
