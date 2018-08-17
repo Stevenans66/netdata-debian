@@ -1,4 +1,4 @@
-netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
+netdata (1.10.0+dfsg-2~SK.1) unstable; urgency=medium
 
   [ Lennart Weller ]
   * Add support for kfreebsd/hurd
@@ -22,7 +22,11 @@ netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
   * Adding patch from Sander Klein <debian-bugs@roedie.nl> to fix the
     python config directory path (Closes: #904134).
 
- -- Lennart Weller <lhw@ring0.de>  Tue, 15 May 2018 14:58:06 +0200
+  [ roedie ]
+  * Really add my patch
+  * Added patch to for Python3 usage
+
+ -- Sander Klein <github@roedie.nl>  Fri, 17 Aug 2018 09:12:23 +0200
 
 netdata (1.10.0+dfsg-1) unstable; urgency=medium
 
