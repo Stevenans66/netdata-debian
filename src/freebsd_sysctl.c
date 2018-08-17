@@ -1,8 +1,6 @@
 #include "common.h"
 
 #include <sys/vmmeter.h>
-#include <sys/devicestat.h>
-#include <sys/mount.h>
 #include <vm/vm_param.h>
 
 #define _KERNEL
@@ -12,8 +10,6 @@
 #undef _KERNEL
 
 #include <net/netisr.h>
-#include <net/if.h>
-#include <ifaddrs.h>
 
 #include <netinet/ip.h>
 #include <netinet/ip_var.h>
@@ -29,14 +25,64 @@
 // --------------------------------------------------------------------------------------------------------------------
 // common definitions and variables
 
-#define KILO_FACTOR 1024
-#define MEGA_FACTOR 1048576     // 1024 * 1024
-#define GIGA_FACTOR 1073741824  // 1024 * 1024 * 1024
-
-#define MAX_INT_DIGITS 10 // maximum number of digits for int
-
 int system_pagesize = PAGE_SIZE;
 int number_of_cpus = 1;
+#if __FreeBSD_version >= 1200029
+struct __vmmeter {
+	uint64_t v_swtch;
+	uint64_t v_trap;
+	uint64_t v_syscall;
+	uint64_t v_intr;
+	uint64_t v_soft;
+	uint64_t v_vm_faults;
+	uint64_t v_io_faults;
+	uint64_t v_cow_faults;
+	uint64_t v_cow_optim;
+	uint64_t v_zfod;
+	uint64_t v_ozfod;
+	uint64_t v_swapin;
+	uint64_t v_swapout;
+	uint64_t v_swappgsin;
+	uint64_t v_swappgsout;
+	uint64_t v_vnodein;
+	uint64_t v_vnodeout;
+	uint64_t v_vnodepgsin;
+	uint64_t v_vnodepgsout;
+	uint64_t v_intrans;
+	uint64_t v_reactivated;
+	uint64_t v_pdwakeups;
+	uint64_t v_pdpages;
+	uint64_t v_pdshortfalls;
+	uint64_t v_dfree;
+	uint64_t v_pfree;
+	uint64_t v_tfree;
+	uint64_t v_forks;
+	uint64_t v_vforks;
+	uint64_t v_rforks;
+	uint64_t v_kthreads;
+	uint64_t v_forkpages;
+	uint64_t v_vforkpages;
+	uint64_t v_rforkpages;
+	uint64_t v_kthreadpages;
+	u_int v_page_size;
+	u_int v_page_count;
+	u_int v_free_reserved;
+	u_int v_free_target;
+	u_int v_free_min;
+	u_int v_free_count;
+	u_int v_wire_count;
+	u_int v_active_count;
+	u_int v_inactive_target;
+	u_int v_inactive_count;
+	u_int v_laundry_count;
+	u_int v_pageout_free_min;
+	u_int v_interrupt_free_min;
+	u_int v_free_severe;
+};
+typedef struct __vmmeter vmmeter_t;
+#else
+typedef struct vmmeter vmmeter_t;
+#endif
 
 // --------------------------------------------------------------------------------------------------------------------
 // FreeBSD plugin initialization
@@ -87,16 +133,19 @@ int do_vm_loadavg(int update_every, usec_t dt){
             static RRDDIM *rd_load1 = NULL, *rd_load2 = NULL, *rd_load3 = NULL;
 
             if (unlikely(!st)) {
-                st = rrdset_create_localhost("system",
-                                             "load",
-                                             NULL,
-                                             "load",
-                                             NULL,
-                                             "System Load Average",
-                                             "load",
-                                             100,
-                                             (update_every < MIN_LOADAVG_UPDATE_EVERY) ?
-                                             MIN_LOADAVG_UPDATE_EVERY : update_every, RRDSET_TYPE_LINE
+                st = rrdset_create_localhost(
+                        "system",
+                        "load",
+                        NULL,
+                        "load",
+                        NULL,
+                        "System Load Average",
+                        "load",
+                        "freebsd",
+                        "vm.loadavg",
+                        100,
+                        (update_every < MIN_LOADAVG_UPDATE_EVERY) ?
+                        MIN_LOADAVG_UPDATE_EVERY : update_every, RRDSET_TYPE_LINE
                 );
                 rd_load1 = rrddim_add(st, "load1", NULL, 1, 1000, RRD_ALGORITHM_ABSOLUTE);
                 rd_load2 = rrddim_add(st, "load5", NULL, 1, 1000, RRD_ALGORITHM_ABSOLUTE);
@@ -153,16 +202,19 @@ int do_vm_vmtotal(int update_every, usec_t dt) {
                 static RRDDIM *rd = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("system",
-                                                 "active_processes",
-                                                 NULL,
-                                                 "processes",
-                                                 NULL,
-                                                 "System Active Processes",
-                                                 "processes",
-                                                 750,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "system",
+                            "active_processes",
+                            NULL,
+                            "processes",
+                            NULL,
+                            "System Active Processes",
+                            "processes",
+                            "freebsd",
+                            "vm.vmtotal",
+                            750,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
                     rd = rrddim_add(st, "active", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
                 }
@@ -179,16 +231,19 @@ int do_vm_vmtotal(int update_every, usec_t dt) {
                 static RRDDIM *rd_running = NULL, *rd_blocked = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("system",
-                                                 "processes",
-                                                 NULL,
-                                                 "processes",
-                                                 NULL,
-                                                 "System Processes",
-                                                 "processes",
-                                                 600,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "system",
+                            "processes",
+                            NULL,
+                            "processes",
+                            NULL,
+                            "System Processes",
+                            "processes",
+                            "freebsd",
+                            "vm.vmtotal",
+                            600,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_running = rrddim_add(st, "running", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -208,16 +263,19 @@ int do_vm_vmtotal(int update_every, usec_t dt) {
                 static RRDDIM *rd = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("mem",
-                                                 "committed",
-                                                 NULL,
-                                                 "system",
-                                                 NULL,
-                                                 "Committed (Allocated) Memory",
-                                                 "MB",
-                                                 5000,
-                                                 update_every,
-                                                 RRDSET_TYPE_AREA
+                    st = rrdset_create_localhost(
+                            "mem",
+                            "committed",
+                            NULL,
+                            "system",
+                            NULL,
+                            "Committed (Allocated) Memory",
+                            "MB",
+                            "freebsd",
+                            "vm.vmtotal",
+                            NETDATA_CHART_PRIO_MEM_SYSTEM_COMMITTED,
+                            update_every,
+                            RRDSET_TYPE_AREA
                     );
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
 
@@ -264,15 +322,18 @@ int do_kern_cp_time(int update_every, usec_t dt) {
             static RRDDIM *rd_nice = NULL, *rd_system = NULL, *rd_user = NULL, *rd_interrupt = NULL, *rd_idle = NULL;
 
             if (unlikely(!st)) {
-                st = rrdset_create_localhost("system",
-                                             "cpu",
-                                             NULL,
-                                             "cpu",
-                                             "system.cpu",
-                                             "Total CPU utilization",
-                                             "percentage",
-                                             100, update_every,
-                                             RRDSET_TYPE_STACKED
+                st = rrdset_create_localhost(
+                        "system",
+                        "cpu",
+                        NULL,
+                        "cpu",
+                        "system.cpu",
+                        "Total CPU utilization",
+                        "percentage",
+                        "freebsd",
+                        "kern.cp_time",
+                        100, update_every,
+                        RRDSET_TYPE_STACKED
                 );
 
                 rd_nice         = rrddim_add(st, "nice", NULL, 1, 1, RRD_ALGORITHM_PCENT_OVER_DIFF_TOTAL);
@@ -311,8 +372,10 @@ int do_kern_cp_times(int update_every, usec_t dt) {
         static int mib[2] = {0, 0};
         long cp_time[CPUSTATES];
         static long *pcpu_cp_time = NULL;
+        static int old_number_of_cpus = 0;
 
-        pcpu_cp_time = reallocz(pcpu_cp_time, sizeof(cp_time) * number_of_cpus);
+        if(unlikely(number_of_cpus != old_number_of_cpus))
+            pcpu_cp_time = reallocz(pcpu_cp_time, sizeof(cp_time) * number_of_cpus);
         if (unlikely(GETSYSCTL_WSIZE("kern.cp_times", mib, pcpu_cp_time, sizeof(cp_time) * number_of_cpus))) {
             error("DISABLED: cpu.cpuXX charts");
             error("DISABLED: kern.cp_times module");
@@ -331,27 +394,28 @@ int do_kern_cp_times(int update_every, usec_t dt) {
                 RRDDIM *rd_interrupt;
                 RRDDIM *rd_idle;
             } *all_cpu_charts = NULL;
-            static int old_number_of_cpus = 0;
 
             if(unlikely(number_of_cpus > old_number_of_cpus)) {
                 all_cpu_charts = reallocz(all_cpu_charts, sizeof(struct cpu_chart) * number_of_cpus);
                 memset(&all_cpu_charts[old_number_of_cpus], 0, sizeof(struct cpu_chart) * (number_of_cpus - old_number_of_cpus));
-                old_number_of_cpus = number_of_cpus;
             }
 
             for (i = 0; i < number_of_cpus; i++) {
                 if (unlikely(!all_cpu_charts[i].st)) {
                     snprintfz(all_cpu_charts[i].cpuid, MAX_INT_DIGITS, "cpu%d", i);
-                    all_cpu_charts[i].st = rrdset_create_localhost("cpu",
-                                                                   all_cpu_charts[i].cpuid,
-                                                                   NULL,
-                                                                   "utilization",
-                                                                   "cpu.cpu",
-                                                                   "Core utilization",
-                                                                   "percentage",
-                                                                   1000,
-                                                                   update_every,
-                                                                   RRDSET_TYPE_STACKED
+                    all_cpu_charts[i].st = rrdset_create_localhost(
+                            "cpu",
+                            all_cpu_charts[i].cpuid,
+                            NULL,
+                            "utilization",
+                            "cpu.cpu",
+                            "Core utilization",
+                            "percentage",
+                            "freebsd",
+                            "kern.cp_times",
+                            1000,
+                            update_every,
+                            RRDSET_TYPE_STACKED
                     );
 
                     all_cpu_charts[i].rd_nice       = rrddim_add(all_cpu_charts[i].st, "nice", NULL, 1, 1,
@@ -375,6 +439,128 @@ int do_kern_cp_times(int update_every, usec_t dt) {
                 rrdset_done(all_cpu_charts[i].st);
             }
         }
+
+        old_number_of_cpus = number_of_cpus;
+    }
+
+    return 0;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// dev.cpu.temperature
+
+int do_dev_cpu_temperature(int update_every, usec_t dt) {
+    (void)dt;
+
+    int i;
+    static int *mib = NULL;
+    static int *pcpu_temperature = NULL;
+    static int old_number_of_cpus = 0;
+    char char_mib[MAX_INT_DIGITS + 21];
+    char char_rd[MAX_INT_DIGITS + 9];
+
+    if (unlikely(number_of_cpus != old_number_of_cpus)) {
+        pcpu_temperature = reallocz(pcpu_temperature, sizeof(int) * number_of_cpus);
+        mib = reallocz(mib, sizeof(int) * number_of_cpus * 4);
+        if (unlikely(number_of_cpus > old_number_of_cpus))
+            memset(&mib[old_number_of_cpus * 4], 0, sizeof(RRDDIM) * (number_of_cpus - old_number_of_cpus));
+    }
+    for (i = 0; i < number_of_cpus; i++) {
+        if (unlikely(!(mib[i * 4])))
+            sprintf(char_mib, "dev.cpu.%d.temperature", i);
+        if (unlikely(getsysctl_simple(char_mib, &mib[i * 4], 4, &pcpu_temperature[i], sizeof(int)))) {
+            error("DISABLED: cpu.temperature chart");
+            error("DISABLED: dev.cpu.temperature module");
+            return 1;
+        }
+    }
+
+    // --------------------------------------------------------------------
+
+    static RRDSET *st;
+    static RRDDIM **rd_pcpu_temperature;
+
+    if (unlikely(number_of_cpus != old_number_of_cpus)) {
+        rd_pcpu_temperature = reallocz(rd_pcpu_temperature, sizeof(RRDDIM) * number_of_cpus);
+        if (unlikely(number_of_cpus > old_number_of_cpus))
+            memset(&rd_pcpu_temperature[old_number_of_cpus], 0, sizeof(RRDDIM) * (number_of_cpus - old_number_of_cpus));
+    }
+
+    if (unlikely(!st)) {
+        st = rrdset_create_localhost(
+                "cpu",
+                "temperature",
+                NULL,
+                "temperature",
+                "cpu.temperatute",
+                "Core temperature",
+                "Celsius",
+                "freebsd",
+                "dev.cpu.temperature",
+                1050,
+                update_every,
+                RRDSET_TYPE_LINE
+        );
+    }
+    else rrdset_next(st);
+
+    for (i = 0; i < number_of_cpus; i++) {
+        if (unlikely(!rd_pcpu_temperature[i])) {
+            sprintf(char_rd, "cpu%d.temp", i);
+            rd_pcpu_temperature[i] = rrddim_add(st, char_rd, NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
+        }
+
+        rrddim_set_by_pointer(st, rd_pcpu_temperature[i], (collected_number) ((double)pcpu_temperature[i] / 10 - 273.15));
+    }
+
+    rrdset_done(st);
+
+    old_number_of_cpus = number_of_cpus;
+
+    return 0;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// dev.cpu.0.freq
+
+int do_dev_cpu_0_freq(int update_every, usec_t dt) {
+    (void)dt;
+    static int mib[4] = {0, 0, 0, 0};
+    int cpufreq;
+
+    if (unlikely(GETSYSCTL_SIMPLE("dev.cpu.0.freq", mib, cpufreq))) {
+        error("DISABLED: cpu.scaling_cur_freq chart");
+        error("DISABLED: dev.cpu.0.freq module");
+        return 1;
+    } else {
+
+        // --------------------------------------------------------------------
+
+        static RRDSET *st = NULL;
+        static RRDDIM *rd = NULL;
+
+        if (unlikely(!st)) {
+            st = rrdset_create_localhost(
+                    "cpu",
+                    "scaling_cur_freq",
+                    NULL,
+                    "cpufreq",
+                    NULL,
+                    "Current CPU Scaling Frequency",
+                    "MHz",
+                    "freebsd",
+                    "dev.cpu.0.freq",
+                    5003,
+                    update_every,
+                    RRDSET_TYPE_LINE
+            );
+
+            rd = rrddim_add(st, "frequency", NULL, 1, 1000, RRD_ALGORITHM_ABSOLUTE);
+        }
+        else rrdset_next(st);
+
+        rrddim_set_by_pointer(st, rd, cpufreq);
+        rrdset_done(st);
     }
 
     return 0;
@@ -386,7 +572,7 @@ int do_kern_cp_times(int update_every, usec_t dt) {
 int do_hw_intcnt(int update_every, usec_t dt) {
     (void)dt;
     static int mib_hw_intrcnt[2] = {0, 0};
-    size_t intrcnt_size = sizeof(mib_hw_intrcnt);
+    size_t intrcnt_size = 0;
     unsigned long i;
 
     if (unlikely(GETSYSCTL_SIZE("hw.intrcnt", mib_hw_intrcnt, intrcnt_size))) {
@@ -396,11 +582,13 @@ int do_hw_intcnt(int update_every, usec_t dt) {
         return 1;
     } else {
         unsigned long nintr = 0;
+        static unsigned long old_nintr = 0;
         static unsigned long *intrcnt = NULL;
         unsigned long long totalintr = 0;
 
         nintr = intrcnt_size / sizeof(u_long);
-        intrcnt = reallocz(intrcnt, nintr * sizeof(u_long));
+        if (unlikely(nintr != old_nintr))
+            intrcnt = reallocz(intrcnt, nintr * sizeof(u_long));
         if (unlikely(GETSYSCTL_WSIZE("hw.intrcnt", mib_hw_intrcnt, intrcnt, nintr * sizeof(u_long)))) {
             error("DISABLED: system.intr chart");
             error("DISABLED: system.interrupts chart");
@@ -416,16 +604,19 @@ int do_hw_intcnt(int update_every, usec_t dt) {
             static RRDDIM *rd_intr = NULL;
 
             if (unlikely(!st_intr)) {
-                st_intr = rrdset_create_localhost("system",
-                                                  "intr",
-                                                  NULL,
-                                                  "interrupts",
-                                                  NULL,
-                                                  "Total Hardware Interrupts",
-                                                  "interrupts/s",
-                                                  900,
-                                                  update_every,
-                                                  RRDSET_TYPE_LINE
+                st_intr = rrdset_create_localhost(
+                        "system",
+                        "intr",
+                        NULL,
+                        "interrupts",
+                        NULL,
+                        "Total Hardware Interrupts",
+                        "interrupts/s",
+                        "freebsd",
+                        "hw.intrcnt",
+                        900,
+                        update_every,
+                        RRDSET_TYPE_LINE
                 );
                 rrdset_flag_set(st_intr, RRDSET_FLAG_DETAIL);
 
@@ -443,7 +634,8 @@ int do_hw_intcnt(int update_every, usec_t dt) {
             static char *intrnames = NULL;
 
             size = nintr * (MAXCOMLEN + 1);
-            intrnames = reallocz(intrnames, size);
+            if (unlikely(nintr != old_nintr))
+                intrnames = reallocz(intrnames, size);
             if (unlikely(GETSYSCTL_WSIZE("hw.intrnames", mib_hw_intrnames, intrnames, size))) {
                 error("DISABLED: system.intr chart");
                 error("DISABLED: system.interrupts chart");
@@ -454,20 +646,22 @@ int do_hw_intcnt(int update_every, usec_t dt) {
                 // --------------------------------------------------------------------
 
                 static RRDSET *st_interrupts = NULL;
-                RRDDIM *rd_interrupts = NULL;
                 void *p;
 
                 if (unlikely(!st_interrupts))
-                    st_interrupts = rrdset_create_localhost("system",
-                                                            "interrupts",
-                                                            NULL,
-                                                            "interrupts",
-                                                            NULL,
-                                                            "System interrupts",
-                                                            "interrupts/s",
-                                                            1000,
-                                                            update_every,
-                                                            RRDSET_TYPE_STACKED
+                    st_interrupts = rrdset_create_localhost(
+                            "system",
+                            "interrupts",
+                            NULL,
+                            "interrupts",
+                            NULL,
+                            "System interrupts",
+                            "interrupts/s",
+                            "freebsd",
+                            "hw.intrcnt",
+                            1000,
+                            update_every,
+                            RRDSET_TYPE_STACKED
                     );
                 else
                     rrdset_next(st_interrupts);
@@ -475,15 +669,19 @@ int do_hw_intcnt(int update_every, usec_t dt) {
                 for (i = 0; i < nintr; i++) {
                     p = intrnames + i * (MAXCOMLEN + 1);
                     if (unlikely((intrcnt[i] != 0) && (*(char *) p != 0))) {
-                        rd_interrupts = rrddim_find(st_interrupts, p);
+                        RRDDIM *rd_interrupts = rrddim_find(st_interrupts, p);
+
                         if (unlikely(!rd_interrupts))
                             rd_interrupts = rrddim_add(st_interrupts, p, NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+
                         rrddim_set_by_pointer(st_interrupts, rd_interrupts, intrcnt[i]);
                     }
                 }
                 rrdset_done(st_interrupts);
             }
         }
+
+        old_nintr = nintr;
     }
 
     return 0;
@@ -509,16 +707,19 @@ int do_vm_stats_sys_v_intr(int update_every, usec_t dt) {
         static RRDDIM *rd = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "dev_intr",
-                                         NULL,
-                                         "interrupts",
-                                         NULL,
-                                         "Device Interrupts",
-                                         "interrupts/s",
-                                         1000,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "system",
+                    "dev_intr",
+                    NULL,
+                    "interrupts",
+                    NULL,
+                    "Device Interrupts",
+                    "interrupts/s",
+                    "freebsd",
+                    "vm.stats.sys.v_intr",
+                    1000,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rd = rrddim_add(st, "interrupts", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -552,16 +753,19 @@ int do_vm_stats_sys_v_soft(int update_every, usec_t dt) {
         static RRDDIM *rd = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "soft_intr",
-                                         NULL,
-                                         "interrupts",
-                                         NULL,
-                                         "Software Interrupts",
-                                         "interrupts/s",
-                                         1100,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "system",
+                    "soft_intr",
+                    NULL,
+                    "interrupts",
+                    NULL,
+                    "Software Interrupts",
+                    "interrupts/s",
+                    "freebsd",
+                    "vm.stats.sys.v_soft",
+                    1100,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rd = rrddim_add(st, "interrupts", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -595,16 +799,19 @@ int do_vm_stats_sys_v_swtch(int update_every, usec_t dt) {
         static RRDDIM *rd = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "ctxt",
-                                         NULL,
-                                         "processes",
-                                         NULL,
-                                         "CPU Context Switches",
-                                         "context switches/s",
-                                         800,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "system",
+                    "ctxt",
+                    NULL,
+                    "processes",
+                    NULL,
+                    "CPU Context Switches",
+                    "context switches/s",
+                    "freebsd",
+                    "vm.stats.sys.v_swtch",
+                    800,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rd = rrddim_add(st, "switches", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -638,16 +845,19 @@ int do_vm_stats_sys_v_forks(int update_every, usec_t dt) {
         static RRDDIM *rd = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "forks",
-                                         NULL,
-                                         "processes",
-                                         NULL,
-                                         "Started Processes",
-                                         "processes/s",
-                                         700,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "system",
+                    "forks",
+                    NULL,
+                    "processes",
+                    NULL,
+                    "Started Processes",
+                    "processes/s",
+                    "freebsd",
+                    "vm.stats.sys.v_swtch",
+                    700,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -712,16 +922,19 @@ int do_vm_swap_info(int update_every, usec_t dt) {
         static RRDDIM *rd_free = NULL, *rd_used = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "swap",
-                                         NULL,
-                                         "swap",
-                                         NULL,
-                                         "System Swap",
-                                         "MB",
-                                         201,
-                                         update_every,
-                                         RRDSET_TYPE_STACKED
+            st = rrdset_create_localhost(
+                    "system",
+                    "swap",
+                    NULL,
+                    "swap",
+                    NULL,
+                    "System Swap",
+                    "MB",
+                    "freebsd",
+                    "vm.swap_info",
+                    201,
+                    update_every,
+                    RRDSET_TYPE_STACKED
             );
 
             rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -746,7 +959,7 @@ int do_system_ram(int update_every, usec_t dt) {
     (void)dt;
     static int mib_active_count[4] = {0, 0, 0, 0}, mib_inactive_count[4] = {0, 0, 0, 0}, mib_wire_count[4] = {0, 0, 0, 0},
                mib_cache_count[4] = {0, 0, 0, 0}, mib_vfs_bufspace[2] = {0, 0}, mib_free_count[4] = {0, 0, 0, 0};
-    struct vmmeter vmmeter_data;
+    vmmeter_t vmmeter_data;
     int vfs_bufspace_count;
 
     if (unlikely(GETSYSCTL_SIMPLE("vm.stats.vm.v_active_count",   mib_active_count,   vmmeter_data.v_active_count) ||
@@ -758,7 +971,7 @@ int do_system_ram(int update_every, usec_t dt) {
                  GETSYSCTL_SIMPLE("vfs.bufspace",                 mib_vfs_bufspace,     vfs_bufspace_count) ||
                  GETSYSCTL_SIMPLE("vm.stats.vm.v_free_count",     mib_free_count,     vmmeter_data.v_free_count))) {
         error("DISABLED: system.ram chart");
-        error("DISABLED: System.ram module");
+        error("DISABLED: system.ram module");
         return 1;
     } else {
 
@@ -768,18 +981,20 @@ int do_system_ram(int update_every, usec_t dt) {
         static RRDDIM *rd_free = NULL, *rd_active = NULL, *rd_inactive = NULL,
                       *rd_wired = NULL, *rd_cache = NULL, *rd_buffers = NULL;
 
-        st = rrdset_find_localhost("system.ram");
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "ram",
-                                         NULL,
-                                         "ram",
-                                         NULL,
-                                         "System RAM",
-                                         "MB",
-                                         200,
-                                         update_every,
-                                         RRDSET_TYPE_STACKED
+            st = rrdset_create_localhost(
+                    "system",
+                    "ram",
+                    NULL,
+                    "ram",
+                    NULL,
+                    "System RAM",
+                    "MB",
+                    "freebsd",
+                    "system.ram",
+                    200,
+                    update_every,
+                    RRDSET_TYPE_STACKED
             );
 
             rd_free     = rrddim_add(st, "free",     NULL, system_pagesize, MEGA_FACTOR, RRD_ALGORITHM_ABSOLUTE);
@@ -813,7 +1028,7 @@ int do_system_ram(int update_every, usec_t dt) {
 int do_vm_stats_sys_v_swappgs(int update_every, usec_t dt) {
     (void)dt;
     static int mib_swappgsin[4] = {0, 0, 0, 0}, mib_swappgsout[4] = {0, 0, 0, 0};
-    struct vmmeter vmmeter_data;
+    vmmeter_t vmmeter_data;
 
     if (unlikely(GETSYSCTL_SIMPLE("vm.stats.vm.v_swappgsin", mib_swappgsin, vmmeter_data.v_swappgsin) ||
                  GETSYSCTL_SIMPLE("vm.stats.vm.v_swappgsout", mib_swappgsout, vmmeter_data.v_swappgsout))) {
@@ -828,16 +1043,19 @@ int do_vm_stats_sys_v_swappgs(int update_every, usec_t dt) {
         static RRDDIM *rd_in = NULL, *rd_out = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "swapio",
-                                         NULL,
-                                         "swap",
-                                         NULL,
-                                         "Swap I/O",
-                                         "kilobytes/s",
-                                         250,
-                                         update_every,
-                                         RRDSET_TYPE_AREA
+            st = rrdset_create_localhost(
+                    "system",
+                    "swapio",
+                    NULL,
+                    "swap",
+                    NULL,
+                    "Swap I/O",
+                    "kilobytes/s",
+                    "freebsd",
+                    "vm.stats.vm.v_swappgs",
+                    250,
+                    update_every,
+                    RRDSET_TYPE_AREA
             );
 
             rd_in = rrddim_add(st, "in",  NULL, system_pagesize, KILO_FACTOR, RRD_ALGORITHM_INCREMENTAL);
@@ -860,7 +1078,7 @@ int do_vm_stats_sys_v_pgfaults(int update_every, usec_t dt) {
     (void)dt;
     static int mib_vm_faults[4] = {0, 0, 0, 0}, mib_io_faults[4] = {0, 0, 0, 0}, mib_cow_faults[4] = {0, 0, 0, 0},
                mib_cow_optim[4] = {0, 0, 0, 0}, mib_intrans[4] = {0, 0, 0, 0};
-    struct vmmeter vmmeter_data;
+    vmmeter_t vmmeter_data;
 
     if (unlikely(GETSYSCTL_SIMPLE("vm.stats.vm.v_vm_faults",  mib_vm_faults,  vmmeter_data.v_vm_faults) ||
                  GETSYSCTL_SIMPLE("vm.stats.vm.v_io_faults",  mib_io_faults,  vmmeter_data.v_io_faults) ||
@@ -879,16 +1097,19 @@ int do_vm_stats_sys_v_pgfaults(int update_every, usec_t dt) {
                       *rd_cow_optimized = NULL, *rd_in_transit = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("mem",
-                                         "pgfaults",
-                                         NULL,
-                                         "system",
-                                         NULL,
-                                         "Memory Page Faults",
-                                         "page faults/s",
-                                         500,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "mem",
+                    "pgfaults",
+                    NULL,
+                    "system",
+                    NULL,
+                    "Memory Page Faults",
+                    "page faults/s",
+                    "freebsd",
+                    "vm.stats.vm.v_pgfaults",
+                    NETDATA_CHART_PRIO_MEM_SYSTEM_PGFAULTS,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -931,8 +1152,12 @@ int do_kern_ipc_sem(int update_every, usec_t dt) {
         return 1;
     } else {
         static struct semid_kernel *ipc_sem_data = NULL;
+        static int old_semmni = 0;
 
-        ipc_sem_data = reallocz(ipc_sem_data, sizeof(struct semid_kernel) * ipc_sem.semmni);
+        if (unlikely(ipc_sem.semmni != old_semmni)) {
+            ipc_sem_data = reallocz(ipc_sem_data, sizeof(struct semid_kernel) * ipc_sem.semmni);
+            old_semmni = ipc_sem.semmni;
+        }
         if (unlikely(GETSYSCTL_WSIZE("kern.ipc.sema", mib_sema, ipc_sem_data, sizeof(struct semid_kernel) * ipc_sem.semmni))) {
             error("DISABLED: system.ipc_semaphores chart");
             error("DISABLED: system.ipc_semaphore_arrays chart");
@@ -954,16 +1179,19 @@ int do_kern_ipc_sem(int update_every, usec_t dt) {
             static RRDDIM *rd_semaphores = NULL, *rd_semaphore_arrays = NULL;
 
             if (unlikely(!st_semaphores)) {
-                st_semaphores = rrdset_create_localhost("system",
-                                                        "ipc_semaphores",
-                                                        NULL,
-                                                        "ipc semaphores",
-                                                        NULL,
-                                                        "IPC Semaphores",
-                                                        "semaphores",
-                                                        1000,
-                                                        update_every,
-                                                        RRDSET_TYPE_AREA
+                st_semaphores = rrdset_create_localhost(
+                        "system",
+                        "ipc_semaphores",
+                        NULL,
+                        "ipc semaphores",
+                        NULL,
+                        "IPC Semaphores",
+                        "semaphores",
+                        "freebsd",
+                        "kern.ipc.sem",
+                        1000,
+                        update_every,
+                        RRDSET_TYPE_AREA
                 );
 
                 rd_semaphores = rrddim_add(st_semaphores, "semaphores", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -976,16 +1204,19 @@ int do_kern_ipc_sem(int update_every, usec_t dt) {
             // --------------------------------------------------------------------
 
             if (unlikely(!st_semaphore_arrays)) {
-                st_semaphore_arrays = rrdset_create_localhost("system",
-                                                              "ipc_semaphore_arrays",
-                                                              NULL,
-                                                              "ipc semaphores",
-                                                              NULL,
-                                                              "IPC Semaphore Arrays",
-                                                              "arrays",
-                                                              1000,
-                                                              update_every,
-                                                              RRDSET_TYPE_AREA
+                st_semaphore_arrays = rrdset_create_localhost(
+                        "system",
+                        "ipc_semaphore_arrays",
+                        NULL,
+                        "ipc semaphores",
+                        NULL,
+                        "IPC Semaphore Arrays",
+                        "arrays",
+                        "freebsd",
+                        "kern.ipc.sem",
+                        1000,
+                        update_every,
+                        RRDSET_TYPE_AREA
                 );
 
                 rd_semaphore_arrays = rrddim_add(st_semaphore_arrays, "arrays", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1019,8 +1250,12 @@ int do_kern_ipc_shm(int update_every, usec_t dt) {
         return 1;
     } else {
         static struct shmid_kernel *ipc_shm_data = NULL;
+        static u_long old_shmmni = 0;
 
-        ipc_shm_data = reallocz(ipc_shm_data, sizeof(struct shmid_kernel) * ipc_shm.shmmni);
+        if (unlikely(ipc_shm.shmmni != old_shmmni)) {
+            ipc_shm_data = reallocz(ipc_shm_data, sizeof(struct shmid_kernel) * ipc_shm.shmmni);
+            old_shmmni = ipc_shm.shmmni;
+        }
         if (unlikely(
                 GETSYSCTL_WSIZE("kern.ipc.shmsegs", mib_shmsegs, ipc_shm_data, sizeof(struct shmid_kernel) * ipc_shm.shmmni))) {
             error("DISABLED: system.ipc_shared_mem_segs chart");
@@ -1043,16 +1278,19 @@ int do_kern_ipc_shm(int update_every, usec_t dt) {
             static RRDDIM *rd_segments = NULL, *rd_allocated = NULL;
 
             if (unlikely(!st_segs)) {
-                st_segs = rrdset_create_localhost("system",
-                                             "ipc_shared_mem_segs",
-                                             NULL,
-                                             "ipc shared memory",
-                                             NULL,
-                                             "IPC Shared Memory Segments",
-                                             "segments",
-                                             1000,
-                                             update_every,
-                                             RRDSET_TYPE_AREA
+                st_segs = rrdset_create_localhost(
+                        "system",
+                        "ipc_shared_mem_segs",
+                        NULL,
+                        "ipc shared memory",
+                        NULL,
+                        "IPC Shared Memory Segments",
+                        "segments",
+                        "freebsd",
+                        "kern.ipc.shm",
+                        1000,
+                        update_every,
+                        RRDSET_TYPE_AREA
                 );
 
                 rd_segments = rrddim_add(st_segs, "segments", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1065,16 +1303,19 @@ int do_kern_ipc_shm(int update_every, usec_t dt) {
             // --------------------------------------------------------------------
 
             if (unlikely(!st_size)) {
-                st_size = rrdset_create_localhost("system",
-                                             "ipc_shared_mem_size",
-                                             NULL,
-                                             "ipc shared memory",
-                                             NULL,
-                                             "IPC Shared Memory Segments Size",
-                                             "kilobytes",
-                                             1000,
-                                             update_every,
-                                             RRDSET_TYPE_AREA
+                st_size = rrdset_create_localhost(
+                        "system",
+                        "ipc_shared_mem_size",
+                        NULL,
+                        "ipc shared memory",
+                        NULL,
+                        "IPC Shared Memory Segments Size",
+                        "kilobytes",
+                        "freebsd",
+                        "kern.ipc.shm",
+                        1000,
+                        update_every,
+                        RRDSET_TYPE_AREA
                 );
 
                 rd_allocated = rrddim_add(st_size, "allocated", NULL, 1, KILO_FACTOR, RRD_ALGORITHM_ABSOLUTE);
@@ -1111,8 +1352,12 @@ int do_kern_ipc_msq(int update_every, usec_t dt) {
         return 1;
     } else {
         static struct msqid_kernel *ipc_msq_data = NULL;
+        static int old_msgmni = 0;
 
-        ipc_msq_data = reallocz(ipc_msq_data, sizeof(struct msqid_kernel) * ipc_msq.msgmni);
+        if (unlikely(ipc_msq.msgmni != old_msgmni)) {
+            ipc_msq_data = reallocz(ipc_msq_data, sizeof(struct msqid_kernel) * ipc_msq.msgmni);
+            old_msgmni = ipc_msq.msgmni;
+        }
         if (unlikely(
                 GETSYSCTL_WSIZE("kern.ipc.msqids", mib_msqids, ipc_msq_data, sizeof(struct msqid_kernel) * ipc_msq.msgmni))) {
             error("DISABLED: system.ipc_msq_queues chart");
@@ -1138,16 +1383,19 @@ int do_kern_ipc_msq(int update_every, usec_t dt) {
             static RRDDIM *rd_queues = NULL, *rd_messages = NULL, *rd_allocated = NULL, *rd_used = NULL;
 
             if (unlikely(!st_queues)) {
-                st_queues = rrdset_create_localhost("system",
-                                                    "ipc_msq_queues",
-                                                    NULL,
-                                                    "ipc message queues",
-                                                    NULL,
-                                                    "Number of IPC Message Queues",
-                                                    "queues",
-                                                    990,
-                                                    update_every,
-                                                    RRDSET_TYPE_AREA
+                st_queues = rrdset_create_localhost(
+                        "system",
+                        "ipc_msq_queues",
+                        NULL,
+                        "ipc message queues",
+                        NULL,
+                        "Number of IPC Message Queues",
+                        "queues",
+                        "freebsd",
+                        "kern.ipc.msq",
+                        990,
+                        update_every,
+                        RRDSET_TYPE_AREA
                 );
 
                 rd_queues = rrddim_add(st_queues, "queues", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1160,16 +1408,19 @@ int do_kern_ipc_msq(int update_every, usec_t dt) {
             // --------------------------------------------------------------------
 
             if (unlikely(!st_messages)) {
-                st_messages = rrdset_create_localhost("system",
-                                                      "ipc_msq_messages",
-                                                      NULL,
-                                                      "ipc message queues",
-                                                      NULL,
-                                                      "Number of Messages in IPC Message Queues",
-                                                      "messages",
-                                                      1000,
-                                                      update_every,
-                                                      RRDSET_TYPE_AREA
+                st_messages = rrdset_create_localhost(
+                        "system",
+                        "ipc_msq_messages",
+                        NULL,
+                        "ipc message queues",
+                        NULL,
+                        "Number of Messages in IPC Message Queues",
+                        "messages",
+                        "freebsd",
+                        "kern.ipc.msq",
+                        1000,
+                        update_every,
+                        RRDSET_TYPE_AREA
                 );
 
                 rd_messages = rrddim_add(st_messages, "messages", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1182,16 +1433,19 @@ int do_kern_ipc_msq(int update_every, usec_t dt) {
             // --------------------------------------------------------------------
 
             if (unlikely(!st_size)) {
-                st_size = rrdset_create_localhost("system",
-                                             "ipc_msq_size",
-                                             NULL,
-                                             "ipc message queues",
-                                             NULL,
-                                             "Size of IPC Message Queues",
-                                             "bytes",
-                                             1100,
-                                             update_every,
-                                             RRDSET_TYPE_LINE
+                st_size = rrdset_create_localhost(
+                        "system",
+                        "ipc_msq_size",
+                        NULL,
+                        "ipc message queues",
+                        NULL,
+                        "Size of IPC Message Queues",
+                        "bytes",
+                        "freebsd",
+                        "kern.ipc.msq",
+                        1100,
+                        update_every,
+                        RRDSET_TYPE_LINE
                 );
 
                 rd_allocated = rrddim_add(st_size, "allocated", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1223,16 +1477,19 @@ int do_uptime(int update_every, usec_t dt) {
     static RRDDIM *rd = NULL;
 
     if(unlikely(!st)) {
-        st = rrdset_create_localhost("system",
-                                     "uptime",
-                                     NULL,
-                                     "uptime",
-                                     NULL,
-                                     "System Uptime",
-                                     "seconds",
-                                     1000,
-                                     update_every,
-                                     RRDSET_TYPE_LINE
+        st = rrdset_create_localhost(
+                "system",
+                "uptime",
+                NULL,
+                "uptime",
+                NULL,
+                "System Uptime",
+                "seconds",
+                "freebsd",
+                "uptime",
+                1000,
+                update_every,
+                RRDSET_TYPE_LINE
         );
 
         rd = rrddim_add(st, "uptime", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1259,7 +1516,7 @@ int do_net_isr(int update_every, usec_t dt) {
 
     static int mib_workstream[3] = {0, 0, 0}, mib_work[3] = {0, 0, 0};
     int common_error = 0;
-    size_t netisr_workstream_size = sizeof(mib_workstream), netisr_work_size = sizeof(mib_work);
+    size_t netisr_workstream_size = 0, netisr_work_size = 0;
     unsigned long num_netisr_workstreams = 0, num_netisr_works = 0;
     static struct sysctl_netisr_workstream *netisr_workstream = NULL;
     static struct sysctl_netisr_work *netisr_work = NULL;
@@ -1276,14 +1533,25 @@ int do_net_isr(int update_every, usec_t dt) {
         } else if (unlikely(GETSYSCTL_SIZE("net.isr.work", mib_work, netisr_work_size))) {
             common_error = 1;
         } else {
+            static size_t old_netisr_workstream_size = 0;
+
             num_netisr_workstreams = netisr_workstream_size / sizeof(struct sysctl_netisr_workstream);
-            netisr_workstream = reallocz(netisr_workstream, num_netisr_workstreams * sizeof(struct sysctl_netisr_workstream));
+            if (unlikely(netisr_workstream_size != old_netisr_workstream_size)) {
+                netisr_workstream = reallocz(netisr_workstream,
+                                             num_netisr_workstreams * sizeof(struct sysctl_netisr_workstream));
+                old_netisr_workstream_size = netisr_workstream_size;
+            }
             if (unlikely(GETSYSCTL_WSIZE("net.isr.workstream", mib_workstream, netisr_workstream,
                                            num_netisr_workstreams * sizeof(struct sysctl_netisr_workstream)))){
                 common_error = 1;
             } else {
+                static size_t old_netisr_work_size = 0;
+
                 num_netisr_works = netisr_work_size / sizeof(struct sysctl_netisr_work);
-                netisr_work = reallocz(netisr_work, num_netisr_works * sizeof(struct sysctl_netisr_work));
+                if (unlikely(netisr_work_size != old_netisr_work_size)) {
+                    netisr_work = reallocz(netisr_work, num_netisr_works * sizeof(struct sysctl_netisr_work));
+                    old_netisr_work_size = netisr_work_size;
+                }
                 if (unlikely(GETSYSCTL_WSIZE("net.isr.work", mib_work, netisr_work,
                                                num_netisr_works * sizeof(struct sysctl_netisr_work)))){
                     common_error = 1;
@@ -1301,8 +1569,12 @@ int do_net_isr(int update_every, usec_t dt) {
         } else {
             unsigned long i, n;
             int j;
+            static int old_number_of_cpus = 0;
 
-            netisr_stats = reallocz(netisr_stats, (number_of_cpus + 1) * sizeof(struct netisr_stats));
+            if (unlikely(number_of_cpus != old_number_of_cpus)) {
+                netisr_stats = reallocz(netisr_stats, (number_of_cpus + 1) * sizeof(struct netisr_stats));
+                old_number_of_cpus = number_of_cpus;
+            }
             memset(netisr_stats, 0, (number_of_cpus + 1) * sizeof(struct netisr_stats));
             for (i = 0; i < num_netisr_workstreams; i++) {
                 for (n = 0; n < num_netisr_works; n++) {
@@ -1333,16 +1605,19 @@ int do_net_isr(int update_every, usec_t dt) {
         static RRDDIM *rd_dispatched = NULL, *rd_hybrid_dispatched = NULL, *rd_qdrops = NULL, *rd_queued = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("system",
-                                         "softnet_stat",
-                                         NULL,
-                                         "softnet_stat",
-                                         NULL,
-                                         "System softnet_stat",
-                                         "events/s",
-                                         955,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "system",
+                    "softnet_stat",
+                    NULL,
+                    "softnet_stat",
+                    NULL,
+                    "System softnet_stat",
+                    "events/s",
+                    "freebsd",
+                    "net.isr",
+                    955,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rd_dispatched        = rrddim_add(st, "dispatched",        NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1383,16 +1658,19 @@ int do_net_isr(int update_every, usec_t dt) {
             snprintfz(all_softnet_charts[i].netisr_cpuid, MAX_INT_DIGITS + 17, "cpu%d_softnet_stat", i);
 
             if (unlikely(!all_softnet_charts[i].st)) {
-                all_softnet_charts[i].st = rrdset_create_localhost("cpu",
-                                                                   all_softnet_charts[i].netisr_cpuid,
-                                                                   NULL,
-                                                                   "softnet_stat",
-                                                                   NULL,
-                                                                   "Per CPU netisr statistics",
-                                                                   "events/s",
-                                                                   1101 + i,
-                                                                   update_every,
-                                                                   RRDSET_TYPE_LINE
+                all_softnet_charts[i].st = rrdset_create_localhost(
+                        "cpu",
+                        all_softnet_charts[i].netisr_cpuid,
+                        NULL,
+                        "softnet_stat",
+                        NULL,
+                        "Per CPU netisr statistics",
+                        "events/s",
+                        "freebsd",
+                        "net.isr",
+                        1101 + i,
+                        update_every,
+                        RRDSET_TYPE_LINE
                 );
 
                 all_softnet_charts[i].rd_dispatched        = rrddim_add(all_softnet_charts[i].st, "dispatched",
@@ -1442,16 +1720,19 @@ int do_net_inet_tcp_states(int update_every, usec_t dt) {
         static RRDDIM *rd = NULL;
 
         if (unlikely(!st)) {
-            st = rrdset_create_localhost("ipv4",
-                                         "tcpsock",
-                                         NULL,
-                                         "tcp",
-                                         NULL,
-                                         "IPv4 TCP Connections",
-                                         "active connections",
-                                         2500,
-                                         update_every,
-                                         RRDSET_TYPE_LINE
+            st = rrdset_create_localhost(
+                    "ipv4",
+                    "tcpsock",
+                    NULL,
+                    "tcp",
+                    NULL,
+                    "IPv4 TCP Connections",
+                    "active connections",
+                    "freebsd",
+                    "net.inet.tcp.states",
+                    2500,
+                    update_every,
+                    RRDSET_TYPE_LINE
             );
 
             rd = rrddim_add(st, "CurrEstab", "connections", 1, 1, RRD_ALGORITHM_ABSOLUTE);
@@ -1470,7 +1751,8 @@ int do_net_inet_tcp_states(int update_every, usec_t dt) {
 
 int do_net_inet_tcp_stats(int update_every, usec_t dt) {
     (void)dt;
-    static int do_tcp_packets = -1, do_tcp_errors = -1, do_tcp_handshake = -1, do_tcpext_connaborts = -1, do_tcpext_ofo = -1, do_tcpext_syncookies = -1, do_ecn = -1;
+    static int do_tcp_packets = -1, do_tcp_errors = -1, do_tcp_handshake = -1, do_tcpext_connaborts = -1, do_tcpext_ofo = -1,
+               do_tcpext_syncookies = -1, do_tcpext_listen = -1, do_ecn = -1;
 
     if (unlikely(do_tcp_packets == -1)) {
         do_tcp_packets       = config_get_boolean("plugin:freebsd:net.inet.tcp.stats", "ipv4 TCP packets",          1);
@@ -1482,12 +1764,15 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                                                            CONFIG_BOOLEAN_AUTO);
         do_tcpext_syncookies = config_get_boolean_ondemand("plugin:freebsd:net.inet.tcp.stats", "TCP SYN cookies",
                                                            CONFIG_BOOLEAN_AUTO);
+        do_tcpext_listen     = config_get_boolean_ondemand("plugin:freebsd:net.inet.tcp.stats", "TCP listen issues",
+                                                           CONFIG_BOOLEAN_AUTO);
         do_ecn               = config_get_boolean_ondemand("plugin:freebsd:net.inet.tcp.stats", "ECN packets",
                                                            CONFIG_BOOLEAN_AUTO);
     }
 
     // see http://net-snmp.sourceforge.net/docs/mibs/tcp.html
-    if (likely(do_tcp_packets || do_tcp_errors || do_tcp_handshake || do_tcpext_connaborts || do_tcpext_ofo || do_tcpext_syncookies || do_ecn)) {
+    if (likely(do_tcp_packets || do_tcp_errors || do_tcp_handshake || do_tcpext_connaborts || do_tcpext_ofo ||
+               do_tcpext_syncookies || do_tcpext_listen || do_ecn)) {
         static int mib[4] = {0, 0, 0, 0};
         struct tcpstat tcpstat;
 
@@ -1504,6 +1789,8 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
             error("DISABLED: ipv4.tcpofo chart");
             do_tcpext_syncookies = 0;
             error("DISABLED: ipv4.tcpsyncookies chart");
+            do_tcpext_listen = 0;
+            error("DISABLED: ipv4.tcplistenissues chart");
             do_ecn = 0;
             error("DISABLED: ipv4.ecnpkts chart");
             error("DISABLED: net.inet.tcp.stats module");
@@ -1517,16 +1804,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in_segs = NULL, *rd_out_segs = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "tcppackets",
-                                                 NULL,
-                                                 "tcp",
-                                                 NULL,
-                                                 "IPv4 TCP Packets",
-                                                 "packets/s",
-                                                 2600,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "tcppackets",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "IPv4 TCP Packets",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            2600,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in_segs  = rrddim_add(st, "InSegs",  "received", 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1546,16 +1836,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in_errs = NULL, *rd_in_csum_errs = NULL, *rd_retrans_segs = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "tcperrors",
-                                                 NULL,
-                                                 "tcp",
-                                                 NULL,
-                                                 "IPv4 TCP Errors",
-                                                 "packets/s",
-                                                 2700,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "tcperrors",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "IPv4 TCP Errors",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            2700,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -1585,16 +1878,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                               *rd_attempt_fails = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "tcphandshake",
-                                                 NULL,
-                                                 "tcp",
-                                                 NULL,
-                                                 "IPv4 TCP Handshake Issues",
-                                                 "events/s",
-                                                 2900,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "tcphandshake",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "IPv4 TCP Handshake Issues",
+                            "events/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            2900,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -1623,16 +1919,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                               *rd_on_timeout = NULL, *rd_on_linger = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "tcpconnaborts",
-                                                 NULL,
-                                                 "tcp",
-                                                 NULL,
-                                                 "TCP Connection Aborts",
-                                                 "connections/s",
-                                                 3010,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "tcpconnaborts",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "TCP Connection Aborts",
+                            "connections/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            3010,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_on_data    = rrddim_add(st, "TCPAbortOnData",    "baddata",     1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1660,16 +1959,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_ofo_queue = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "tcpofo",
-                                                 NULL,
-                                                 "tcp",
-                                                 NULL,
-                                                 "TCP Out-Of-Order Queue",
-                                                 "packets/s",
-                                                 3050,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "tcpofo",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "TCP Out-Of-Order Queue",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            3050,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_ofo_queue = rrddim_add(st, "TCPOFOQueue", "inqueue",  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1689,16 +1991,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_recv = NULL, *rd_send = NULL, *rd_failed = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "tcpsyncookies",
-                                                 NULL,
-                                                 "tcp",
-                                                 NULL,
-                                                 "TCP SYN Cookies",
-                                                 "packets/s",
-                                                 3100,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "tcpsyncookies",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "TCP SYN Cookies",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            3100,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_recv   = rrddim_add(st, "SyncookiesRecv",   "received",  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1712,6 +2017,41 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                 rrddim_set_by_pointer(st, rd_failed, tcpstat.tcps_sc_zonefail);
                 rrdset_done(st);
             }
+            
+            // --------------------------------------------------------------------
+
+            if(do_tcpext_listen == CONFIG_BOOLEAN_YES || (do_tcpext_listen == CONFIG_BOOLEAN_AUTO && tcpstat.tcps_listendrop)) {
+                do_tcpext_listen = CONFIG_BOOLEAN_YES;
+
+                static RRDSET *st_listen = NULL;
+                static RRDDIM *rd_overflows = NULL;
+
+                if(unlikely(!st_listen)) {
+
+                    st_listen = rrdset_create_localhost(
+                            "ipv4",
+                            "tcplistenissues",
+                            NULL,
+                            "tcp",
+                            NULL,
+                            "TCP Listen Socket Issues",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            3015,
+                            update_every,
+                            RRDSET_TYPE_LINE
+                    );
+
+                    rd_overflows = rrddim_add(st_listen, "ListenOverflows", "overflows",  1, 1, RRD_ALGORITHM_INCREMENTAL);
+                }
+                else
+                    rrdset_next(st_listen);
+
+                rrddim_set_by_pointer(st_listen, rd_overflows, tcpstat.tcps_listendrop);
+
+                rrdset_done(st_listen);
+            }
 
             // --------------------------------------------------------------------
 
@@ -1722,16 +2062,19 @@ int do_net_inet_tcp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_ce = NULL, *rd_no_ect = NULL, *rd_ect0 = NULL, *rd_ect1 = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "ecnpkts",
-                                                 NULL,
-                                                 "ecn",
-                                                 NULL,
-                                                 "IPv4 ECN Statistics",
-                                                 "packets/s",
-                                                 8700,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "ecnpkts",
+                            NULL,
+                            "ecn",
+                            NULL,
+                            "IPv4 ECN Statistics",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.tcp.stats",
+                            8700,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -1793,16 +2136,19 @@ int do_net_inet_udp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in = NULL, *rd_out = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "udppackets",
-                                                 NULL,
-                                                 "udp",
-                                                 NULL,
-                                                 "IPv4 UDP Packets",
-                                                 "packets/s",
-                                                 2601,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "udppackets",
+                            NULL,
+                            "udp",
+                            NULL,
+                            "IPv4 UDP Packets",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.udp.stats",
+                            2601,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in  = rrddim_add(st, "InDatagrams",  "received", 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1823,16 +2169,19 @@ int do_net_inet_udp_stats(int update_every, usec_t dt) {
                               *rd_in_csum_errors = NULL, *rd_ignored_multi = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "udperrors",
-                                                 NULL,
-                                                 "udp",
-                                                 NULL,
-                                                 "IPv4 UDP Errors",
-                                                 "events/s",
-                                                 2701,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "udperrors",
+                            NULL,
+                            "udp",
+                            NULL,
+                            "IPv4 UDP Errors",
+                            "events/s",
+                            "freebsd",
+                            "net.inet.udp.stats",
+                            2701,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -1906,16 +2255,19 @@ int do_net_inet_icmp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in = NULL, *rd_out = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "icmp",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv4 ICMP Packets",
-                                                 "packets/s",
-                                                 2602,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4"
+                            , "icmp"
+                            , NULL
+                            , "icmp"
+                            , NULL
+                            , "IPv4 ICMP Packets"
+                            , "packets/s"
+                            , "freebsd"
+                            , "net.inet.icmp.stats"
+                            , 2602
+                            , update_every
+                            , RRDSET_TYPE_LINE
                     );
 
                     rd_in  = rrddim_add(st, "InMsgs",  "received", 1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1936,9 +2288,20 @@ int do_net_inet_icmp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in = NULL, *rd_out = NULL, *rd_in_csum = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4", "icmp_errors", NULL, "icmp", NULL, "IPv4 ICMP Errors",
-                                                 "packets/s",
-                                                 2603, update_every, RRDSET_TYPE_LINE);
+                    st = rrdset_create_localhost(
+                            "ipv4"
+                            , "icmp_errors"
+                            , NULL
+                            , "icmp"
+                            , NULL
+                            , "IPv4 ICMP Errors"
+                            , "packets/s"
+                            , "freebsd"
+                            , "net.inet.icmp.stats"
+                            , 2603
+                            , update_every
+                            , RRDSET_TYPE_LINE
+                    );
 
                     rd_in      = rrddim_add(st, "InErrors", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
                     rd_out     = rrddim_add(st, "OutErrors", NULL, -1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -1961,8 +2324,20 @@ int do_net_inet_icmp_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in_reps = NULL, *rd_out_reps = NULL, *rd_in = NULL, *rd_out = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4", "icmpmsg", NULL, "icmp", NULL, "IPv4 ICMP Messsages",
-                                                 "packets/s", 2604, update_every, RRDSET_TYPE_LINE);
+                    st = rrdset_create_localhost(
+                            "ipv4"
+                            , "icmpmsg"
+                            , NULL
+                            , "icmp"
+                            , NULL
+                            , "IPv4 ICMP Messages"
+                            , "packets/s"
+                            , "freebsd"
+                            , "net.inet.icmp.stats"
+                            , 2604
+                            , update_every
+                            , RRDSET_TYPE_LINE
+                    );
 
                     rd_in_reps  = rrddim_add(st, "InEchoReps",  NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
                     rd_out_reps = rrddim_add(st, "OutEchoReps", NULL, -1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2027,16 +2402,19 @@ int do_net_inet_ip_stats(int update_every, usec_t dt) {
                               *rd_in_delivers = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "packets",
-                                                 NULL,
-                                                 "packets",
-                                                 NULL,
-                                                 "IPv4 Packets",
-                                                 "packets/s",
-                                                 3000,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "packets",
+                            NULL,
+                            "packets",
+                            NULL,
+                            "IPv4 Packets",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.ip.stats",
+                            3000,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in_receives       = rrddim_add(st, "InReceives",    "received",  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2060,16 +2438,19 @@ int do_net_inet_ip_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_ok = NULL, *rd_fails = NULL, *rd_created = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "fragsout",
-                                                 NULL,
-                                                 "fragments",
-                                                 NULL,
-                                                 "IPv4 Fragments Sent",
-                                                 "packets/s",
-                                                 3010,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "fragsout",
+                            NULL,
+                            "fragments",
+                            NULL,
+                            "IPv4 Fragments Sent",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.ip.stats",
+                            3010,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -2093,16 +2474,19 @@ int do_net_inet_ip_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_ok = NULL, *rd_failed = NULL, *rd_all = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "fragsin",
-                                                 NULL,
-                                                 "fragments",
-                                                 NULL,
-                                                 "IPv4 Fragments Reassembly",
-                                                 "packets/s",
-                                                 3011,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "fragsin",
+                            NULL,
+                            "fragments",
+                            NULL,
+                            "IPv4 Fragments Reassembly",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.ip.stats",
+                            3011,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -2128,16 +2512,19 @@ int do_net_inet_ip_stats(int update_every, usec_t dt) {
                               *rd_in_addr_errors = NULL, *rd_in_unknown_protos = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv4",
-                                                 "errors",
-                                                 NULL,
-                                                 "errors",
-                                                 NULL,
-                                                 "IPv4 Errors",
-                                                 "packets/s",
-                                                 3002,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv4",
+                            "errors",
+                            NULL,
+                            "errors",
+                            NULL,
+                            "IPv4 Errors",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet.ip.stats",
+                            3002,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -2216,16 +2603,19 @@ int do_net_inet6_ip6_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_received = NULL, *rd_sent = NULL, *rd_forwarded = NULL, *rd_delivers = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "packets",
-                                                 NULL,
-                                                 "packets",
-                                                 NULL,
-                                                 "IPv6 Packets",
-                                                 "packets/s",
-                                                 3000,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "packets",
+                            NULL,
+                            "packets",
+                            NULL,
+                            "IPv6 Packets",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet6.ip6.stats",
+                            3000,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_received  = rrddim_add(st, "received",  NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2253,16 +2643,19 @@ int do_net_inet6_ip6_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_ok = NULL, *rd_failed = NULL, *rd_all = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "fragsout",
-                                                 NULL,
-                                                 "fragments",
-                                                 NULL,
-                                                 "IPv6 Fragments Sent",
-                                                 "packets/s",
-                                                 3010,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                             "fragsout",
+                             NULL,
+                             "fragments",
+                             NULL,
+                             "IPv6 Fragments Sent",
+                             "packets/s",
+                             "freebsd",
+                             "net.inet6.ip6.stats",
+                             3010,
+                             update_every,
+                             RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -2290,16 +2683,19 @@ int do_net_inet6_ip6_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_ok = NULL, *rd_failed = NULL, *rd_timeout = NULL, *rd_all = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "fragsin",
-                                                 NULL,
-                                                 "fragments",
-                                                 NULL,
-                                                 "IPv6 Fragments Reassembly",
-                                                 "packets/s",
-                                                 3011,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "fragsin",
+                            NULL,
+                            "fragments",
+                            NULL,
+                            "IPv6 Fragments Reassembly",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet6.ip6.stats",
+                            3011,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -2338,16 +2734,19 @@ int do_net_inet6_ip6_stats(int update_every, usec_t dt) {
                               *rd_in_no_routes = NULL, *rd_out_no_routes = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "errors",
-                                                 NULL,
-                                                 "errors",
-                                                 NULL,
-                                                 "IPv6 Errors",
-                                                 "packets/s",
-                                                 3002,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "errors",
+                            NULL,
+                            "errors",
+                            NULL,
+                            "IPv6 Errors",
+                            "packets/s",
+                            "freebsd",
+                            "net.inet6.ip6.stats",
+                            3002,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rrdset_flag_set(st, RRDSET_FLAG_DETAIL);
@@ -2449,16 +2848,19 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_received = NULL, *rd_sent = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmp",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv6 ICMP Messages",
-                                                 "messages/s",
-                                                 10000,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmp",
+                            NULL,
+                            "icmp",
+                            NULL,
+                            "IPv6 ICMP Messages",
+                            "messages/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10000,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_received = rrddim_add(st, "received", NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2481,16 +2883,19 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_received = NULL, *rd_sent = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmpredir",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv6 ICMP Redirects",
-                                                 "redirects/s",
-                                                 10050,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmpredir",
+                            NULL,
+                            "icmp",
+                            NULL,
+                            "IPv6 ICMP Redirects",
+                            "redirects/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10050,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_received = rrddim_add(st, "received", NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2526,15 +2931,18 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                               *rd_out_parm_problems = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmperrors",
-                                                 NULL, "icmp",
-                                                 NULL,
-                                                 "IPv6 ICMP Errors",
-                                                 "errors/s",
-                                                 10100,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmperrors",
+                            NULL, "icmp",
+                            NULL,
+                            "IPv6 ICMP Errors",
+                            "errors/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10100,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in_errors         = rrddim_add(st, "InErrors",        NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2577,16 +2985,19 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                 static RRDDIM *rd_in = NULL, *rd_out = NULL, *rd_in_replies = NULL, *rd_out_replies = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmpechos",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv6 ICMP Echo",
-                                                 "messages/s",
-                                                 10200,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmpechos",
+                            NULL,
+                            "icmp",
+                            NULL,
+                            "IPv6 ICMP Echo",
+                            "messages/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10200,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in          = rrddim_add(st, "InEchos",        NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2617,16 +3028,19 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                               *rd_in_advertisements = NULL, *rd_out_advertisements = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmprouter",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv6 Router Messages",
-                                                 "messages/s",
-                                                 10400,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmprouter",
+                            NULL,
+                            "icmp",
+                            NULL,
+                            "IPv6 Router Messages",
+                            "messages/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10400,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in_solicits        = rrddim_add(st, "InSolicits",        NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2657,16 +3071,19 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                               *rd_in_advertisements = NULL, *rd_out_advertisements = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmpneighbor",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv6 Neighbor Messages",
-                                                 "messages/s",
-                                                 10500,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmpneighbor",
+                            NULL,
+                            "icmp",
+                            NULL,
+                            "IPv6 Neighbor Messages",
+                            "messages/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10500,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in_solicits        = rrddim_add(st, "InSolicits",        NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2704,16 +3121,19 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
                               *rd_out_135 = NULL, *rd_out_143 = NULL;
 
                 if (unlikely(!st)) {
-                    st = rrdset_create_localhost("ipv6",
-                                                 "icmptypes",
-                                                 NULL,
-                                                 "icmp",
-                                                 NULL,
-                                                 "IPv6 ICMP Types",
-                                                 "messages/s",
-                                                 10700,
-                                                 update_every,
-                                                 RRDSET_TYPE_LINE
+                    st = rrdset_create_localhost(
+                            "ipv6",
+                            "icmptypes",
+                            NULL,
+                            "icmp",
+                            NULL,
+                            "IPv6 ICMP Types",
+                            "messages/s",
+                            "freebsd",
+                            "net.inet6.icmp6.stats",
+                            10700,
+                            update_every,
+                            RRDSET_TYPE_LINE
                     );
 
                     rd_in_1    = rrddim_add(st, "InType1",    NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
@@ -2744,1219 +3164,6 @@ int do_net_inet6_icmp6_stats(int update_every, usec_t dt) {
         }
     } else {
         error("DISABLED: net.inet6.icmp6.stats module");
-        return 1;
-    }
-
-    return 0;
-}
-
-// --------------------------------------------------------------------------------------------------------------------
-// getmntinfo
-
-int do_getmntinfo(int update_every, usec_t dt) {
-    (void)dt;
-
-#define DELAULT_EXLUDED_PATHS "/proc/*"
-// taken from gnulib/mountlist.c and shortened to FreeBSD related fstypes
-#define DEFAULT_EXCLUDED_FILESYSTEMS "autofs procfs subfs devfs none"
-#define CONFIG_SECTION_GETMNTINFO "plugin:freebsd:getmntinfo"
-
-    static int do_space = -1, do_inodes = -1;
-
-    if (unlikely(do_space == -1)) {
-        do_space  = config_get_boolean_ondemand(CONFIG_SECTION_GETMNTINFO, "space usage for all disks",  CONFIG_BOOLEAN_AUTO);
-        do_inodes = config_get_boolean_ondemand(CONFIG_SECTION_GETMNTINFO, "inodes usage for all disks", CONFIG_BOOLEAN_AUTO);
-    }
-
-    if (likely(do_space || do_inodes)) {
-        struct statfs *mntbuf;
-        int mntsize;
-
-        // there is no mount info in sysctl MIBs
-        if (unlikely(!(mntsize = getmntinfo(&mntbuf, MNT_NOWAIT)))) {
-            error("FREEBSD: getmntinfo() failed");
-            do_space = 0;
-            error("DISABLED: disk_space.* charts");
-            do_inodes = 0;
-            error("DISABLED: disk_inodes.* charts");
-            error("DISABLED: getmntinfo module");
-            return 1;
-        } else {
-            // Data to be stored in DICTIONARY mount_points.
-            // This DICTIONARY is used to lookup the settings of the mount point on each iteration.
-            struct mount_point_metadata {
-                int do_space;
-                int do_inodes;
-
-                size_t collected; // the number of times this has been collected
-
-                // charts and dimensions
-
-                RRDSET *st_space;
-                RRDDIM *rd_space_used;
-                RRDDIM *rd_space_avail;
-                RRDDIM *rd_space_reserved;
-
-                RRDSET *st_inodes;
-                RRDDIM *rd_inodes_used;
-                RRDDIM *rd_inodes_avail;
-            };
-            static DICTIONARY *mount_points = NULL;
-            static SIMPLE_PATTERN *excluded_mountpoints = NULL;
-            static SIMPLE_PATTERN *excluded_filesystems = NULL;
-            int i;
-
-            if(unlikely(!mount_points)) {
-
-                excluded_mountpoints = simple_pattern_create(
-                        config_get(CONFIG_SECTION_GETMNTINFO, "exclude space metrics on paths",
-                                   DELAULT_EXLUDED_PATHS),
-                        SIMPLE_PATTERN_EXACT
-                );
-
-                excluded_filesystems = simple_pattern_create(
-                        config_get(CONFIG_SECTION_GETMNTINFO, "exclude space metrics on filesystems",
-                                   DEFAULT_EXCLUDED_FILESYSTEMS),
-                        SIMPLE_PATTERN_EXACT
-                );
-
-                mount_points = dictionary_create(DICTIONARY_FLAG_SINGLE_THREADED);
-            }
-
-            for (i = 0; i < mntsize; i++) {
-
-                char title[4096 + 1];
-                int def_space, def_inodes, iter_space, iter_inodes;
-
-                struct mount_point_metadata *m = dictionary_get(mount_points, mntbuf[i].f_mntonname);
-                if(unlikely(!m)) {
-                    char var_name[4096 + 1];
-                    snprintfz(var_name, 4096, "%s:%s", CONFIG_SECTION_GETMNTINFO, mntbuf[i].f_mntonname);
-
-                    def_space = do_space;
-                    def_inodes = do_space;
-
-                    if(unlikely(simple_pattern_matches(excluded_mountpoints, mntbuf[i].f_mntonname))) {
-                        def_space = CONFIG_BOOLEAN_NO;
-                        def_inodes = CONFIG_BOOLEAN_NO;
-                    }
-
-                    if(unlikely(simple_pattern_matches(excluded_filesystems, mntbuf[i].f_fstypename))) {
-                        def_space = CONFIG_BOOLEAN_NO;
-                        def_inodes = CONFIG_BOOLEAN_NO;
-                    }
-
-                    iter_space  = config_get_boolean_ondemand(var_name, "space usage",  def_space);
-                    iter_inodes = config_get_boolean_ondemand(var_name, "inodes usage", def_inodes);
-
-                    struct mount_point_metadata mp = {
-                            .do_space = iter_space,
-                            .do_inodes = iter_inodes,
-
-                            .collected = 0,
-
-                            .st_space = NULL,
-                            .rd_space_avail = NULL,
-                            .rd_space_used = NULL,
-                            .rd_space_reserved = NULL,
-
-                            .st_inodes = NULL,
-                            .rd_inodes_avail = NULL,
-                            .rd_inodes_used = NULL,
-                    };
-
-                    m = dictionary_set(mount_points, mntbuf[i].f_mntonname, &mp, sizeof(struct mount_point_metadata));
-                }
-
-                if(unlikely(m->do_space == CONFIG_BOOLEAN_NO && m->do_inodes == CONFIG_BOOLEAN_NO))
-                    continue;
-
-                if(unlikely(mntbuf[i].f_flags & MNT_RDONLY && !m->collected))
-                    continue;
-
-                // --------------------------------------------------------------------------
-
-                int rendered = 0;
-
-                if (m->do_space == CONFIG_BOOLEAN_YES || (m->do_space == CONFIG_BOOLEAN_AUTO && (mntbuf[i].f_blocks > 2))) {
-                    if (unlikely(!m->st_space)) {
-                        snprintfz(title, 4096, "Disk Space Usage for %s [%s]",
-                                  mntbuf[i].f_mntonname, mntbuf[i].f_mntfromname);
-                        m->st_space = rrdset_create_localhost("disk_space",
-                                                              mntbuf[i].f_mntonname,
-                                                              NULL,
-                                                              mntbuf[i].f_mntonname,
-                                                              "disk.space",
-                                                              title,
-                                                              "GB",
-                                                              2023,
-                                                              update_every,
-                                                              RRDSET_TYPE_STACKED
-                        );
-
-                        m->rd_space_avail    = rrddim_add(m->st_space, "avail", NULL,
-                                                          mntbuf[i].f_bsize, GIGA_FACTOR, RRD_ALGORITHM_ABSOLUTE);
-                        m->rd_space_used     = rrddim_add(m->st_space, "used", NULL,
-                                                          mntbuf[i].f_bsize, GIGA_FACTOR, RRD_ALGORITHM_ABSOLUTE);
-                        m->rd_space_reserved = rrddim_add(m->st_space, "reserved_for_root", "reserved for root",
-                                                          mntbuf[i].f_bsize, GIGA_FACTOR, RRD_ALGORITHM_ABSOLUTE);
-                    } else
-                        rrdset_next(m->st_space);
-
-                    rrddim_set_by_pointer(m->st_space, m->rd_space_avail,    (collected_number) mntbuf[i].f_bavail);
-                    rrddim_set_by_pointer(m->st_space, m->rd_space_used,     (collected_number) (mntbuf[i].f_blocks -
-                                                                                                 mntbuf[i].f_bfree));
-                    rrddim_set_by_pointer(m->st_space, m->rd_space_reserved, (collected_number) (mntbuf[i].f_bfree -
-                                                                                                 mntbuf[i].f_bavail));
-                    rrdset_done(m->st_space);
-
-                    rendered++;
-                }
-
-                // --------------------------------------------------------------------------
-
-                if (m->do_inodes == CONFIG_BOOLEAN_YES || (m->do_inodes == CONFIG_BOOLEAN_AUTO && (mntbuf[i].f_files > 1))) {
-                    if (unlikely(!m->st_inodes)) {
-                        snprintfz(title, 4096, "Disk Files (inodes) Usage for %s [%s]",
-                                  mntbuf[i].f_mntonname, mntbuf[i].f_mntfromname);
-                        m->st_inodes = rrdset_create_localhost("disk_inodes",
-                                                               mntbuf[i].f_mntonname,
-                                                               NULL,
-                                                               mntbuf[i].f_mntonname,
-                                                               "disk.inodes",
-                                                               title,
-                                                               "Inodes",
-                                                               2024,
-                                                               update_every,
-                                                               RRDSET_TYPE_STACKED
-                        );
-
-                        m->rd_inodes_avail = rrddim_add(m->st_inodes, "avail", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
-                        m->rd_inodes_used  = rrddim_add(m->st_inodes, "used",  NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
-                    } else
-                        rrdset_next(m->st_inodes);
-
-                    rrddim_set_by_pointer(m->st_inodes, m->rd_inodes_avail, (collected_number) mntbuf[i].f_ffree);
-                    rrddim_set_by_pointer(m->st_inodes, m->rd_inodes_used,  (collected_number) (mntbuf[i].f_files -
-                                                                                                mntbuf[i].f_ffree));
-                    rrdset_done(m->st_inodes);
-
-                    rendered++;
-                }
-
-                if(likely(rendered))
-                    m->collected++;
-            }
-        }
-    } else {
-        error("DISABLED: getmntinfo module");
-        return 1;
-    }
-
-    return 0;
-}
-
-// --------------------------------------------------------------------------------------------------------------------
-// getifaddrs
-
-int do_getifaddrs(int update_every, usec_t dt) {
-    (void)dt;
-
-#define DELAULT_EXLUDED_INTERFACES "lo*"
-#define CONFIG_SECTION_GETIFADDRS "plugin:freebsd:getifaddrs"
-
-    static int do_bandwidth_ipv4 = -1, do_bandwidth_ipv6 = -1, do_bandwidth = -1, do_packets = -1,
-               do_errors = -1, do_drops = -1, do_events = -1;
-
-    if (unlikely(do_bandwidth_ipv4 == -1)) {
-        do_bandwidth_ipv4 = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "total bandwidth for ipv4 interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-        do_bandwidth_ipv6 = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "total bandwidth for ipv6 interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-        do_bandwidth      = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "bandwidth for all interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-        do_packets        = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "packets for all interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-        do_errors         = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "errors for all interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-        do_drops          = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "drops for all interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-        do_events         = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "collisions for all interfaces",
-                                                        CONFIG_BOOLEAN_AUTO);
-    }
-
-    if (likely(do_bandwidth_ipv4 || do_bandwidth_ipv6 || do_bandwidth || do_packets || do_errors ||
-               do_drops || do_events)) {
-        struct ifaddrs *ifap;
-
-        if (unlikely(getifaddrs(&ifap))) {
-            error("FREEBSD: getifaddrs() failed");
-            do_bandwidth_ipv4 = 0;
-            error("DISABLED: system.ipv4 chart");
-            do_bandwidth_ipv6 = 0;
-            error("DISABLED: system.ipv6 chart");
-            do_bandwidth = 0;
-            error("DISABLED: net.* charts");
-            do_packets = 0;
-            error("DISABLED: net_packets.* charts");
-            do_errors = 0;
-            error("DISABLED: net_errors.* charts");
-            do_drops = 0;
-            error("DISABLED: net_drops.* charts");
-            do_events = 0;
-            error("DISABLED: net_events.* charts");
-            error("DISABLED: getifaddrs module");
-            return 1;
-        } else {
-            #define IFA_DATA(s) (((struct if_data *)ifa->ifa_data)->ifi_ ## s)
-            struct ifaddrs *ifa;
-            struct iftot {
-                u_long  ift_ibytes;
-                u_long  ift_obytes;
-            } iftot = {0, 0};
-
-            // --------------------------------------------------------------------
-
-            if (likely(do_bandwidth_ipv4)) {
-                iftot.ift_ibytes = iftot.ift_obytes = 0;
-                for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-                    if (ifa->ifa_addr->sa_family != AF_INET)
-                        continue;
-                    iftot.ift_ibytes += IFA_DATA(ibytes);
-                    iftot.ift_obytes += IFA_DATA(obytes);
-                }
-
-                static RRDSET *st = NULL;
-                static RRDDIM *rd_in = NULL, *rd_out = NULL;
-
-                if (unlikely(!st)) {
-                    st = rrdset_create_localhost("system",
-                                                 "ipv4",
-                                                 NULL,
-                                                 "network",
-                                                 NULL,
-                                                 "IPv4 Bandwidth",
-                                                 "kilobits/s",
-                                                 500,
-                                                 update_every,
-                                                 RRDSET_TYPE_AREA
-                    );
-
-                    rd_in  = rrddim_add(st, "InOctets",  "received", 8, KILO_FACTOR, RRD_ALGORITHM_INCREMENTAL);
-                    rd_out = rrddim_add(st, "OutOctets", "sent",    -8, KILO_FACTOR, RRD_ALGORITHM_INCREMENTAL);
-                } else
-                    rrdset_next(st);
-
-                rrddim_set_by_pointer(st, rd_in,  iftot.ift_ibytes);
-                rrddim_set_by_pointer(st, rd_out, iftot.ift_obytes);
-                rrdset_done(st);
-            }
-
-            // --------------------------------------------------------------------
-
-            if (likely(do_bandwidth_ipv6)) {
-                iftot.ift_ibytes = iftot.ift_obytes = 0;
-                for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-                    if (ifa->ifa_addr->sa_family != AF_INET6)
-                        continue;
-                    iftot.ift_ibytes += IFA_DATA(ibytes);
-                    iftot.ift_obytes += IFA_DATA(obytes);
-                }
-
-                static RRDSET *st = NULL;
-                static RRDDIM *rd_in = NULL, *rd_out = NULL;
-
-                if (unlikely(!st)) {
-                    st = rrdset_create_localhost("system",
-                                                 "ipv6",
-                                                 NULL,
-                                                 "network",
-                                                 NULL,
-                                                 "IPv6 Bandwidth",
-                                                 "kilobits/s",
-                                                 500,
-                                                 update_every,
-                                                 RRDSET_TYPE_AREA
-                    );
-
-                    rd_in  = rrddim_add(st, "received", NULL,  8, KILO_FACTOR, RRD_ALGORITHM_INCREMENTAL);
-                    rd_out = rrddim_add(st, "sent",     NULL, -8, KILO_FACTOR, RRD_ALGORITHM_INCREMENTAL);
-                } else
-                    rrdset_next(st);
-
-                rrddim_set_by_pointer(st, rd_in,  iftot.ift_ibytes);
-                rrddim_set_by_pointer(st, rd_out, iftot.ift_obytes);
-                rrdset_done(st);
-            }
-
-            // --------------------------------------------------------------------
-
-            // Data to be stored in DICTIONARY interfaces.
-            // This DICTIONARY is used to lookup the settings of the interfaces on each iteration.
-            struct interfaces_metadata {
-                int do_bandwidth;
-                int do_packets;
-                int do_errors;
-                int do_drops;
-                int do_events;
-
-                // charts and dimensions
-
-                RRDSET *st_bandwidth;
-                RRDDIM *rd_bandwidth_in;
-                RRDDIM *rd_bandwidth_out;
-
-                RRDSET *st_packets;
-                RRDDIM *rd_packets_in;
-                RRDDIM *rd_packets_out;
-                RRDDIM *rd_packets_m_in;
-                RRDDIM *rd_packets_m_out;
-
-                RRDSET *st_errors;
-                RRDDIM *rd_errors_in;
-                RRDDIM *rd_errors_out;
-
-                RRDSET *st_drops;
-                RRDDIM *rd_drops_in;
-                RRDDIM *rd_drops_out;
-
-                RRDSET *st_events;
-                RRDDIM *rd_events_coll;
-            };
-            static DICTIONARY *interfaces = NULL;
-            static SIMPLE_PATTERN *excluded_interfaces = NULL;
-
-            if(unlikely(!interfaces)) {
-
-                excluded_interfaces = simple_pattern_create(
-                        config_get(CONFIG_SECTION_GETIFADDRS, "disable by default interfaces matching",
-                                   DELAULT_EXLUDED_INTERFACES)
-                        , SIMPLE_PATTERN_EXACT
-                );
-
-                interfaces = dictionary_create(DICTIONARY_FLAG_SINGLE_THREADED);
-            }
-
-            for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-                if (ifa->ifa_addr->sa_family != AF_LINK)
-                    continue;
-
-                int def_bandwidth, def_packets, def_errors, def_drops, def_events,
-                    iter_bandwidth, iter_packets, iter_errors, iter_drops, iter_events;
-
-                struct interfaces_metadata *ifm = dictionary_get(interfaces, ifa->ifa_name);
-                if(unlikely(!ifm)) {
-                    char var_name[4096 + 1];
-                    snprintfz(var_name, 4096, "%s:%s", CONFIG_SECTION_GETIFADDRS, ifa->ifa_name);
-
-                    def_bandwidth = do_bandwidth;
-                    def_packets   = do_packets;
-                    def_errors    = do_errors;
-                    def_drops     = do_drops;
-                    def_events    = do_events;
-
-                    if(unlikely(simple_pattern_matches(excluded_interfaces, ifa->ifa_name))) {
-                        def_bandwidth = CONFIG_BOOLEAN_NO;
-                        def_packets   = CONFIG_BOOLEAN_NO;
-                        def_errors    = CONFIG_BOOLEAN_NO;
-                        def_drops     = CONFIG_BOOLEAN_NO;
-                        def_events    = CONFIG_BOOLEAN_NO;
-                    }
-
-                    iter_bandwidth = config_get_boolean_ondemand(var_name, "bandwidth", def_bandwidth);
-                    iter_packets   = config_get_boolean_ondemand(var_name, "packets",   def_packets);
-                    iter_errors    = config_get_boolean_ondemand(var_name, "errors",    def_errors);
-                    iter_drops     = config_get_boolean_ondemand(var_name, "drops",     def_drops);
-                    iter_events    = config_get_boolean_ondemand(var_name, "events",    def_events);
-
-                    struct interfaces_metadata ifmp = {
-                            .do_bandwidth = iter_bandwidth,
-                            .do_packets   = iter_packets,
-                            .do_errors    = iter_errors,
-                            .do_drops     = iter_drops,
-                            .do_events    = iter_events,
-
-                            .st_bandwidth = NULL,
-                            .rd_bandwidth_in = NULL,
-                            .rd_bandwidth_out = NULL,
-
-                            .st_packets = NULL,
-                            .rd_packets_in = NULL,
-                            .rd_packets_out = NULL,
-                            .rd_packets_m_in = NULL,
-                            .rd_packets_m_out = NULL,
-
-                            .st_errors = NULL,
-                            .rd_errors_in = NULL,
-                            .rd_errors_out = NULL,
-
-                            .st_drops = NULL,
-                            .rd_drops_in = NULL,
-                            .rd_drops_out = NULL,
-
-                            .st_events = NULL,
-                            .rd_events_coll = NULL,
-                    };
-
-                    ifm = dictionary_set(interfaces, ifa->ifa_name, &ifmp, sizeof(struct interfaces_metadata));
-                }
-
-                // --------------------------------------------------------------------
-
-                if (ifm->do_bandwidth == CONFIG_BOOLEAN_YES || (ifm->do_bandwidth == CONFIG_BOOLEAN_AUTO &&
-                        (IFA_DATA(ibytes) || IFA_DATA(obytes)))) {
-                    if (unlikely(!ifm->st_bandwidth)) {
-                        ifm->st_bandwidth = rrdset_create_localhost("net",
-                                                                    ifa->ifa_name,
-                                                                    NULL,
-                                                                    ifa->ifa_name,
-                                                                    "net.net",
-                                                                    "Bandwidth",
-                                                                    "kilobits/s",
-                                                                    7000,
-                                                                    update_every,
-                                                                    RRDSET_TYPE_AREA
-                        );
-
-                        ifm->rd_bandwidth_in  = rrddim_add(ifm->st_bandwidth, "received", NULL,  8, KILO_FACTOR,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                        ifm->rd_bandwidth_out = rrddim_add(ifm->st_bandwidth, "sent",     NULL, -8, KILO_FACTOR,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                    } else
-                        rrdset_next(ifm->st_bandwidth);
-
-                    rrddim_set_by_pointer(ifm->st_bandwidth, ifm->rd_bandwidth_in,  IFA_DATA(ibytes));
-                    rrddim_set_by_pointer(ifm->st_bandwidth, ifm->rd_bandwidth_out, IFA_DATA(obytes));
-                    rrdset_done(ifm->st_bandwidth);
-                }
-
-                // --------------------------------------------------------------------
-
-                if (ifm->do_packets == CONFIG_BOOLEAN_YES || (ifm->do_packets == CONFIG_BOOLEAN_AUTO &&
-                        (IFA_DATA(ipackets) || IFA_DATA(opackets) || IFA_DATA(imcasts) || IFA_DATA(omcasts)))) {
-                    if (unlikely(!ifm->st_packets)) {
-                        ifm->st_packets = rrdset_create_localhost("net_packets",
-                                                                  ifa->ifa_name,
-                                                                  NULL,
-                                                                  ifa->ifa_name,
-                                                                  "net.packets",
-                                                                  "Packets",
-                                                                  "packets/s",
-                                                                  7001,
-                                                                  update_every,
-                                                                  RRDSET_TYPE_LINE
-                        );
-
-                        rrdset_flag_set(ifm->st_packets, RRDSET_FLAG_DETAIL);
-
-                        ifm->rd_packets_in    = rrddim_add(ifm->st_packets, "received",           NULL,  1, 1,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                        ifm->rd_packets_out   = rrddim_add(ifm->st_packets, "sent",               NULL, -1, 1,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                        ifm->rd_packets_m_in  = rrddim_add(ifm->st_packets, "multicast_received", NULL,  1, 1,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                        ifm->rd_packets_m_out = rrddim_add(ifm->st_packets, "multicast_sent",     NULL, -1, 1,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                    } else
-                        rrdset_next(ifm->st_packets);
-
-                    rrddim_set_by_pointer(ifm->st_packets, ifm->rd_packets_in,    IFA_DATA(ipackets));
-                    rrddim_set_by_pointer(ifm->st_packets, ifm->rd_packets_out,   IFA_DATA(opackets));
-                    rrddim_set_by_pointer(ifm->st_packets, ifm->rd_packets_m_in,  IFA_DATA(imcasts));
-                    rrddim_set_by_pointer(ifm->st_packets, ifm->rd_packets_m_out, IFA_DATA(omcasts));
-                    rrdset_done(ifm->st_packets);
-                }
-
-                // --------------------------------------------------------------------
-
-                if (ifm->do_errors == CONFIG_BOOLEAN_YES || (ifm->do_errors == CONFIG_BOOLEAN_AUTO &&
-                        (IFA_DATA(ierrors) || IFA_DATA(oerrors)))) {
-                    if (unlikely(!ifm->st_errors)) {
-                        ifm->st_errors = rrdset_create_localhost("net_errors",
-                                                                 ifa->ifa_name,
-                                                                 NULL,
-                                                                 ifa->ifa_name,
-                                                                 "net.errors",
-                                                                 "Interface Errors",
-                                                                 "errors/s",
-                                                                 7002,
-                                                                 update_every,
-                                                                 RRDSET_TYPE_LINE
-                        );
-
-                        rrdset_flag_set(ifm->st_errors, RRDSET_FLAG_DETAIL);
-
-                        ifm->rd_errors_in  = rrddim_add(ifm->st_errors, "inbound",  NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
-                        ifm->rd_errors_out = rrddim_add(ifm->st_errors, "outbound", NULL, -1, 1, RRD_ALGORITHM_INCREMENTAL);
-                    } else
-                        rrdset_next(ifm->st_errors);
-
-                    rrddim_set_by_pointer(ifm->st_errors, ifm->rd_errors_in,  IFA_DATA(ierrors));
-                    rrddim_set_by_pointer(ifm->st_errors, ifm->rd_errors_out, IFA_DATA(oerrors));
-                    rrdset_done(ifm->st_errors);
-                }
-                // --------------------------------------------------------------------
-
-                if (ifm->do_drops == CONFIG_BOOLEAN_YES || (ifm->do_drops == CONFIG_BOOLEAN_AUTO &&
-                        (IFA_DATA(iqdrops) || IFA_DATA(oqdrops)))) {
-                    if (unlikely(!ifm->st_drops)) {
-                        ifm->st_drops = rrdset_create_localhost("net_drops",
-                                                                ifa->ifa_name,
-                                                                NULL,
-                                                                ifa->ifa_name,
-                                                                "net.drops",
-                                                                "Interface Drops",
-                                                                "drops/s",
-                                                                7003,
-                                                                update_every,
-                                                                RRDSET_TYPE_LINE
-                        );
-
-                        rrdset_flag_set(ifm->st_drops, RRDSET_FLAG_DETAIL);
-
-                        ifm->rd_drops_in  = rrddim_add(ifm->st_drops, "inbound",  NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
-#if __FreeBSD__ >= 11
-                        ifm->rd_drops_out = rrddim_add(ifm->st_drops, "outbound", NULL, -1, 1, RRD_ALGORITHM_INCREMENTAL);
-#endif
-                    } else
-                        rrdset_next(ifm->st_drops);
-
-                    rrddim_set_by_pointer(ifm->st_drops, ifm->rd_drops_in,  IFA_DATA(iqdrops));
-#if __FreeBSD__ >= 11
-                    rrddim_set_by_pointer(ifm->st_drops, ifm->rd_drops_out, IFA_DATA(oqdrops));
-#endif
-                    rrdset_done(ifm->st_drops);
-                }
-
-                // --------------------------------------------------------------------
-
-                if (ifm->do_events == CONFIG_BOOLEAN_YES || (ifm->do_events == CONFIG_BOOLEAN_AUTO &&
-                                                             IFA_DATA(collisions))) {
-                    if (unlikely(!ifm->st_events)) {
-                        ifm->st_events = rrdset_create_localhost("net_events",
-                                                                 ifa->ifa_name,
-                                                                 NULL,
-                                                                 ifa->ifa_name,
-                                                                 "net.events",
-                                                                 "Network Interface Events",
-                                                                 "events/s",
-                                                                 7006,
-                                                                 update_every,
-                                                                 RRDSET_TYPE_LINE
-                        );
-
-                        rrdset_flag_set(ifm->st_events, RRDSET_FLAG_DETAIL);
-
-                        ifm->rd_events_coll = rrddim_add(ifm->st_events, "collisions", NULL, -1, 1,
-                                                         RRD_ALGORITHM_INCREMENTAL);
-                    } else
-                        rrdset_next(ifm->st_events);
-
-                    rrddim_set_by_pointer(ifm->st_events, ifm->rd_events_coll, IFA_DATA(collisions));
-                    rrdset_done(ifm->st_events);
-                }
-            }
-
-            freeifaddrs(ifap);
-        }
-    } else {
-        error("DISABLED: getifaddrs module");
-        return 1;
-    }
-
-    return 0;
-}
-
-// --------------------------------------------------------------------------------------------------------------------
-// kern.devstat
-
-int do_kern_devstat(int update_every, usec_t dt) {
-
-#define DELAULT_EXLUDED_DISKS ""
-#define CONFIG_SECTION_KERN_DEVSTAT "plugin:freebsd:kern.devstat"
-#define BINTIME_SCALE 5.42101086242752217003726400434970855712890625e-17 // this is 1000/2^64
-
-    static int enable_pass_devices = -1, do_system_io = -1, do_io = -1, do_ops = -1, do_qops = -1, do_util = -1,
-               do_iotime = -1, do_await = -1, do_avagsz = -1, do_svctm = -1;
-
-    if (unlikely(enable_pass_devices == -1)) {
-        enable_pass_devices = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT,
-                                                          "performance metrics for pass devices", CONFIG_BOOLEAN_AUTO);
-
-        do_system_io = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "total bandwidth for all disks",
-                                                   CONFIG_BOOLEAN_YES);
-
-        do_io     = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "bandwidth for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_ops    = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "operations for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_qops   = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "queued operations for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_util   = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "utilization percentage for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_iotime = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "i/o time for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_await  = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "average completed i/o time for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_avagsz = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "average completed i/o bandwidth for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-        do_svctm  = config_get_boolean_ondemand(CONFIG_SECTION_KERN_DEVSTAT, "average service time for all disks",
-                                                CONFIG_BOOLEAN_AUTO);
-    }
-
-    if (likely(do_system_io || do_io || do_ops || do_qops || do_util || do_iotime || do_await || do_avagsz || do_svctm)) {
-        static int mib_numdevs[3] = {0, 0, 0};
-        int numdevs;
-        int common_error = 0;
-
-        if (unlikely(GETSYSCTL_SIMPLE("kern.devstat.numdevs", mib_numdevs, numdevs))) {
-            common_error = 1;
-        } else {
-            static int mib_devstat[3] = {0, 0, 0};
-            static void *devstat_data = NULL;
-
-            devstat_data = reallocz(devstat_data, sizeof(long) + sizeof(struct devstat) * numdevs); // there is generation number before devstat structures
-            if (unlikely(GETSYSCTL_WSIZE("kern.devstat.all", mib_devstat, devstat_data,
-                                         sizeof(long) + sizeof(struct devstat) * numdevs))) {
-                common_error = 1;
-            } else {
-                struct devstat *dstat;
-                int i;
-                collected_number total_disk_kbytes_read = 0;
-                collected_number total_disk_kbytes_write = 0;
-
-                // Data to be stored in DICTIONARY disks.
-                // This DICTIONARY is used to lookup the settings of the disks on each iteration.
-                struct disks_metadata {
-                    int do_io;
-                    int do_ops;
-                    int do_qops;
-                    int do_util;
-                    int do_iotime;
-                    int do_await;
-                    int do_avagsz;
-                    int do_svctm;
-
-
-                    // data for differential charts
-
-                    struct prev_dstat {
-                        collected_number bytes_read;
-                        collected_number bytes_write;
-                        collected_number operations_read;
-                        collected_number operations_write;
-                        collected_number duration_read_ms;
-                        collected_number duration_write_ms;
-                        collected_number busy_time_ms;
-                    } prev_dstat;
-
-                    // charts and dimensions
-
-                    RRDSET *st_io;
-                    RRDDIM *rd_io_in;
-                    RRDDIM *rd_io_out;
-
-                    RRDSET *st_ops;
-                    RRDDIM *rd_ops_in;
-                    RRDDIM *rd_ops_out;
-
-                    RRDSET *st_qops;
-                    RRDDIM *rd_qops;
-
-                    RRDSET *st_util;
-                    RRDDIM *rd_util;
-
-                    RRDSET *st_iotime;
-                    RRDDIM *rd_iotime_in;
-                    RRDDIM *rd_iotime_out;
-
-                    RRDSET *st_await;
-                    RRDDIM *rd_await_in;
-                    RRDDIM *rd_await_out;
-
-                    RRDSET *st_avagsz;
-                    RRDDIM *rd_avagsz_in;
-                    RRDDIM *rd_avagsz_out;
-
-                    RRDSET *st_svctm;
-                    RRDDIM *rd_svctm;
-
-                };
-                static DICTIONARY *disks = NULL;
-                static SIMPLE_PATTERN *excluded_disks = NULL;
-
-                if(unlikely(!disks)) {
-
-                    excluded_disks = simple_pattern_create(
-                            config_get(CONFIG_SECTION_KERN_DEVSTAT, "disable by default disks matching",
-                                       DELAULT_EXLUDED_DISKS)
-                            , SIMPLE_PATTERN_EXACT
-                    );
-
-                    disks = dictionary_create(DICTIONARY_FLAG_SINGLE_THREADED);
-                }
-
-                dstat = devstat_data + sizeof(long); // skip generation number
-
-                for (i = 0; i < numdevs; i++) {
-                    if (likely(do_system_io)) {
-                        if (((dstat[i].device_type & DEVSTAT_TYPE_MASK) == DEVSTAT_TYPE_DIRECT) || ((dstat[i].device_type & DEVSTAT_TYPE_MASK) == DEVSTAT_TYPE_STORARRAY)) {
-                            total_disk_kbytes_read += dstat[i].bytes[DEVSTAT_READ] / KILO_FACTOR;
-                            total_disk_kbytes_write += dstat[i].bytes[DEVSTAT_WRITE] / KILO_FACTOR;
-                        }
-                    }
-
-                    if (unlikely(!enable_pass_devices))
-                        if ((dstat[i].device_type & DEVSTAT_TYPE_PASS) == DEVSTAT_TYPE_PASS)
-                            continue;
-
-                    if (((dstat[i].device_type & DEVSTAT_TYPE_MASK) == DEVSTAT_TYPE_DIRECT) || ((dstat[i].device_type & DEVSTAT_TYPE_MASK) == DEVSTAT_TYPE_STORARRAY)) {
-                        char disk[DEVSTAT_NAME_LEN + MAX_INT_DIGITS + 1];
-                        int def_io, def_ops, def_qops, def_util, def_iotime, def_await, def_avagsz, def_svctm,
-                            iter_io, iter_ops, iter_qops, iter_util, iter_iotime, iter_await, iter_avagsz, iter_svctm;
-                        struct cur_dstat {
-                            collected_number duration_read_ms;
-                            collected_number duration_write_ms;
-                            collected_number busy_time_ms;
-                        } cur_dstat;
-
-                        sprintf(disk, "%s%d", dstat[i].device_name, dstat[i].unit_number);
-
-                        struct disks_metadata *dm = dictionary_get(disks, disk);
-                        if(unlikely(!dm)) {
-                            char var_name[4096 + 1];
-                            snprintfz(var_name, 4096, "%s:%s", CONFIG_SECTION_KERN_DEVSTAT, disk);
-
-                            def_io     = do_io;
-                            def_ops    = do_ops;
-                            def_qops   = do_qops;
-                            def_util   = do_util;
-                            def_iotime = do_iotime;
-                            def_await  = do_await;
-                            def_avagsz = do_avagsz;
-                            def_svctm  = do_svctm;
-
-                            if(unlikely(simple_pattern_matches(excluded_disks, disk))) {
-                                def_io     = CONFIG_BOOLEAN_NO;
-                                def_ops    = CONFIG_BOOLEAN_NO;
-                                def_qops   = CONFIG_BOOLEAN_NO;
-                                def_util   = CONFIG_BOOLEAN_NO;
-                                def_iotime = CONFIG_BOOLEAN_NO;
-                                def_await  = CONFIG_BOOLEAN_NO;
-                                def_avagsz = CONFIG_BOOLEAN_NO;
-                                def_svctm  = CONFIG_BOOLEAN_NO;
-                            }
-
-                            iter_io     = config_get_boolean_ondemand(var_name, "bandwidth",                  def_io);
-                            iter_ops    = config_get_boolean_ondemand(var_name, "operations",                 def_ops);
-                            iter_qops   = config_get_boolean_ondemand(var_name, "queued operations",          def_qops);
-                            iter_util   = config_get_boolean_ondemand(var_name, "utilization percentage",     def_util);
-                            iter_iotime = config_get_boolean_ondemand(var_name, "i/o time",                   def_iotime);
-                            iter_await  = config_get_boolean_ondemand(var_name, "average completed i/o time", def_await);
-                            iter_avagsz = config_get_boolean_ondemand(var_name, "average completed i/o bandwidth",
-                                                                                                              def_avagsz);
-                            iter_svctm  = config_get_boolean_ondemand(var_name, "average service time",       def_svctm);
-
-                            struct disks_metadata dmp = {
-                                    .do_io     = iter_io,
-                                    .do_ops    = iter_ops,
-                                    .do_qops   = iter_qops,
-                                    .do_util   = iter_util,
-                                    .do_iotime = iter_iotime,
-                                    .do_await  = iter_await,
-                                    .do_avagsz = iter_avagsz,
-                                    .do_svctm  = iter_svctm,
-
-                                    .st_io = NULL,
-                                    .rd_io_in = NULL,
-                                    .rd_io_out = NULL,
-
-                                    .st_ops = NULL,
-                                    .rd_ops_in = NULL,
-                                    .rd_ops_out = NULL,
-
-                                    .st_qops = NULL,
-                                    .rd_qops = NULL,
-
-                                    .st_util = NULL,
-                                    .rd_util = NULL,
-
-                                    .st_iotime = NULL,
-                                    .rd_iotime_in = NULL,
-                                    .rd_iotime_out = NULL,
-
-                                    .st_await = NULL,
-                                    .rd_await_in = NULL,
-                                    .rd_await_out = NULL,
-
-                                    .st_avagsz = NULL,
-                                    .rd_avagsz_in = NULL,
-                                    .rd_avagsz_out = NULL,
-
-                                    .st_svctm = NULL,
-                                    .rd_svctm = NULL,
-                            };
-
-                            // initialise data for differential charts
-
-                            dmp.prev_dstat.bytes_read        = dstat[i].bytes[DEVSTAT_READ];
-                            dmp.prev_dstat.bytes_write       = dstat[i].bytes[DEVSTAT_WRITE];
-                            dmp.prev_dstat.operations_read   = dstat[i].operations[DEVSTAT_READ];
-                            dmp.prev_dstat.operations_write  = dstat[i].operations[DEVSTAT_WRITE];
-                            dmp.prev_dstat.duration_read_ms  = dstat[i].duration[DEVSTAT_READ].sec * 1000
-                                                               + dstat[i].duration[DEVSTAT_READ].frac * BINTIME_SCALE;
-                            dmp.prev_dstat.duration_write_ms = dstat[i].duration[DEVSTAT_WRITE].sec * 1000
-                                                               + dstat[i].duration[DEVSTAT_READ].frac * BINTIME_SCALE;
-                            dmp.prev_dstat.busy_time_ms      = dstat[i].busy_time.sec * 1000
-                                                               + dstat[i].busy_time.frac * BINTIME_SCALE;
-
-                            dm = dictionary_set(disks, disk, &dmp, sizeof(struct disks_metadata));
-                        }
-
-                        cur_dstat.duration_read_ms  = dstat[i].duration[DEVSTAT_READ].sec * 1000
-                                                      + dstat[i].duration[DEVSTAT_READ].frac * BINTIME_SCALE;
-                        cur_dstat.duration_write_ms = dstat[i].duration[DEVSTAT_WRITE].sec * 1000
-                                                      + dstat[i].duration[DEVSTAT_READ].frac * BINTIME_SCALE;
-                        cur_dstat.busy_time_ms = dstat[i].busy_time.sec * 1000 + dstat[i].busy_time.frac * BINTIME_SCALE;
-
-                        // --------------------------------------------------------------------
-
-                        if(dm->do_io == CONFIG_BOOLEAN_YES || (dm->do_io == CONFIG_BOOLEAN_AUTO &&
-                                (dstat[i].bytes[DEVSTAT_READ] || dstat[i].bytes[DEVSTAT_WRITE]))) {
-                            if (unlikely(!dm->st_io)) {
-                                dm->st_io = rrdset_create_localhost("disk",
-                                                                    disk,
-                                                                    NULL,
-                                                                    disk,
-                                                                    "disk.io",
-                                                                    "Disk I/O Bandwidth",
-                                                                    "kilobytes/s",
-                                                                    2000,
-                                                                    update_every,
-                                                                    RRDSET_TYPE_AREA
-                                );
-
-                                dm->rd_io_in  = rrddim_add(dm->st_io, "reads",  NULL,  1, KILO_FACTOR,
-                                                          RRD_ALGORITHM_INCREMENTAL);
-                                dm->rd_io_out = rrddim_add(dm->st_io, "writes", NULL, -1, KILO_FACTOR,
-                                                           RRD_ALGORITHM_INCREMENTAL);
-                            } else
-                                rrdset_next(dm->st_io);
-
-                            rrddim_set_by_pointer(dm->st_io, dm->rd_io_in,  dstat[i].bytes[DEVSTAT_READ]);
-                            rrddim_set_by_pointer(dm->st_io, dm->rd_io_out, dstat[i].bytes[DEVSTAT_WRITE]);
-                            rrdset_done(dm->st_io);
-                        }
-
-                        // --------------------------------------------------------------------
-
-                        if(dm->do_ops == CONFIG_BOOLEAN_YES || (dm->do_ops == CONFIG_BOOLEAN_AUTO &&
-                                (dstat[i].operations[DEVSTAT_READ] || dstat[i].operations[DEVSTAT_WRITE]))) {
-                            if (unlikely(!dm->st_ops)) {
-                                dm->st_ops = rrdset_create_localhost("disk_ops",
-                                                                     disk,
-                                                                     NULL,
-                                                                     disk,
-                                                                     "disk.ops",
-                                                                     "Disk Completed I/O Operations",
-                                                                     "operations/s",
-                                                                     2001,
-                                                                     update_every,
-                                                                     RRDSET_TYPE_LINE
-                                );
-
-                                rrdset_flag_set(dm->st_ops, RRDSET_FLAG_DETAIL);
-
-                                dm->rd_ops_in = rrddim_add(dm->st_ops, "reads", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
-                                dm->rd_ops_out = rrddim_add(dm->st_ops, "writes", NULL, -1, 1,
-                                                            RRD_ALGORITHM_INCREMENTAL);
-                            } else
-                                rrdset_next(dm->st_ops);
-
-                            rrddim_set_by_pointer(dm->st_ops, dm->rd_ops_in, dstat[i].operations[DEVSTAT_READ]);
-                            rrddim_set_by_pointer(dm->st_ops, dm->rd_ops_out, dstat[i].operations[DEVSTAT_WRITE]);
-                            rrdset_done(dm->st_ops);
-                        }
-
-                        // --------------------------------------------------------------------
-
-                        if(dm->do_qops == CONFIG_BOOLEAN_YES || (dm->do_qops == CONFIG_BOOLEAN_AUTO &&
-                                (dstat[i].start_count || dstat[i].end_count))) {
-                            if (unlikely(!dm->st_qops)) {
-                                dm->st_qops = rrdset_create_localhost("disk_qops",
-                                                                      disk,
-                                                                      NULL,
-                                                                      disk,
-                                                                      "disk.qops",
-                                                                      "Disk Current I/O Operations",
-                                                                      "operations",
-                                                                      2002,
-                                                                      update_every,
-                                                                      RRDSET_TYPE_LINE
-                                );
-
-                                rrdset_flag_set(dm->st_qops, RRDSET_FLAG_DETAIL);
-
-                                dm->rd_qops = rrddim_add(dm->st_qops, "operations", NULL, 1, 1, RRD_ALGORITHM_ABSOLUTE);
-                            } else
-                                rrdset_next(dm->st_qops);
-
-                            rrddim_set_by_pointer(dm->st_qops, dm->rd_qops, dstat[i].start_count - dstat[i].end_count);
-                            rrdset_done(dm->st_qops);
-                        }
-
-                        // --------------------------------------------------------------------
-
-                        if(dm->do_util == CONFIG_BOOLEAN_YES || (dm->do_util == CONFIG_BOOLEAN_AUTO &&
-                                                                 cur_dstat.busy_time_ms)) {
-                            if (unlikely(!dm->st_util)) {
-                                dm->st_util = rrdset_create_localhost("disk_util",
-                                                                      disk,
-                                                                      NULL,
-                                                                      disk,
-                                                                      "disk.util",
-                                                                      "Disk Utilization Time",
-                                                                      "% of time working",
-                                                                      2004,
-                                                                      update_every,
-                                                                      RRDSET_TYPE_AREA
-                                );
-
-                                rrdset_flag_set(dm->st_util, RRDSET_FLAG_DETAIL);
-
-                                dm->rd_util = rrddim_add(dm->st_util, "utilization", NULL, 1, 10,
-                                                         RRD_ALGORITHM_INCREMENTAL);
-                            } else
-                                rrdset_next(dm->st_util);
-
-                            rrddim_set_by_pointer(dm->st_util, dm->rd_util, cur_dstat.busy_time_ms);
-                            rrdset_done(dm->st_util);
-                        }
-
-                        // --------------------------------------------------------------------
-
-                        if(dm->do_iotime == CONFIG_BOOLEAN_YES || (dm->do_iotime == CONFIG_BOOLEAN_AUTO &&
-                                (cur_dstat.duration_read_ms || cur_dstat.duration_write_ms))) {
-                            if (unlikely(!dm->st_iotime)) {
-                                dm->st_iotime = rrdset_create_localhost("disk_iotime",
-                                                                        disk,
-                                                                        NULL,
-                                                                        disk,
-                                                                        "disk.iotime",
-                                                                        "Disk Total I/O Time",
-                                                                        "milliseconds/s",
-                                                                        2022,
-                                                                        update_every,
-                                                                        RRDSET_TYPE_LINE
-                                );
-
-                                rrdset_flag_set(dm->st_iotime, RRDSET_FLAG_DETAIL);
-
-                                dm->rd_iotime_in  = rrddim_add(dm->st_iotime, "reads",  NULL,  1, 1,
-                                                               RRD_ALGORITHM_INCREMENTAL);
-                                dm->rd_iotime_out = rrddim_add(dm->st_iotime, "writes", NULL, -1, 1,
-                                                               RRD_ALGORITHM_INCREMENTAL);
-                            } else
-                                rrdset_next(dm->st_iotime);
-
-                            rrddim_set_by_pointer(dm->st_iotime, dm->rd_iotime_in,  cur_dstat.duration_read_ms);
-                            rrddim_set_by_pointer(dm->st_iotime, dm->rd_iotime_out, cur_dstat.duration_write_ms);
-                            rrdset_done(dm->st_iotime);
-                        }
-
-                        // --------------------------------------------------------------------
-                        // calculate differential charts
-                        // only if this is not the first time we run
-
-                        if (likely(dt)) {
-
-                            // --------------------------------------------------------------------
-
-                            if(dm->do_await == CONFIG_BOOLEAN_YES || (dm->do_await == CONFIG_BOOLEAN_AUTO &&
-                                    (dstat[i].operations[DEVSTAT_READ] || dstat[i].operations[DEVSTAT_WRITE]))) {
-                                if (unlikely(!dm->st_await)) {
-                                    dm->st_await = rrdset_create_localhost("disk_await",
-                                                                           disk,
-                                                                           NULL,
-                                                                           disk,
-                                                                           "disk.await",
-                                                                           "Average Completed I/O Operation Time",
-                                                                           "ms per operation",
-                                                                           2005,
-                                                                           update_every,
-                                                                           RRDSET_TYPE_LINE
-                                    );
-
-                                    rrdset_flag_set(dm->st_await, RRDSET_FLAG_DETAIL);
-
-                                    dm->rd_await_in  = rrddim_add(dm->st_await, "reads",  NULL,  1, 1,
-                                                                  RRD_ALGORITHM_ABSOLUTE);
-                                    dm->rd_await_out = rrddim_add(dm->st_await, "writes", NULL, -1, 1,
-                                                                  RRD_ALGORITHM_ABSOLUTE);
-                                } else
-                                    rrdset_next(dm->st_await);
-
-                                rrddim_set_by_pointer(dm->st_await, dm->rd_await_in,
-                                                      (dstat[i].operations[DEVSTAT_READ] -
-                                                       dm->prev_dstat.operations_read) ?
-                                                      (cur_dstat.duration_read_ms - dm->prev_dstat.duration_read_ms) /
-                                                      (dstat[i].operations[DEVSTAT_READ] -
-                                                       dm->prev_dstat.operations_read) :
-                                                      0);
-                                rrddim_set_by_pointer(dm->st_await, dm->rd_await_out,
-                                                      (dstat[i].operations[DEVSTAT_WRITE] -
-                                                       dm->prev_dstat.operations_write) ?
-                                                      (cur_dstat.duration_write_ms - dm->prev_dstat.duration_write_ms) /
-                                                      (dstat[i].operations[DEVSTAT_WRITE] -
-                                                       dm->prev_dstat.operations_write) :
-                                                      0);
-                                rrdset_done(dm->st_await);
-                            }
-
-                            // --------------------------------------------------------------------
-
-                            if(dm->do_avagsz == CONFIG_BOOLEAN_YES || (dm->do_avagsz == CONFIG_BOOLEAN_AUTO &&
-                                    (dstat[i].operations[DEVSTAT_READ] || dstat[i].operations[DEVSTAT_WRITE]))) {
-                                if (unlikely(!dm->st_avagsz)) {
-                                    dm->st_avagsz = rrdset_create_localhost("disk_avgsz",
-                                                                            disk,
-                                                                            NULL,
-                                                                            disk,
-                                                                            "disk.avgsz",
-                                                                            "Average Completed I/O Operation Bandwidth",
-                                                                            "kilobytes per operation",
-                                                                            2006,
-                                                                            update_every,
-                                                                            RRDSET_TYPE_AREA
-                                    );
-
-                                    rrdset_flag_set(dm->st_avagsz, RRDSET_FLAG_DETAIL);
-
-                                    dm->rd_avagsz_in  = rrddim_add(dm->st_avagsz, "reads",  NULL,  1, KILO_FACTOR,
-                                                                  RRD_ALGORITHM_ABSOLUTE);
-                                    dm->rd_avagsz_out = rrddim_add(dm->st_avagsz, "writes", NULL, -1, KILO_FACTOR,
-                                                                   RRD_ALGORITHM_ABSOLUTE);
-                                } else
-                                    rrdset_next(dm->st_avagsz);
-
-                                rrddim_set_by_pointer(dm->st_avagsz, dm->rd_avagsz_in,
-                                                      (dstat[i].operations[DEVSTAT_READ] -
-                                                       dm->prev_dstat.operations_read) ?
-                                                      (dstat[i].bytes[DEVSTAT_READ] - dm->prev_dstat.bytes_read) /
-                                                      (dstat[i].operations[DEVSTAT_READ] -
-                                                       dm->prev_dstat.operations_read) :
-                                                      0);
-                                rrddim_set_by_pointer(dm->st_avagsz, dm->rd_avagsz_out,
-                                                      (dstat[i].operations[DEVSTAT_WRITE] -
-                                                       dm->prev_dstat.operations_write) ?
-                                                      (dstat[i].bytes[DEVSTAT_WRITE] - dm->prev_dstat.bytes_write) /
-                                                      (dstat[i].operations[DEVSTAT_WRITE] -
-                                                       dm->prev_dstat.operations_write) :
-                                                      0);
-                                rrdset_done(dm->st_avagsz);
-                            }
-
-                            // --------------------------------------------------------------------
-
-                            if(dm->do_svctm == CONFIG_BOOLEAN_YES || (dm->do_svctm == CONFIG_BOOLEAN_AUTO &&
-                                    (dstat[i].operations[DEVSTAT_READ] || dstat[i].operations[DEVSTAT_WRITE]))) {
-                                if (unlikely(!dm->st_svctm)) {
-                                    dm->st_svctm = rrdset_create_localhost("disk_svctm",
-                                                                           disk,
-                                                                           NULL,
-                                                                           disk,
-                                                                           "disk.svctm",
-                                                                           "Average Service Time",
-                                                                           "ms per operation",
-                                                                           2007,
-                                                                           update_every,
-                                                                           RRDSET_TYPE_LINE
-                                    );
-
-                                    rrdset_flag_set(dm->st_svctm, RRDSET_FLAG_DETAIL);
-
-                                    dm->rd_svctm = rrddim_add(dm->st_svctm, "svctm", NULL, 1, 1,
-                                                              RRD_ALGORITHM_ABSOLUTE);
-                                } else
-                                    rrdset_next(dm->st_svctm);
-
-                                rrddim_set_by_pointer(dm->st_svctm, dm->rd_svctm,
-                                    ((dstat[i].operations[DEVSTAT_READ] - dm->prev_dstat.operations_read) +
-                                     (dstat[i].operations[DEVSTAT_WRITE] - dm->prev_dstat.operations_write)) ?
-                                    (cur_dstat.busy_time_ms - dm->prev_dstat.busy_time_ms) /
-                                    ((dstat[i].operations[DEVSTAT_READ] - dm->prev_dstat.operations_read) +
-                                     (dstat[i].operations[DEVSTAT_WRITE] - dm->prev_dstat.operations_write)) :
-                                    0);
-                                rrdset_done(dm->st_svctm);
-                            }
-
-                            // --------------------------------------------------------------------
-
-                            dm->prev_dstat.bytes_read        = dstat[i].bytes[DEVSTAT_READ];
-                            dm->prev_dstat.bytes_write       = dstat[i].bytes[DEVSTAT_WRITE];
-                            dm->prev_dstat.operations_read   = dstat[i].operations[DEVSTAT_READ];
-                            dm->prev_dstat.operations_write  = dstat[i].operations[DEVSTAT_WRITE];
-                            dm->prev_dstat.duration_read_ms  = cur_dstat.duration_read_ms;
-                            dm->prev_dstat.duration_write_ms = cur_dstat.duration_write_ms;
-                            dm->prev_dstat.busy_time_ms      = cur_dstat.busy_time_ms;
-                        }
-                    }
-                }
-
-                // --------------------------------------------------------------------
-
-                if (likely(do_system_io)) {
-                    static RRDSET *st = NULL;
-                    static RRDDIM *rd_in = NULL, *rd_out = NULL;
-
-                    if (unlikely(!st)) {
-                        st = rrdset_create_localhost("system",
-                                                     "io",
-                                                     NULL,
-                                                     "disk",
-                                                     NULL,
-                                                     "Disk I/O",
-                                                     "kilobytes/s",
-                                                     150,
-                                                     update_every,
-                                                     RRDSET_TYPE_AREA
-                        );
-
-                        rd_in  = rrddim_add(st, "in",  NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
-                        rd_out = rrddim_add(st, "out", NULL, -1, 1, RRD_ALGORITHM_INCREMENTAL);
-                    } else
-                        rrdset_next(st);
-
-                    rrddim_set_by_pointer(st, rd_in,  total_disk_kbytes_read);
-                    rrddim_set_by_pointer(st, rd_out, total_disk_kbytes_write);
-                    rrdset_done(st);
-                }
-            }
-        }
-        if (unlikely(common_error)) {
-            do_system_io = 0;
-            error("DISABLED: system.io chart");
-            do_io = 0;
-            error("DISABLED: disk.* charts");
-            do_ops = 0;
-            error("DISABLED: disk_ops.* charts");
-            do_qops = 0;
-            error("DISABLED: disk_qops.* charts");
-            do_util = 0;
-            error("DISABLED: disk_util.* charts");
-            do_iotime = 0;
-            error("DISABLED: disk_iotime.* charts");
-            do_await = 0;
-            error("DISABLED: disk_await.* charts");
-            do_avagsz = 0;
-            error("DISABLED: disk_avgsz.* charts");
-            do_svctm = 0;
-            error("DISABLED: disk_svctm.* charts");
-            error("DISABLED: kern.devstat module");
-            return 1;
-        }
-    } else {
-        error("DISABLED: kern.devstat module");
         return 1;
     }
 

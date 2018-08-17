@@ -1,10 +1,25 @@
 # Long lines in source files
-netdata source: source-is-missing debian/missing-sources/dygraph-combined-dd74404.js *
 netdata source: source-is-missing debian/missing-sources/morris-0.5.1.js *
 netdata source: source-is-missing debian/missing-sources/perfect-scrollbar-0.6.15.js *
+netdata source: source-is-missing debian/missing-sources/bootstrap-slider-10.0.0.js *
+netdata source: source-is-missing debian/missing-sources/pako-1.0.6.js *
 
 # Source is present as gauge-d5260c3.coffee
 netdata source: source-is-missing web/lib/gauge-1.3.2.min.js
 
-# Not a minified JS file
+# Source is present as clipboard-polyfill-be05dad.ts
+netdata source: source-is-missing web/lib/clipboard-polyfill-be05dad.js *
+
+# Font in JS lines
+netdata source: source-is-missing debian/missing-sources/fontawesome-all-5.0.1.js *
+
+# This is not a minified JS file and might contain long lines
+netdata source: insane-line-length-in-source-file web/dashboard_info.js line length is 823 characters (>512)
+netdata source: source-contains-prebuilt-javascript-object web/dashboard_info.js line length is 815 characters (>512)
 netdata source: source-is-missing web/dashboard_info.js *
+netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/bootstrap-slider-10.0.0.js line length is 269 characters (>256)
+netdata source: insane-line-length-in-source-file debian/missing-sources/fontawesome-all-5.0.1.js line length is 1203 characters (>512)
+
+# Versions are way off
+netdata-data: embedded-javascript-library usr/share/netdata/web/lib/bootstrap-3.3.7.min.js *
+netdata-data: embedded-javascript-library usr/share/netdata/web/lib/jquery-2.2.4.min.js *

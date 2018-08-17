@@ -1,5 +1,9 @@
 # no shebang necessary - this is a library to be sourced
 
+# make sure we have a UID
+[ -z "${UID}" ] && UID="$(id -u)"
+
+
 # -----------------------------------------------------------------------------
 # checking the availability of commands
 
@@ -81,7 +85,7 @@ setup_terminal() {
 
     return 0
 }
-setup_terminal
+setup_terminal || echo >/dev/null
 
 progress() {
     echo >&2 " --- ${TPUT_DIM}${TPUT_BOLD}${*}${TPUT_RESET} --- "
@@ -116,21 +120,60 @@ netdata_banner() {
 # portable service command
 
 service_cmd="$(which_cmd service)"
+rcservice_cmd="$(which_cmd rc-service)"
 systemctl_cmd="$(which_cmd systemctl)"
 service() {
     local cmd="${1}" action="${2}"
 
-    if [ ! -z "${service_cmd}" ]
+    if [ ! -z "${systemctl_cmd}" ]
+    then
+        run "${systemctl_cmd}" "${action}" "${cmd}"
+        return $?
+    elif [ ! -z "${service_cmd}" ]
     then
         run "${service_cmd}" "${cmd}" "${action}"
         return $?
-    elif [ ! -z "${systemctl_cmd}" ]
+    elif [ ! -z "${rcservice_cmd}" ]
     then
-        run "${systemctl_cmd}" "${action}" "${cmd}"
+        run "${rcservice_cmd}" "${cmd}" "${action}"
         return $?
     fi
     return 1
 }
+
+# -----------------------------------------------------------------------------
+# portable pidof
+
+pidof_cmd="$(which_cmd pidof)"
+pidof() {
+    if [ ! -z "${pidof_cmd}" ]
+    then
+        ${pidof_cmd} "${@}"
+        return $?
+    else
+        ps -acxo pid,comm |\
+            sed "s/^ *//g" |\
+            grep netdata |\
+            cut -d ' ' -f 1
+        return $?
+    fi
+}
+
+# -----------------------------------------------------------------------------
+
+export SYSTEM_CPUS=1
+portable_find_processors() {
+    if [ -f "/proc/cpuinfo" ]
+    then
+        # linux
+        SYSTEM_CPUS=$(grep -c ^processor /proc/cpuinfo)
+    else
+        # freebsd
+        SYSTEM_CPUS=$(sysctl hw.ncpu 2>/dev/null | grep ^hw.ncpu | cut -d ' ' -f 2)
+    fi
+    [ -z "${SYSTEM_CPUS}" -o $(( SYSTEM_CPUS )) -lt 1 ] && SYSTEM_CPUS=1
+}
+portable_find_processors
 
 # -----------------------------------------------------------------------------
 
@@ -142,9 +185,22 @@ run_failed() {
     printf >&2 "${TPUT_BGRED}${TPUT_WHITE}${TPUT_BOLD} FAILED ${TPUT_RESET} ${*} \n\n"
 }
 
+ESCAPED_PRINT_METHOD=
+printf "%q " test >/dev/null 2>&1
+[ $? -eq 0 ] && ESCAPED_PRINT_METHOD="printfq"
+escaped_print() {
+    if [ "${ESCAPED_PRINT_METHOD}" = "printfq" ]
+    then
+        printf "%q " "${@}"
+    else
+        printf "%s" "${*}"
+    fi
+    return 0
+}
+
 run_logfile="/dev/null"
 run() {
-    local user="${USER}" dir="$(basename "${PWD}")" info info_console
+    local user="${USER--}" dir="${PWD}" info info_console
 
     if [ "${UID}" = "0" ]
         then
@@ -156,11 +212,11 @@ run() {
     fi
 
     printf >> "${run_logfile}" "${info}"
-    printf >> "${run_logfile}" "%q " "${@}"
+    escaped_print >> "${run_logfile}" "${@}"
     printf >> "${run_logfile}" " ... "
 
     printf >&2 "${info_console}${TPUT_BOLD}${TPUT_YELLOW}"
-    printf >&2 "%q " "${@}"
+    escaped_print >&2 "${@}"
     printf >&2 "${TPUT_RESET}\n"
 
     "${@}"
@@ -178,32 +234,77 @@ run() {
     return ${ret}
 }
 
-portable_add_user() {
-    local username="${1}"
+getent_cmd="$(which_cmd getent)"
+portable_check_user_exists() {
+    local username="${1}" found=
 
-    getent passwd "${username}" > /dev/null 2>&1
+    if [ ! -z "${getent_cmd}" ]
+        then
+        "${getent_cmd}" passwd "${username}" >/dev/null 2>&1
+        return $?
+    fi
+
+    found="$(cut -d ':' -f 1 </etc/passwd | grep "^${username}$")"
+    [ "${found}" = "${username}" ] && return 0
+    return 1
+}
+
+portable_check_group_exists() {
+    local groupname="${1}" found=
+
+    if [ ! -z "${getent_cmd}" ]
+        then
+        "${getent_cmd}" group "${groupname}" >/dev/null 2>&1
+        return $?
+    fi
+
+    found="$(cut -d ':' -f 1 </etc/group | grep "^${groupname}$")"
+    [ "${found}" = "${groupname}" ] && return 0
+    return 1
+}
+
+portable_check_user_in_group() {
+    local username="${1}" groupname="${2}" users=
+
+    if [ ! -z "${getent_cmd}" ]
+        then
+        users="$(getent group "${groupname}" | cut -d ':' -f 4)"
+    else
+        users="$(grep "^${groupname}:" </etc/group | cut -d ':' -f 4)"
+    fi
+
+    [[ ",${users}," =~ ,${username}, ]] && return 0
+    return 1
+}
+
+portable_add_user() {
+    local username="${1}" homedir="${2}"
+
+    [ -z "${homedir}" ] && homedir="/tmp"
+
+    portable_check_user_exists "${username}"
     [ $? -eq 0 ] && echo >&2 "User '${username}' already exists." && return 0
 
-    echo >&2 "Adding ${username} user account ..."
+    echo >&2 "Adding ${username} user account with home ${homedir} ..."
 
     local nologin="$(which nologin 2>/dev/null || command -v nologin 2>/dev/null || echo '/bin/false')"
 
     # Linux
     if check_cmd useradd
     then
-        run useradd -r -g "${username}" -c "${username}" -s "${nologin}" -d / "${username}" && return 0
+        run useradd -r -g "${username}" -c "${username}" -s "${nologin}" --no-create-home -d "${homedir}" "${username}" && return 0
     fi
 
     # FreeBSD
     if check_cmd pw
     then
-        run pw useradd "${username}" -d / -g "${username}" -s "${nologin}" && return 0
+        run pw useradd "${username}" -d "${homedir}" -g "${username}" -s "${nologin}" && return 0
     fi
 
     # BusyBox
     if check_cmd adduser
     then
-        run adduser -D -G "${username}" "${username}" && return 0
+        run adduser -h "${homedir}" -s "${nologin}" -D -G "${username}" "${username}" && return 0
     fi
 
     echo >&2 "Failed to add ${username} user account !"
@@ -214,7 +315,7 @@ portable_add_user() {
 portable_add_group() {
     local groupname="${1}"
 
-    getent group "${groupname}" > /dev/null 2>&1
+    portable_check_group_exists "${groupname}"
     [ $? -eq 0 ] && echo >&2 "Group '${groupname}' already exists." && return 0
 
     echo >&2 "Adding ${groupname} user group ..."
@@ -244,12 +345,11 @@ portable_add_group() {
 portable_add_user_to_group() {
     local groupname="${1}" username="${2}"
 
-    getent group "${groupname}" > /dev/null 2>&1
+    portable_check_group_exists "${groupname}"
     [ $? -ne 0 ] && echo >&2 "Group '${groupname}' does not exist." && return 1
 
     # find the user is already in the group
-    local users=$(getent group "${groupname}" | cut -d ':' -f 4)
-    if [[ ",${users}," =~ ,${username}, ]]
+    if portable_check_user_in_group "${username}" "${groupname}"
         then
         # username is already there
         echo >&2 "User '${username}' is already in group '${groupname}'."
@@ -340,5 +440,394 @@ issystemd() {
     done
 
     # else, it is not systemd
+    return 1
+}
+
+install_non_systemd_init() {
+    [ "${UID}" != 0 ] && return 1
+
+    local key="unknown"
+    if [ -f /etc/os-release ]
+        then
+        source /etc/os-release || return 1
+        key="${ID}-${VERSION_ID}"
+
+    elif [ -f /etc/redhat-release ]
+        then
+        key=$(</etc/redhat-release)
+    fi
+
+    if [ -d /etc/init.d -a ! -f /etc/init.d/netdata ]
+        then
+        if [[ "${key}" =~ ^(gentoo|alpine).* ]]
+            then
+            echo >&2 "Installing OpenRC init file..."
+            run cp system/netdata-openrc /etc/init.d/netdata && \
+            run chmod 755 /etc/init.d/netdata && \
+            run rc-update add netdata default && \
+            return 0
+        
+        elif [ "${key}" = "debian-7" \
+            -o "${key}" = "ubuntu-12.04" \
+            -o "${key}" = "ubuntu-14.04" \
+            ]
+            then
+            echo >&2 "Installing LSB init file..."
+            run cp system/netdata-lsb /etc/init.d/netdata && \
+            run chmod 755 /etc/init.d/netdata && \
+            run update-rc.d netdata defaults && \
+            run update-rc.d netdata enable && \
+            return 0
+        elif [[ "${key}" =~ ^(amzn-201[567]|ol|CentOS release 6|Red Hat Enterprise Linux Server release 6|Scientific Linux CERN SLC release 6|CloudLinux Server release 6).* ]]
+            then
+            echo >&2 "Installing init.d file..."
+            run cp system/netdata-init-d /etc/init.d/netdata && \
+            run chmod 755 /etc/init.d/netdata && \
+            run chkconfig netdata on && \
+            return 0
+        else
+            echo >&2 "I don't know what init file to install on system '${key}'. Open a github issue to help us fix it."
+            return 1
+        fi
+    elif [ -f /etc/init.d/netdata ]
+        then
+        echo >&2 "file '/etc/init.d/netdata' already exists."
+        return 0
+    else
+        echo >&2 "I don't know what init file to install on system '${key}'. Open a github issue to help us fix it."
+    fi
+
+    return 1
+}
+
+NETDATA_START_CMD="netdata"
+NETDATA_STOP_CMD="killall netdata"
+
+install_netdata_service() {
+    local uname="$(uname 2>/dev/null)"
+
+    if [ "${UID}" -eq 0 ]
+    then
+        if [ "${uname}" = "Darwin" ]
+        then
+
+            echo >&2 "hm... I don't know how to install a startup script for MacOS X"
+            return 1
+
+        elif [ "${uname}" = "FreeBSD" ]
+        then
+
+            run cp system/netdata-freebsd /etc/rc.d/netdata && \
+                NETDATA_START_CMD="service netdata start" && \
+                NETDATA_STOP_CMD="service netdata stop" && \
+                return 0
+
+        elif issystemd
+        then
+            # systemd is running on this system
+            NETDATA_START_CMD="systemctl start netdata"
+            NETDATA_STOP_CMD="systemctl stop netdata"
+
+            if [ ! -f /etc/systemd/system/netdata.service ]
+            then
+                echo >&2 "Installing systemd service..."
+                run cp system/netdata.service /etc/systemd/system/netdata.service && \
+                    run systemctl daemon-reload && \
+                    run systemctl enable netdata && \
+                    return 0
+            else
+                echo >&2 "file '/etc/systemd/system/netdata.service' already exists."
+                return 0
+            fi
+        else
+            install_non_systemd_init
+            local ret=$?
+
+            if [ ${ret} -eq 0 ]
+            then
+                if [ ! -z "${service_cmd}" ]
+                then
+                    NETDATA_START_CMD="service netdata start"
+                    NETDATA_STOP_CMD="service netdata stop"
+                elif [ ! -z "${rcservice_cmd}" ]
+                then
+                    NETDATA_START_CMD="rc-service netdata start"
+                    NETDATA_STOP_CMD="rc-service netdata stop"
+                fi
+            fi
+
+            return ${ret}
+        fi
+    fi
+
+    return 1
+}
+
+
+# -----------------------------------------------------------------------------
+# stop netdata
+
+pidisnetdata() {
+    if [ -d /proc/self ]
+    then
+        [ -z "$1" -o ! -f "/proc/$1/stat" ] && return 1
+        [ "$(cat "/proc/$1/stat" | cut -d '(' -f 2 | cut -d ')' -f 1)" = "netdata" ] && return 0
+        return 1
+    fi
+    return 0
+}
+
+stop_netdata_on_pid() {
+    local pid="${1}" ret=0 count=0
+
+    pidisnetdata ${pid} || return 0
+
+    printf >&2 "Stopping netdata on pid ${pid} ..."
+    while [ ! -z "$pid" -a ${ret} -eq 0 ]
+    do
+        if [ ${count} -gt 45 ]
+            then
+            echo >&2 "Cannot stop the running netdata on pid ${pid}."
+            return 1
+        fi
+
+        count=$(( count + 1 ))
+
+        run kill ${pid} 2>/dev/null
+        ret=$?
+
+        test ${ret} -eq 0 && printf >&2 "." && sleep 2
+    done
+
+    echo >&2
+    if [ ${ret} -eq 0 ]
+    then
+        echo >&2 "SORRY! CANNOT STOP netdata ON PID ${pid} !"
+        return 1
+    fi
+
+    echo >&2 "netdata on pid ${pid} stopped."
+    return 0
+}
+
+netdata_pids() {
+    local p myns ns
+
+    myns="$(readlink /proc/self/ns/pid 2>/dev/null)"
+
+    # echo >&2 "Stopping a (possibly) running netdata (namespace '${myns}')..."
+
+    for p in \
+        $(cat /var/run/netdata.pid 2>/dev/null) \
+        $(cat /var/run/netdata/netdata.pid 2>/dev/null) \
+        $(pidof netdata 2>/dev/null)
+    do
+        ns="$(readlink /proc/${p}/ns/pid 2>/dev/null)"
+
+        if [ -z "${myns}" -o -z "${ns}" -o "${myns}" = "${ns}" ]
+            then
+            pidisnetdata ${p} && echo "${p}"
+        fi
+    done
+}
+
+stop_all_netdata() {
+    local p
+    for p in $(netdata_pids)
+    do
+        stop_netdata_on_pid ${p}
+    done
+}
+
+# -----------------------------------------------------------------------------
+# restart netdata
+
+restart_netdata() {
+    local netdata="${1}"
+    shift
+
+    local started=0
+
+    progress "Start netdata"
+
+    if [ "${UID}" -eq 0 ]
+        then
+        service netdata stop
+        stop_all_netdata
+        service netdata restart && started=1
+
+        if [ ${started} -eq 1 -a -z "$(netdata_pids)" ]
+        then
+            echo >&2 "Ooops! it seems netdata is not started."
+            started=0
+        fi
+
+        if [ ${started} -eq 0 ]
+        then
+            service netdata start && started=1
+        fi
+    fi
+
+    if [ ${started} -eq 1 -a -z "$(netdata_pids)" ]
+    then
+        echo >&2 "Hm... it seems netdata is still not started."
+        started=0
+    fi
+
+    if [ ${started} -eq 0 ]
+    then
+        # still not started...
+
+        run stop_all_netdata
+        run "${netdata}" "${@}"
+        return $?
+    fi
+
+    return 0
+}
+
+# -----------------------------------------------------------------------------
+# install netdata logrotate
+
+install_netdata_logrotate() {
+    if [ ${UID} -eq 0 ]
+        then
+        if [ -d /etc/logrotate.d ]
+            then
+            if [ ! -f /etc/logrotate.d/netdata ]
+                then
+                run cp system/netdata.logrotate /etc/logrotate.d/netdata
+            fi
+            
+            if [ -f /etc/logrotate.d/netdata ]
+                then
+                run chmod 644 /etc/logrotate.d/netdata
+            fi
+
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# download netdata.conf
+
+fix_netdata_conf() {
+    local owner="${1}"
+
+    if [ "${UID}" -eq 0 ]
+        then
+        run chown "${owner}" "${filename}"
+    fi
+    run chmod 0664 "${filename}"
+}
+
+generate_netdata_conf() {
+    local owner="${1}" filename="${2}" url="${3}"
+
+    if [ ! -s "${filename}" ]
+        then
+        cat >"${filename}" <<EOFCONF
+# netdata can generate its own config.
+# Get it with:
+#
+# wget -O ${filename} "${url}"
+#
+# or
+#
+# curl -s -o ${filename} "${url}"
+#
+EOFCONF
+        fix_netdata_conf "${owner}"
+    fi
+}
+
+download_netdata_conf() {
+    local owner="${1}" filename="${2}" url="${3}"
+
+    if [ ! -s "${filename}" ]
+        then
+        echo >&2
+        echo >&2 "-------------------------------------------------------------------------------"
+        echo >&2
+        echo >&2 "Downloading default configuration from netdata..."
+        sleep 5
+
+        # remove a possibly obsolete download
+        [ -f "${filename}.new" ] && rm "${filename}.new"
+
+        # disable a proxy to get data from the local netdata
+        export http_proxy=
+        export https_proxy=
+
+        # try curl
+        run curl -s -o "${filename}.new" "${url}"
+        ret=$?
+
+        if [ ${ret} -ne 0 -o ! -s "${filename}.new" ]
+            then
+            # try wget
+            run wget -O "${filename}.new" "${url}"
+            ret=$?
+        fi
+
+        if [ ${ret} -eq 0 -a -s "${filename}.new" ]
+            then
+            run mv "${filename}.new" "${filename}"
+            run_ok "New configuration saved for you to edit at ${filename}"
+        else
+            [ -f "${filename}.new" ] && rm "${filename}.new"
+            run_failed "Cannnot download configuration from netdata daemon using url '${url}'"
+
+            generate_netdata_conf "${owner}" "${filename}" "${url}"
+        fi
+
+        fix_netdata_conf "${owner}"
+    fi
+}
+
+
+# -----------------------------------------------------------------------------
+# add netdata user and group
+
+NETDATA_ADDED_TO_DOCKER=0
+NETDATA_ADDED_TO_NGINX=0
+NETDATA_ADDED_TO_VARNISH=0
+NETDATA_ADDED_TO_HAPROXY=0
+NETDATA_ADDED_TO_ADM=0
+NETDATA_ADDED_TO_NSD=0
+NETDATA_ADDED_TO_PROXY=0
+NETDATA_ADDED_TO_SQUID=0
+NETDATA_ADDED_TO_CEPH=0
+add_netdata_user_and_group() {
+    local homedir="${1}"
+
+    if [ ${UID} -eq 0 ]
+        then
+        portable_add_group netdata || return 1
+        portable_add_user netdata "${homedir}"  || return 1
+        portable_add_user_to_group docker   netdata && NETDATA_ADDED_TO_DOCKER=1
+        portable_add_user_to_group nginx    netdata && NETDATA_ADDED_TO_NGINX=1
+        portable_add_user_to_group varnish  netdata && NETDATA_ADDED_TO_VARNISH=1
+        portable_add_user_to_group haproxy  netdata && NETDATA_ADDED_TO_HAPROXY=1
+        portable_add_user_to_group adm      netdata && NETDATA_ADDED_TO_ADM=1
+        portable_add_user_to_group nsd      netdata && NETDATA_ADDED_TO_NSD=1
+        portable_add_user_to_group proxy    netdata && NETDATA_ADDED_TO_PROXY=1
+        portable_add_user_to_group squid    netdata && NETDATA_ADDED_TO_SQUID=1
+        portable_add_user_to_group ceph     netdata && NETDATA_ADDED_TO_CEPH=1
+
+        [ ~netdata = / ] && cat <<USERMOD
+
+The netdata user has its home directory set to /
+You may want to change it, using this command:
+
+# usermod -d "${homedir}" netdata
+
+USERMOD
+        return 0
+    fi
+
     return 1
 }

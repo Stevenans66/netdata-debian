@@ -3,8 +3,6 @@ Upstream-Name: netdata
 Upstream-Contact: Costa Tsaousis <costa@tsaousis.gr>
 Source: https://github.com/firehol/netdata
 Files-Excluded:
- python.d/python_modules/pyyaml2
- python.d/python_modules/pyyaml3
  web/old
  web/fonts
  web/.well-known
@@ -15,7 +13,7 @@ Comment:
  distributed with the tarball.
 
 Files: *
-Copyright: 2014-2017, Costa Tsaousis
+Copyright: 2014-2018, Costa Tsaousis
 License: GPL-3+
 
 Files: debian/*
@@ -30,8 +28,7 @@ Copyright: 2004 Free Software Foundation Inc.
 License: LGPL-3+
 
 Files:
- node.d/node_modules/ber/*
- node.d/node_modules/asn1.js
+ node.d/node_modules/lib/ber/*
 Copyright: 2011 Mark Cavage <mcavage@gmail.com>
 License: Expat
 
@@ -77,17 +74,18 @@ Copyright: 2016 Zhixin Wen
 License: Expat
 
 Files:
- web/lib/c3-0.4.11.min.js
- web/css/c3-0.4.11.min.css
- debian/missing-sources/c3-0.4.11.js
- debian/missing-sources/c3-0.4.11.css
+ web/lib/c3-0.4.18.min.js
+ web/css/c3-0.4.18.min.css
+ debian/missing-sources/c3-0.4.18.js
+ debian/missing-sources/c3-0.4.18.css
 Copyright: 2013 Masayuki Tanaka
 License: Expat
 
 Files:
- web/lib/dygraph-combined-dd74404.js
- web/lib/dygraph-smooth-plotter-dd74404.js
- debian/missing-sources/dygraph-combined-dd74404.js
+ web/lib/dygraph-c91c859.min.js
+ web/lib/dygraph-smooth-plotter-c91c859.js
+ debian/missing-sources/dygraph-c91c859.js
+ debian/missing-sources/dygraph-smooth-plotter-c91c859.js
 Copyright: 2014 Dan Vanderkam <danvdk@gmail.com>
 License: Expat
 
@@ -136,8 +134,8 @@ Copyright: 2016 JS Foundation
 License: Apache-2.0
 
 Files:
- web/lib/d3-3.5.17.min.js
- debian/missing-sources/d3-3.5.17.js
+ web/lib/d3-4.12.2.min.js
+ debian/missing-sources/d3-4.12.2.js
 Copyright: Copyright (C) 2013 Michael Bostock
 License: BSD-3-Clause
 
@@ -164,7 +162,13 @@ Copyright: 2016 Dmitry Baranovskiy
 License: Expat
 
 Files:
- python.d/python_modules/lm_sensors.py
+ web/lib/clipboard-polyfill-be05dad.js
+ debian/missing-sources/clipboard-polyfill-be05dad.ts
+Copyright: 2014 Lucas Garron
+License: Expat
+
+Files:
+ python.d/python_modules/third_party/lm_sensors.py
 Copyright: 2015 Pavel Rojtberg
 License: LGPL-2.1
 
@@ -172,6 +176,16 @@ Files:
  python.d/python_modules/base.py
 Copyright: 2016 Pawel Krupa
 License: GPL-3+
+
+Files:
+ python.d/python_modules/pyyaml*
+Copyright: 2006 Kirill Simonov
+License: Expat
+
+Files:
+ python.d/python_modules/urllib3/*
+Copyright: 2008-2016 Andrey Petrov and others
+License: Expat
 
 License: LGPL-3+
  This library is free software; you can redistribute it and/or modify it under

@@ -5,6 +5,7 @@
 #include <config.h>
 #endif
 
+
 // ----------------------------------------------------------------------------
 // system include files for all netdata C programs
 
@@ -40,6 +41,7 @@
 #include <strings.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -79,6 +81,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
@@ -97,6 +100,7 @@
 
 #ifdef STORAGE_WITH_MATH
 #include <math.h>
+#include <float.h>
 #endif
 
 #if defined(HAVE_INTTYPES_H)
@@ -112,6 +116,28 @@
 #ifdef HAVE_CAPABILITY
 #include <sys/capability.h>
 #endif
+
+// ----------------------------------------------------------------------------
+// netdata chart priorities
+
+// This is a work in progress - to scope is to collect here all chart priorities.
+// These should be based on the CONTEXT of the charts + the chart id when needed
+// - for each SECTION +1000 (or +X000 for big sections)
+// - for each FAMILY  +100
+// - for each CHART   +10
+
+// Memory Section - 1xxx
+#define NETDATA_CHART_PRIO_MEM_SYSTEM              1000
+#define NETDATA_CHART_PRIO_MEM_SYSTEM_AVAILABLE    1010
+#define NETDATA_CHART_PRIO_MEM_SYSTEM_COMMITTED    1020
+#define NETDATA_CHART_PRIO_MEM_SYSTEM_PGFAULTS     1030
+#define NETDATA_CHART_PRIO_MEM_KERNEL              1100
+#define NETDATA_CHART_PRIO_MEM_SLAB                1200
+#define NETDATA_CHART_PRIO_MEM_HUGEPAGES           1250
+#define NETDATA_CHART_PRIO_MEM_KSM                 1300
+#define NETDATA_CHART_PRIO_MEM_NUMA                1400
+#define NETDATA_CHART_PRIO_MEM_HW                  1500
+
 
 // ----------------------------------------------------------------------------
 // netdata common definitions
@@ -132,6 +158,12 @@
 #define NEVERNULL __attribute__((returns_nonnull))
 #else
 #define NEVERNULL
+#endif
+
+#ifdef HAVE_FUNC_ATTRIBUTE_NOINLINE
+#define NOINLINE __attribute__((noinline))
+#else
+#define NOINLINE
 #endif
 
 #ifdef HAVE_FUNC_ATTRIBUTE_MALLOC
@@ -161,7 +193,7 @@
 #ifdef abs
 #undef abs
 #endif
-#define abs(x) ((x < 0)? -x : x)
+#define abs(x) (((x) < 0)? (-(x)) : (x))
 
 #define GUID_LEN 36
 
@@ -170,6 +202,7 @@
 
 #include "clocks.h"
 #include "log.h"
+#include "threads.h"
 #include "locks.h"
 #include "simple_pattern.h"
 #include "avl.h"
@@ -201,22 +234,37 @@
 #define NETDATA_OS_TYPE "linux"
 #endif /* __FreeBSD__, __APPLE__*/
 
-#include "socket.h"
+typedef enum rrdcalc_status {
+    RRDCALC_STATUS_REMOVED       = -2,
+    RRDCALC_STATUS_UNDEFINED     = -1,
+    RRDCALC_STATUS_UNINITIALIZED =  0,
+    RRDCALC_STATUS_CLEAR         =  1,
+    RRDCALC_STATUS_RAISED        =  2,
+    RRDCALC_STATUS_WARNING       =  3,
+    RRDCALC_STATUS_CRITICAL      =  4
+} RRDCALC_STATUS;
+
 #include "eval.h"
 #include "health.h"
+
+#include "statistical.h"
+#include "socket.h"
 #include "rrd.h"
 #include "plugin_tc.h"
 #include "plugins_d.h"
+#include "statsd.h"
 #include "rrd2json.h"
 #include "rrd2json_api_old.h"
 #include "web_client.h"
 #include "web_server.h"
 #include "registry.h"
+#include "signals.h"
 #include "daemon.h"
 #include "main.h"
 #include "unit_test.h"
 #include "ipc.h"
 #include "backends.h"
+#include "backend_prometheus.h"
 #include "inlined.h"
 #include "adaptive_resortable_list.h"
 #include "rrdpush.h"
@@ -226,19 +274,22 @@
 extern char *netdata_configured_hostname;
 extern char *netdata_configured_config_dir;
 extern char *netdata_configured_log_dir;
+extern char *netdata_configured_plugins_dir_base;
 extern char *netdata_configured_plugins_dir;
 extern char *netdata_configured_web_dir;
 extern char *netdata_configured_cache_dir;
 extern char *netdata_configured_varlib_dir;
 extern char *netdata_configured_home_dir;
 extern char *netdata_configured_host_prefix;
+extern char *netdata_configured_timezone;
 
 extern void netdata_fix_chart_id(char *s);
 extern void netdata_fix_chart_name(char *s);
 
 extern void strreverse(char* begin, char* end);
 extern char *mystrsep(char **ptr, char *s);
-extern char *trim(char *s);
+extern char *trim(char *s); // remove leading and trailing spaces; may return NULL
+extern char *trim_all(char *buffer); // like trim(), but also remove duplicate spaces inside the string; may return NULL
 
 extern int  vsnprintfz(char *dst, size_t n, const char *fmt, va_list args);
 extern int  snprintfz(char *dst, size_t n, const char *fmt, ...) PRINTFLIKE(3, 4);
@@ -265,15 +316,16 @@ extern void freez(void *ptr);
 #endif
 
 extern void json_escape_string(char *dst, const char *src, size_t size);
+extern void json_fix_string(char *s);
 
 extern void *mymmap(const char *filename, size_t size, int flags, int ksm);
-extern int savememory(const char *filename, void *mem, size_t size);
+extern int memory_file_save(const char *filename, void *mem, size_t size);
 
 extern int fd_is_valid(int fd);
 
-extern int enable_ksm;
+extern struct rlimit rlimit_nofile;
 
-extern pid_t gettid(void);
+extern int enable_ksm;
 
 extern int sleep_usec(usec_t usec);
 
@@ -289,6 +341,8 @@ extern pid_t get_system_pid_max(void);
 extern unsigned int hz;
 extern void get_system_HZ(void);
 
+extern int recursively_delete_dir(const char *path, const char *reason);
+
 extern volatile sig_atomic_t netdata_exit;
 extern const char *os_type;
 
@@ -300,5 +354,7 @@ extern const char *program_version;
 #define RUSAGE_THREAD RUSAGE_CHILDREN
 #endif
 #endif
+
+#define BITS_IN_A_KILOBIT 1000
 
 #endif /* NETDATA_COMMON_H */

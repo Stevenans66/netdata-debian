@@ -46,6 +46,9 @@
 /* Define to 1 if the system has the `malloc' function attribute */
 #undef HAVE_FUNC_ATTRIBUTE_MALLOC
 
+/* Define to 1 if the system has the `noinline' function attribute */
+#undef HAVE_FUNC_ATTRIBUTE_NOINLINE
+
 /* Define to 1 if the system has the `noreturn' function attribute */
 #undef HAVE_FUNC_ATTRIBUTE_NORETURN
 
@@ -93,6 +96,9 @@
 /* Have PTHREAD_PRIO_INHERIT. */
 #undef HAVE_PTHREAD_PRIO_INHERIT
 
+/* Define to 1 if you have the `recvmmsg' function. */
+#undef HAVE_RECVMMSG
+
 /* Define to 1 if you have the <resolv.h> header file. */
 #undef HAVE_RESOLV_H
 
@@ -104,6 +110,9 @@
 
 /* Define to 1 if you have the `sched_setscheduler' function. */
 #undef HAVE_SCHED_SETSCHEDULER
+
+/* Define 1 if you have setns() function */
+#undef HAVE_SETNS
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

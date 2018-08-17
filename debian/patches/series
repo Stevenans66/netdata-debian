@@ -1,5 +1,7 @@
-0001-linked-js-css-fonts-removed-from-make.patch
+0001-python-libraries-removed-from-make.patch
 0002-remove-file-serve-restrictions-for-symlinks.patch
 0003-hide-update-button.patch
-0004-use-system-python-yaml-library.patch
-0006-fix-exim-path.patch
+0004-Debianize-path-to-exim4-binary.patch
+0005-remove-infographic-for-privacy-breach-reasons.patch
+0006-compile-on-kfreebsd-hurd.patch
+0007-python-config-directory.patch

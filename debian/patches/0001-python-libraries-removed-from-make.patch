@@ -1,0 +1,206 @@
+From: Lennart Weller <lhw@ring0.de>
+Date: Wed, 4 Apr 2018 14:22:34 +0200
+Subject: python libraries removed from make. remove unused contrib files
+
+---
+ python.d/Makefile.am                     | 106 -------------------------------
+ python.d/python_modules/bases/loaders.py |   4 +-
+ web/Makefile.am                          |  32 ----------
+ 3 files changed, 2 insertions(+), 140 deletions(-)
+
+diff --git a/python.d/Makefile.am b/python.d/Makefile.am
+index a5fcc73..3349ccf 100644
+--- a/python.d/Makefile.am
++++ b/python.d/Makefile.am
+@@ -96,109 +96,3 @@ dist_third_party_DATA = \
+     python_modules/third_party/ordereddict.py \
+     python_modules/third_party/lm_sensors.py \
+     $(NULL)
+-
+-pythonyaml2dir=$(pythonmodulesdir)/pyyaml2
+-dist_pythonyaml2_DATA = \
+-    python_modules/pyyaml2/__init__.py \
+-    python_modules/pyyaml2/composer.py \
+-    python_modules/pyyaml2/constructor.py \
+-    python_modules/pyyaml2/cyaml.py \
+-    python_modules/pyyaml2/dumper.py \
+-    python_modules/pyyaml2/emitter.py \
+-    python_modules/pyyaml2/error.py \
+-    python_modules/pyyaml2/events.py \
+-    python_modules/pyyaml2/loader.py \
+-    python_modules/pyyaml2/nodes.py \
+-    python_modules/pyyaml2/parser.py \
+-    python_modules/pyyaml2/reader.py \
+-    python_modules/pyyaml2/representer.py \
+-    python_modules/pyyaml2/resolver.py \
+-    python_modules/pyyaml2/scanner.py \
+-    python_modules/pyyaml2/serializer.py \
+-    python_modules/pyyaml2/tokens.py \
+-    $(NULL)
+-
+-pythonyaml3dir=$(pythonmodulesdir)/pyyaml3
+-dist_pythonyaml3_DATA = \
+-    python_modules/pyyaml3/__init__.py \
+-    python_modules/pyyaml3/composer.py \
+-    python_modules/pyyaml3/constructor.py \
+-    python_modules/pyyaml3/cyaml.py \
+-    python_modules/pyyaml3/dumper.py \
+-    python_modules/pyyaml3/emitter.py \
+-    python_modules/pyyaml3/error.py \
+-    python_modules/pyyaml3/events.py \
+-    python_modules/pyyaml3/loader.py \
+-    python_modules/pyyaml3/nodes.py \
+-    python_modules/pyyaml3/parser.py \
+-    python_modules/pyyaml3/reader.py \
+-    python_modules/pyyaml3/representer.py \
+-    python_modules/pyyaml3/resolver.py \
+-    python_modules/pyyaml3/scanner.py \
+-    python_modules/pyyaml3/serializer.py \
+-    python_modules/pyyaml3/tokens.py \
+-    $(NULL)
+-
+-python_urllib3dir=$(pythonmodulesdir)/urllib3
+-dist_python_urllib3_DATA = \
+-    python_modules/urllib3/__init__.py \
+-    python_modules/urllib3/_collections.py \
+-    python_modules/urllib3/connection.py \
+-    python_modules/urllib3/connectionpool.py \
+-    python_modules/urllib3/exceptions.py \
+-    python_modules/urllib3/fields.py \
+-    python_modules/urllib3/filepost.py \
+-    python_modules/urllib3/response.py \
+-    python_modules/urllib3/poolmanager.py \
+-    python_modules/urllib3/request.py \
+-    $(NULL)
+-
+-python_urllib3_utildir=$(python_urllib3dir)/util
+-dist_python_urllib3_util_DATA = \
+-    python_modules/urllib3/util/__init__.py \
+-    python_modules/urllib3/util/connection.py \
+-    python_modules/urllib3/util/request.py \
+-    python_modules/urllib3/util/response.py \
+-    python_modules/urllib3/util/retry.py \
+-    python_modules/urllib3/util/selectors.py \
+-    python_modules/urllib3/util/ssl_.py \
+-    python_modules/urllib3/util/timeout.py \
+-    python_modules/urllib3/util/url.py \
+-    python_modules/urllib3/util/wait.py \
+-    $(NULL)
+-
+-python_urllib3_packagesdir=$(python_urllib3dir)/packages
+-dist_python_urllib3_packages_DATA = \
+-    python_modules/urllib3/packages/__init__.py \
+-    python_modules/urllib3/packages/ordered_dict.py \
+-    python_modules/urllib3/packages/six.py \
+-    $(NULL)
+-
+-python_urllib3_backportsdir=$(python_urllib3_packagesdir)/backports
+-dist_python_urllib3_backports_DATA = \
+-    python_modules/urllib3/packages/backports/__init__.py \
+-    python_modules/urllib3/packages/backports/makefile.py \
+-    $(NULL)
+-
+-python_urllib3_ssl_match_hostnamedir=$(python_urllib3_packagesdir)/ssl_match_hostname
+-dist_python_urllib3_ssl_match_hostname_DATA = \
+-    python_modules/urllib3/packages/ssl_match_hostname/__init__.py \
+-    python_modules/urllib3/packages/ssl_match_hostname/_implementation.py \
+-    $(NULL)
+-
+-python_urllib3_contribdir=$(python_urllib3dir)/contrib
+-dist_python_urllib3_contrib_DATA = \
+-    python_modules/urllib3/contrib/__init__.py \
+-    python_modules/urllib3/contrib/appengine.py \
+-    python_modules/urllib3/contrib/ntlmpool.py \
+-    python_modules/urllib3/contrib/pyopenssl.py \
+-    python_modules/urllib3/contrib/securetransport.py \
+-    python_modules/urllib3/contrib/socks.py \
+-    $(NULL)
+-
+-python_urllib3_securetransportdir=$(python_urllib3_contribdir)/_securetransport
+-dist_python_urllib3_securetransport_DATA = \
+-    python_modules/urllib3/contrib/_securetransport/__init__.py \
+-    python_modules/urllib3/contrib/_securetransport/bindings.py \
+-    python_modules/urllib3/contrib/_securetransport/low_level.py \
+-    $(NULL)
+diff --git a/python.d/python_modules/bases/loaders.py b/python.d/python_modules/bases/loaders.py
+index d18b9dc..71ba221 100644
+--- a/python.d/python_modules/bases/loaders.py
++++ b/python.d/python_modules/bases/loaders.py
+@@ -8,11 +8,11 @@ from sys import version_info
+ PY_VERSION = version_info[:2]
+ 
+ if PY_VERSION > (3, 1):
+-    from pyyaml3 import SafeLoader as YamlSafeLoader
++    from yaml import SafeLoader as YamlSafeLoader
+     from importlib.machinery import SourceFileLoader
+     DEFAULT_MAPPING_TAG = 'tag:yaml.org,2002:map'
+ else:
+-    from pyyaml2 import SafeLoader as YamlSafeLoader
++    from yaml import SafeLoader as YamlSafeLoader
+     from imp import load_source as SourceFileLoader
+     DEFAULT_MAPPING_TAG = u'tag:yaml.org,2002:map'
+ 
+diff --git a/web/Makefile.am b/web/Makefile.am
+index ac92287..57595fc 100644
+--- a/web/Makefile.am
++++ b/web/Makefile.am
+@@ -4,10 +4,6 @@
+ MAINTAINERCLEANFILES= $(srcdir)/Makefile.in
+ 
+ dist_web_DATA = \
+-	demo.html \
+-	demo2.html \
+-	demosites.html \
+-	demosites2.html \
+ 	dashboard.html \
+ 	dashboard.js \
+ 	dashboard_info.js \
+@@ -28,15 +24,6 @@ dist_web_DATA = \
+ 	version.txt \
+ 	$(NULL)
+ 
+-webolddir=$(webdir)/old
+-dist_webold_DATA = \
+-	old/datasource.html \
+-	old/index.html \
+-	old/index.js \
+-	old/netdata.js \
+-	old/theme.css \
+-	$(NULL)
+-
+ weblibdir=$(webdir)/lib
+ dist_weblib_DATA = \
+ 	lib/bootstrap-3.3.7.min.js \
+@@ -75,15 +62,6 @@ dist_webcss_DATA = \
+ 	css/c3-0.4.18.min.css \
+ 	$(NULL)
+ 
+-webfontsdir=$(webdir)/fonts
+-dist_webfonts_DATA = \
+-	fonts/glyphicons-halflings-regular.eot \
+-	fonts/glyphicons-halflings-regular.svg \
+-	fonts/glyphicons-halflings-regular.ttf \
+-	fonts/glyphicons-halflings-regular.woff \
+-	fonts/glyphicons-halflings-regular.woff2 \
+-	$(NULL)
+-
+ webimagesdir=$(webdir)/images
+ dist_webimages_DATA = \
+ 	images/alert-128-orange.png \
+@@ -108,16 +86,6 @@ dist_webimages_DATA = \
+ 	images/seo-performance-multi-size.icns \
+ 	$(NULL)
+ 
+-
+-webwellknowndir=$(webdir)/.well-known
+-dist_webwellknown_DATA = \
+-	$(NULL)
+-
+-webdntdir=$(webdir)/.well-known/dnt
+-dist_webdnt_DATA = \
+-	.well-known/dnt/cookies \
+-	$(NULL)
+-
+ version.txt:
+ 	if test -d "$(top_srcdir)/.git"; then \
+ 		git --git-dir="$(top_srcdir)/.git" log -n 1 --format=%H; \

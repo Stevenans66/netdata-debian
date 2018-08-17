@@ -18,6 +18,7 @@ MAINTAINERCLEANFILES= \
 
 EXTRA_DIST = \
 	.gitignore \
+	.codacy.yml \
 	.codeclimate.yml \
 	.csslintrc \
 	.eslintignore \
@@ -37,15 +38,18 @@ EXTRA_DIST = \
     m4/ax_c__generic.m4 \
 	autogen.sh \
 	README.md \
+	LICENSE \
 	LICENSE.md \
+	LICENSE-REDISTRIBUTED.md \
 	COPYING \
 	autogen.sh \
-	tests/stress.sh \
 	$(NULL)
 
 SUBDIRS = \
 	charts.d \
 	conf.d \
+	diagrams \
+	makeself \
 	node.d \
 	plugins.d \
 	python.d \
@@ -53,24 +57,28 @@ SUBDIRS = \
 	system \
 	web \
 	contrib \
+	tests \
 	$(NULL)
 
 dist_noinst_DATA= \
-	diagrams/config.puml \
-	diagrams/registry.puml \
-	diagrams/netdata-for-ephemeral-nodes.xml \
-	diagrams/netdata-proxies-example.xml \
+	cppcheck.sh \
 	configs.signatures \
 	Dockerfile \
+	Dockerfile.alpine \
+	Dockerfile.aarch64 \
+	Dockerfile.armv7hf \
+	netdata.cppcheck \
 	netdata.spec \
+	package.json \
 	$(NULL)
 
 # until integrated within build
 # should be proper init.d/openrc/systemd usable
 dist_noinst_SCRIPTS= \
-	diagrams/build.sh \
 	coverity-scan.sh \
 	docker-build.sh \
+	kickstart.sh \
+	kickstart-static64.sh \
 	netdata-installer.sh \
 	installer/functions.sh \
 	$(NULL)

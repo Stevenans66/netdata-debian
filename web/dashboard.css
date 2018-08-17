@@ -37,16 +37,55 @@ body {
     justify-content: center;
     -webkit-justify-content: center;
     -moz-justify-content: center;
+    padding-top: 10px;
 }
 
 .netdata-container {
     display: inline-block;
     overflow: hidden;
 
+    transform: translate3d(0,0,0);
+
     /* required for child elements to have absolute position */
     position: relative;
 
     /* width and height is given per chart with data-width and data-height */
+}
+
+.netdata-container-gauge {
+    display: inline-block;
+    overflow: hidden;
+
+    transform: translate3d(0,0,0);
+
+    /* required for child elements to have absolute position */
+    position: relative;
+
+    /* width and height is given per chart with data-width and data-height */
+}
+
+.netdata-container-gauge:after {
+    padding-top: 60%;
+    display: block;
+    content: '';
+}
+
+.netdata-container-easypiechart {
+    display: inline-block;
+    overflow: hidden;
+
+    transform: translate3d(0,0,0);
+
+    /* required for child elements to have absolute position */
+    position: relative;
+
+    /* width and height is given per chart with data-width and data-height */
+}
+
+.netdata-container-easypiechart:after {
+    padding-top: 100%;
+    display: block;
+    content: '';
 }
 
 .netdata-aspect {
@@ -59,6 +98,8 @@ body {
 .netdata-container-with-legend {
     display: inline-block;
     overflow: hidden;
+
+    transform: translate3d(0,0,0);
 
     /* fix minimum scrollbar issue in firefox */
     min-height: 99px;
@@ -75,9 +116,9 @@ body {
     bottom: 0px;
     right: 0px;
     height: 15px;
-    width: 30px;
+    width: 20px;
     background-color: White;
-    font-size: 12px;
+    font-size: 15px;
     vertical-align: middle;
     line-height: 15px;
     cursor: ns-resize;
@@ -106,6 +147,12 @@ body {
     z-index: 20;
     padding: 0px;
     margin: 0px;
+
+    /* prevent text selection after double click */
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
 }
 
 .netdata-legend-toolbox-button {
@@ -124,16 +171,25 @@ body {
     padding: 0px;
     margin: 0px;
     cursor: pointer;
+
+    /* prevent text selection after double click */
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
 }
 
 .netdata-message {
     display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     text-align: left;
     vertical-align: top;
     font-weight: bold;
     font-size: x-small;
-    width: 100%;
-    height: 100%;
     overflow: hidden;
     background: inherit;
     z-index: 0;
@@ -169,12 +225,18 @@ body {
     font-size: 10px;
     font-weight: normal;
     margin-top: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .netdata-legend-title-time {
     font-size: 11px;
     font-weight: bold;
     margin-top: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .netdata-legend-title-units {
@@ -185,6 +247,9 @@ body {
     vertical-align: top;
     font-weight: normal;
     margin-top: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .netdata-legend-series {
@@ -250,6 +315,7 @@ body {
     white-space: nowrap;
     display: inline-block;
     cursor: pointer;
+    -webkit-print-color-adjust: exact;
 }
 
 .netdata-legend-value {
@@ -326,6 +392,10 @@ body {
 .dygraph-ylabel {
 }
 
+.dygraph-axis-label-x {
+    overflow-x: hidden;
+}
+
 .dygraph-label-rotate-left {
     text-align: center;
     /* See http://caniuse.com/#feat=transforms2d */
@@ -396,10 +466,10 @@ body {
     float: left;
     left: 0;
     width: 64%;
-    margin-left: 18%;
+    margin-left: 18% !important;
     text-align: center;
     color: #999999;
-    font-weight: normal;
+    font-weight: bold;
 }
 
 .easyPieChartUnits {
@@ -408,7 +478,7 @@ body {
     float: left;
     left: 0;
     width: 60%;
-    margin-left: 20%;
+    margin-left: 20% !important;
     text-align: center;
     color: #999999;
     font-weight: normal;
@@ -423,6 +493,8 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+    bottom: 0;
+    right: 0;
     z-index: 0;
 }
 
@@ -471,7 +543,7 @@ body {
     position: absolute;
     float: left;
     left: 0;
-    bottom: 10%;
+    bottom: 8%;
     width: 92%;
     margin-left: 8%;
     text-align: left;
@@ -484,7 +556,7 @@ body {
     position: absolute;
     float: left;
     left: 0;
-    bottom: 10%;
+    bottom: 8%;
     width: 95%;
     margin-right: 5%;
     text-align: right;

@@ -123,6 +123,103 @@ static inline unsigned long long str2ull(const char *s) {
     return n;
 }
 
+static inline long long str2ll(const char *s, char **endptr) {
+    int negative = 0;
+
+    if(unlikely(*s == '-')) {
+        s++;
+        negative = 1;
+    }
+    else if(unlikely(*s == '+'))
+        s++;
+
+    long long n = 0;
+    char c;
+    for(c = *s; c >= '0' && c <= '9' ; c = *(++s)) {
+        n *= 10;
+        n += c - '0';
+    }
+
+    if(unlikely(endptr))
+        *endptr = (char *)s;
+
+    if(unlikely(negative))
+        return -n;
+    else
+        return n;
+}
+
+static inline long double str2ld(const char *s, char **endptr) {
+    int negative = 0;
+    const char *start = s;
+    unsigned long long integer_part = 0;
+    unsigned long decimal_part = 0;
+    size_t decimal_digits = 0;
+
+    switch(*s) {
+        case '-':
+            s++;
+            negative = 1;
+            break;
+
+        case '+':
+            s++;
+            break;
+
+        case 'n':
+            if(s[1] == 'a' && s[2] == 'n') {
+                if(endptr) *endptr = (char *)&s[3];
+                return NAN;
+            }
+            break;
+
+        case 'i':
+            if(s[1] == 'n' && s[2] == 'f') {
+                if(endptr) *endptr = (char *)&s[3];
+                return INFINITY;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    while (*s >= '0' && *s <= '9') {
+        integer_part = (integer_part * 10) + (*s - '0');
+        s++;
+    }
+
+    if(unlikely(*s == '.')) {
+        decimal_part = 0;
+        s++;
+
+        while (*s >= '0' && *s <= '9') {
+            decimal_part = (decimal_part * 10) + (*s - '0');
+            s++;
+            decimal_digits++;
+        }
+    }
+
+    if(unlikely(*s == 'e' || *s == 'E'))
+        return strtold(start, endptr);
+
+    if(unlikely(endptr))
+        *endptr = (char *)s;
+
+    if(unlikely(negative)) {
+        if(unlikely(decimal_digits))
+            return -((long double)integer_part + (long double)decimal_part / powl(10.0, decimal_digits));
+        else
+            return -((long double)integer_part);
+    }
+    else {
+        if(unlikely(decimal_digits))
+            return (long double)integer_part + (long double)decimal_part / powl(10.0, decimal_digits);
+        else
+            return (long double)integer_part;
+    }
+}
+
 #ifdef NETDATA_STRCMP_OVERRIDE
 #ifdef strcmp
 #undef strcmp
@@ -147,25 +244,47 @@ static inline char *strncpyz(char *dst, const char *src, size_t n) {
     return p;
 }
 
-static inline int read_single_number_file(const char *filename, unsigned long long *result) {
-    char buffer[30 + 1];
-
+static inline int read_file(const char *filename, char *buffer, size_t size) {
     int fd = open(filename, O_RDONLY, 0666);
-    if(unlikely(fd == -1)) {
-        *result = 0;
+    if(unlikely(fd == -1))
         return 1;
-    }
 
-    ssize_t r = read(fd, buffer, 30);
+    ssize_t r = read(fd, buffer, size);
     if(unlikely(r == -1)) {
-        *result = 0;
         close(fd);
         return 2;
     }
+    buffer[r] = '\0';
 
     close(fd);
+    return 0;
+}
+
+static inline int read_single_number_file(const char *filename, unsigned long long *result) {
+    char buffer[30 + 1];
+
+    int ret = read_file(filename, buffer, 30);
+    if(unlikely(ret)) {
+        *result = 0;
+        return ret;
+    }
+
     buffer[30] = '\0';
     *result = str2ull(buffer);
+    return 0;
+}
+
+static inline int read_single_signed_number_file(const char *filename, long long *result) {
+    char buffer[30 + 1];
+
+    int ret = read_file(filename, buffer, 30);
+    if(unlikely(ret)) {
+        *result = 0;
+        return ret;
+    }
+
+    buffer[30] = '\0';
+    *result = atoll(buffer);
     return 0;
 }
 

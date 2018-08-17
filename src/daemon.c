@@ -3,45 +3,6 @@
 
 char pidfile[FILENAME_MAX + 1] = "";
 
-void sig_handler_exit(int signo)
-{
-    if(signo) {
-        error_log_limit_unlimited();
-        error("Received signal %d. Exiting...", signo);
-        netdata_exit = 1;
-    }
-}
-
-void sig_handler_logrotate(int signo)
-{
-    if(signo) {
-        error_log_limit_unlimited();
-        info("Received signal %d to re-open the log files", signo);
-        reopen_all_log_files();
-        error_log_limit_reset();
-    }
-}
-
-void sig_handler_save(int signo)
-{
-    if(signo) {
-        error_log_limit_unlimited();
-        info("Received signal %d to save the database...", signo);
-        rrdhost_save_all();
-        error_log_limit_reset();
-    }
-}
-
-void sig_handler_reload_health(int signo)
-{
-    if(signo) {
-        error_log_limit_unlimited();
-        info("Received signal %d to reload health configuration...", signo);
-        health_reload();
-        error_log_limit_reset();
-    }
-}
-
 static void chown_open_file(int fd, uid_t uid, gid_t gid) {
     if(fd == -1) return;
 
@@ -73,8 +34,9 @@ void create_needed_dir(const char *dir, uid_t uid, gid_t gid)
         error("Cannot create directory '%s'", dir);
 }
 
-int become_user(const char *username, int pid_fd)
-{
+int become_user(const char *username, int pid_fd) {
+    int am_i_root = (getuid() == 0)?1:0;
+
     struct passwd *pw = getpwnam(username);
     if(!pw) {
         error("User %s is not present.", username);
@@ -94,12 +56,12 @@ int become_user(const char *username, int pid_fd)
 
     int ngroups = (int)sysconf(_SC_NGROUPS_MAX);
     gid_t *supplementary_groups = NULL;
-    if(ngroups) {
+    if(ngroups > 0) {
         supplementary_groups = mallocz(sizeof(gid_t) * ngroups);
         if(getgrouplist(username, gid, supplementary_groups, &ngroups) == -1) {
-            error("Cannot get supplementary groups of user '%s'.", username);
-            freez(supplementary_groups);
-            supplementary_groups = NULL;
+            if(am_i_root)
+                error("Cannot get supplementary groups of user '%s'.", username);
+
             ngroups = 0;
         }
     }
@@ -109,13 +71,16 @@ int become_user(const char *username, int pid_fd)
     chown_open_file(stdaccess_fd, uid, gid);
     chown_open_file(pid_fd, uid, gid);
 
-    if(supplementary_groups && ngroups) {
-        if(setgroups(ngroups, supplementary_groups) == -1)
-            error("Cannot set supplementary groups for user '%s'", username);
-
-        freez(supplementary_groups);
+    if(supplementary_groups && ngroups > 0) {
+        if(setgroups((size_t)ngroups, supplementary_groups) == -1) {
+            if(am_i_root)
+                error("Cannot set supplementary groups for user '%s'", username);
+        }
         ngroups = 0;
     }
+
+    if(supplementary_groups)
+        freez(supplementary_groups);
 
 #ifdef __APPLE__
     if(setregid(gid, gid) != 0) {
@@ -155,22 +120,78 @@ int become_user(const char *username, int pid_fd)
     return(0);
 }
 
-static void oom_score_adj(void) {
-    int score = (int)config_get_number(CONFIG_SECTION_GLOBAL, "OOM score", 1000);
+#ifndef OOM_SCORE_ADJ_MAX
+#define OOM_SCORE_ADJ_MAX (1000)
+#endif
+#ifndef OOM_SCORE_ADJ_MIN
+#define OOM_SCORE_ADJ_MIN (-1000)
+#endif
 
-    int done = 0;
-    int fd = open("/proc/self/oom_score_adj", O_WRONLY);
-    if(fd != -1) {
-        char buf[10 + 1];
-        ssize_t len = snprintfz(buf, 10, "%d", score);
-        if(len > 0 && write(fd, buf, (size_t)len) == len) done = 1;
-        close(fd);
+static void oom_score_adj(void) {
+    char buf[30 + 1];
+    long long int old_score, wanted_score = OOM_SCORE_ADJ_MAX, final_score = 0;
+
+    // read the existing score
+    if(read_single_signed_number_file("/proc/self/oom_score_adj", &old_score)) {
+        error("Out-Of-Memory (OOM) score setting is not supported on this system.");
+        return;
     }
 
-    if(!done)
-        error("Cannot adjust my Out-Of-Memory score to %d.", score);
+    if(old_score != 0)
+        wanted_score = old_score;
+
+    // check the environment
+    char *s = getenv("OOMScoreAdjust");
+    if(!s || !*s) {
+        snprintfz(buf, 30, "%d", (int)wanted_score);
+        s = buf;
+    }
+
+    // check netdata.conf configuration
+    s = config_get(CONFIG_SECTION_GLOBAL, "OOM score", s);
+    if(s && *s && (isdigit(*s) || *s == '-' || *s == '+'))
+        wanted_score = atoll(s);
+    else {
+        info("Out-Of-Memory (OOM) score not changed due to non-numeric setting: '%s' (running with %d)", s, (int)old_score);
+        return;
+    }
+
+    if(wanted_score < OOM_SCORE_ADJ_MIN) {
+        error("Wanted Out-Of-Memory (OOM) score %d is too small. Using %d", (int)wanted_score, (int)OOM_SCORE_ADJ_MIN);
+        wanted_score = OOM_SCORE_ADJ_MIN;
+    }
+
+    if(wanted_score > OOM_SCORE_ADJ_MAX) {
+        error("Wanted Out-Of-Memory (OOM) score %d is too big. Using %d", (int)wanted_score, (int)OOM_SCORE_ADJ_MAX);
+        wanted_score = OOM_SCORE_ADJ_MAX;
+    }
+
+    if(old_score == wanted_score) {
+        info("Out-Of-Memory (OOM) score is already set to the wanted value %d", (int)old_score);
+        return;
+    }
+
+    int written = 0;
+    int fd = open("/proc/self/oom_score_adj", O_WRONLY);
+    if(fd != -1) {
+        snprintfz(buf, 30, "%d", (int)wanted_score);
+        ssize_t len = strlen(buf);
+        if(len > 0 && write(fd, buf, (size_t)len) == len) written = 1;
+        close(fd);
+
+        if(written) {
+            if(read_single_signed_number_file("/proc/self/oom_score_adj", &final_score))
+                error("Adjusted my Out-Of-Memory (OOM) score to %d, but cannot verify it.", (int)wanted_score);
+            else if(final_score == wanted_score)
+                info("Adjusted my Out-Of-Memory (OOM) score from %d to %d.", (int)old_score, (int)final_score);
+            else
+                error("Adjusted my Out-Of-Memory (OOM) score from %d to %d, but it has been set to %d.", (int)old_score, (int)wanted_score, (int)final_score);
+        }
+        else
+            error("Failed to adjust my Out-Of-Memory (OOM) score to %d. Running with %d. (systemd systems may change it via netdata.service)", (int)wanted_score, (int)old_score);
+    }
     else
-        debug(D_SYSTEM, "Adjusted my Out-Of-Memory score to %d.", score);
+        error("Failed to adjust my Out-Of-Memory (OOM) score. Cannot open /proc/self/oom_score_adj for writing.");
 }
 
 static void process_nice_level(void) {
@@ -244,6 +265,7 @@ static void sched_setscheduler_set(void) {
         for(i = 0 ; scheduler_defaults[i].name ; i++) {
             if(!strcmp(name, scheduler_defaults[i].name)) {
                 found = 1;
+                policy = scheduler_defaults[i].policy;
                 priority = scheduler_defaults[i].priority;
                 flags = scheduler_defaults[i].flags;
 
@@ -254,14 +276,16 @@ static void sched_setscheduler_set(void) {
                     priority = (int)config_get_number(CONFIG_SECTION_GLOBAL, "process scheduling priority", priority);
 
 #ifdef HAVE_SCHED_GET_PRIORITY_MIN
+                errno = 0;
                 if(priority < sched_get_priority_min(policy)) {
-                    error("scheduler %s priority %d is below the minimum %d. Using the minimum.", name, priority, sched_get_priority_min(policy));
+                    error("scheduler %s (%d) priority %d is below the minimum %d. Using the minimum.", name, policy, priority, sched_get_priority_min(policy));
                     priority = sched_get_priority_min(policy);
                 }
 #endif
 #ifdef HAVE_SCHED_GET_PRIORITY_MAX
+                errno = 0;
                 if(priority > sched_get_priority_max(policy)) {
-                    error("scheduler %s priority %d is above the maximum %d. Using the maximum.", name, priority, sched_get_priority_max(policy));
+                    error("scheduler %s (%d) priority %d is above the maximum %d. Using the maximum.", name, policy, priority, sched_get_priority_max(policy));
                     priority = sched_get_priority_max(policy);
                 }
 #endif
@@ -270,7 +294,7 @@ static void sched_setscheduler_set(void) {
         }
 
         if(!found) {
-            error("Unknown scheduling policy %s - falling back to nice()", name);
+            error("Unknown scheduling policy '%s' - falling back to nice", name);
             goto fallback;
         }
 
@@ -278,12 +302,13 @@ static void sched_setscheduler_set(void) {
                 .sched_priority = priority
         };
 
+        errno = 0;
         i = sched_setscheduler(0, policy, &param);
         if(i != 0) {
-            error("Cannot adjust netdata scheduling policy to %s (%d), with priority %d. Falling back to nice", name, policy, priority);
+            error("Cannot adjust netdata scheduling policy to %s (%d), with priority %d. Falling back to nice.", name, policy, priority);
         }
         else {
-            debug(D_SYSTEM, "Adjusted netdata scheduling policy to %s (%d), with priority %d.", name, policy, priority);
+            info("Adjusted netdata scheduling policy to %s (%d), with priority %d.", name, policy, priority);
             if(!(flags & SCHED_FLAG_USE_NICE))
                 return;
         }

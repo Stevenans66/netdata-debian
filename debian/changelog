@@ -1,8 +1,68 @@
-netdata (1.6.0+dfsg-3~bpo9+1) stretch-backports; urgency=medium
+netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
 
-  * Rebuild for stretch-backports
+  [ Lennart Weller ]
+  * Add support for kfreebsd/hurd
 
- -- Federico Ceratto <federico@debian.org>  Sat, 15 Jul 2017 20:15:59 +0100
+  [ Daniel Baumann ]
+  * Updating my email address in uploaders field.
+  * Adding initial Russian debconf translations from Lev Lamberov
+    <dogsleg@debian.org> (Closes: #898185).
+  * Adding initial Portuguese debconf translations from Rui Branco
+    <ruipb@debianpt.org> (Closes: #898291).
+  * Adding initial French debconf translations from Alban Vidal
+    <alban.vidal@zordhak.fr> (Closes: #898829).
+  * Updating year in copyright for current upstream version.
+  * Adding initial Dutch debconf translations from Frans Spiesschaert
+    <Frans.Spiesschaert@yucom.be> (Closes: #899023).
+  * Removing explicit use of --parallel in rules, this is already used by
+    default with the currently used debhelper version.
+  * Updating watch file to version 4, no changes required.
+  * Adding Rules-Requires-Root filed in control.
+  * Updating standards version to 4.1.5, no changes required.
+  * Adding patch from Sander Klein <debian-bugs@roedie.nl> to fix the
+    python config directory path (Closes: #904134).
+
+ -- Lennart Weller <lhw@ring0.de>  Tue, 15 May 2018 14:58:06 +0200
+
+netdata (1.10.0+dfsg-1) unstable; urgency=medium
+
+  [ Federico Ceratto ]
+  * New upstream release
+
+  [ Lennart Weller ]
+  * Patch by Daniel Baumann to enable SEND_EMAILS configuration
+    (Closes: #888815)
+  * Patch by Simon Deziel to fallback to suid in containers (Closes: #890139)
+  * Added Daniel Baumann <daniel@debian.org> to Uploaders
+
+ -- Federico Ceratto <federico@debian.org>  Thu, 03 May 2018 11:40:30 +0100
+
+netdata (1.9.0+dfsg-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #885634)
+
+ -- Federico Ceratto <federico@debian.org>  Fri, 26 Jan 2018 23:57:51 +0000
+
+netdata (1.8.0+dfsg-1) unstable; urgency=medium
+
+  [ Lennart Weller ]
+  * New upstream release
+  * Maintscript update to hopefully rename old config files (Closes: #869200)
+
+ -- Federico Ceratto <federico@debian.org>  Tue, 19 Sep 2017 18:40:00 +0100
+
+netdata (1.7.0+dfsg-1) unstable; urgency=medium
+
+  [ Lennart Weller ]
+  * New upstream release (Closes: #868662)
+  * Rudimentary solution to the sysvinit conundrum (Closes: #861713)
+  * Remove old config files from <1.6.0 with maintscript (Closes: #869200)
+  * Add a recommendation for curl. Fixing telegram pushes (Closes: #872799)
+
+  [ Federico Ceratto ]
+  * Remove James Cowgill from Uploaders (Closes: #872245)
+
+ -- Federico Ceratto <federico@debian.org>  Thu, 24 Aug 2017 19:38:48 +0100
 
 netdata (1.6.0+dfsg-3) unstable; urgency=medium
 
