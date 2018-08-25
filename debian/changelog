@@ -22,6 +22,8 @@ netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
   * Adding patch from Sander Klein <debian-bugs@roedie.nl> to fix the
     python config directory path (Closes: #904134).
   * Updating to standards version 4.2.0.
+  * Adding initial German debconf translations from Helge Kreutzmann
+    <debian@helgefjell.de> (Closes: #905759).
 
   [ Federico Ceratto ]
   * Add CI conf
