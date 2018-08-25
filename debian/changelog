@@ -1,4 +1,4 @@
-netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
+netdata (1.10.0+dfsg-2) unstable; urgency=medium
 
   [ Lennart Weller ]
   * Add support for kfreebsd/hurd
@@ -28,7 +28,7 @@ netdata (1.10.0+dfsg-2) UNRELEASED; urgency=medium
   [ Federico Ceratto ]
   * Add CI conf
 
- -- Lennart Weller <lhw@ring0.de>  Tue, 15 May 2018 14:58:06 +0200
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 25 Aug 2018 16:52:52 +0200
 
 netdata (1.10.0+dfsg-1) unstable; urgency=medium
 
