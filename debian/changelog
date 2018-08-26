@@ -4,6 +4,8 @@ netdata (1.10.0+dfsg-3) UNRELEASED; urgency=medium
   * Updating to standards version 4.2.1.
   * Adding patch from Sander Klein <debian-bugs@roedie.nl> to force
     python3 (Closes: #906329).
+  * Adding patch to skip debian files in upstream's makefile, thanks to
+    Sander Klein <debian-bugs@roedie.nl>.
 
  -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 25 Aug 2018 17:26:10 +0200
 
