@@ -1,6 +1,9 @@
 netdata (1.10.0+dfsg-3) UNRELEASED; urgency=medium
 
   * Running wrap-and-sort on debian/control.
+  * Updating to standards version 4.2.1.
+  * Adding patch from Sander Klein <debian-bugs@roedie.nl> to force
+    python3 (Closes: #906329).
 
  -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 25 Aug 2018 17:26:10 +0200
 
