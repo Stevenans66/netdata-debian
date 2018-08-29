@@ -6,4 +6,4 @@
 0006-compile-on-kfreebsd-hurd.patch
 0007-python-config-directory.patch
 0008-force-python3.patch
-0009-remove-debian-files-from-contrib.patch
+0009-debian-files-removed-from-make.patch

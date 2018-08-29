@@ -1,10 +1,17 @@
---- a/plugins.d/python.d.plugin
-+++ b/plugins.d/python.d.plugin
+Author: Sander Klein <debian-bugs@roedie.nl>
+Description: Force usage of python3
+ Debian uses Python2 by default. The netdata package installs the
+ Python3 dependencies. So, in order to work correctly it must use
+ Python3.
+
+diff -Naurp netdata.orig/plugins.d/python.d.plugin netdata/plugins.d/python.d.plugin
+--- netdata.orig/plugins.d/python.d.plugin
++++ netdata/plugins.d/python.d.plugin
 @@ -1,6 +1,4 @@
 -#!/usr/bin/env bash
 -'''':; exec "$(command -v python || command -v python3 || command -v python2 ||
 -echo "ERROR python IS NOT AVAILABLE IN THIS SYSTEM")" "$0" "$@" # '''
 +#!/usr/bin/python3
- 
+
  # -*- coding: utf-8 -*-
  # Description:
