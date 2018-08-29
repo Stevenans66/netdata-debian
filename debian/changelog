@@ -1,4 +1,4 @@
-netdata (1.10.0+dfsg-3.1) UNRELEASED; urgency=medium
+netdata (1.10.0+dfsg-3~sk.1) unstable; urgency=medium
 
   [ Daniel Baumann ]
   * Running wrap-and-sort on debian/control.
