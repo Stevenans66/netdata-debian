@@ -1,5 +1,6 @@
-netdata (1.10.0+dfsg-3) UNRELEASED; urgency=medium
+netdata (1.10.0+dfsg-3~sk.1) unstable; urgency=medium
 
+  [ Daniel Baumann ]
   * Running wrap-and-sort on debian/control.
   * Updating to standards version 4.2.1.
   * Adding patch from Sander Klein <debian-bugs@roedie.nl> to force
@@ -8,7 +9,11 @@ netdata (1.10.0+dfsg-3) UNRELEASED; urgency=medium
     Sander Klein <debian-bugs@roedie.nl>.
   * Removing superfluous comma in copyright file.
 
- -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 25 Aug 2018 17:26:10 +0200
+  [ roedie ]
+  * Install cgroup binary
+  * Rebuild for own usage
+
+ -- Sander Klein <github@roedie.nl>  Wed, 29 Aug 2018 12:10:18 +0200
 
 netdata (1.10.0+dfsg-2) unstable; urgency=medium
 
