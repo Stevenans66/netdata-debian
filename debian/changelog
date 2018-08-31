@@ -7,6 +7,8 @@ netdata (1.10.0+dfsg-3) UNRELEASED; urgency=medium
   * Adding patch to skip debian files in upstream's makefile, thanks to
     Sander Klein <debian-bugs@roedie.nl>.
   * Removing superfluous comma in copyright file.
+  * Adding new cgroup-network binary in netdata package, thanks to Sander
+    Klein <debian-bugs@roedie.nl> (Closes: #907550).
 
  -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 25 Aug 2018 17:26:10 +0200
 
