@@ -35,11 +35,11 @@ PermissionsStartOnly=true
 CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE CAP_SETGID CAP_SETUID CAP_NET_RAW
 PrivateTmp=true
 ProtectHome=read-only
-ProtectSystem=full
+#ProtectSystem=full
 
-ReadOnlyDirectories=/
-ReadWriteDirectories=/proc/self
-ReadWriteDirectories=/var
+#ReadOnlyDirectories=/
+#ReadWriteDirectories=/proc/self
+#ReadWriteDirectories=/var
 
 # Access to devices and kernel modules and tunables is required
 PrivateDevices=no
