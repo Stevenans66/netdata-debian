@@ -83,14 +83,16 @@ subdir = makeself
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(dist_noinst_SCRIPTS) $(dist_noinst_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
-	$(top_srcdir)/m4/ax_c__generic.m4 $(top_srcdir)/m4/ax_c_lto.m4 \
-	$(top_srcdir)/m4/ax_c_mallinfo.m4 \
-	$(top_srcdir)/m4/ax_c_mallopt.m4 \
-	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
-	$(top_srcdir)/m4/ax_gcc_func_attribute.m4 \
-	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/jemalloc.m4 \
-	$(top_srcdir)/m4/tcmalloc.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/build/m4/ax_c___atomic.m4 \
+	$(top_srcdir)/build/m4/ax_c__generic.m4 \
+	$(top_srcdir)/build/m4/ax_c_lto.m4 \
+	$(top_srcdir)/build/m4/ax_c_mallinfo.m4 \
+	$(top_srcdir)/build/m4/ax_c_mallopt.m4 \
+	$(top_srcdir)/build/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/build/m4/ax_gcc_func_attribute.m4 \
+	$(top_srcdir)/build/m4/ax_pthread.m4 \
+	$(top_srcdir)/build/m4/jemalloc.m4 \
+	$(top_srcdir)/build/m4/tcmalloc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -217,6 +219,7 @@ build = @build@
 build_alias = @build_alias@
 build_cpu = @build_cpu@
 build_os = @build_os@
+build_target = @build_target@
 build_vendor = @build_vendor@
 builddir = @builddir@
 cachedir = @cachedir@
@@ -238,6 +241,7 @@ htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
+libconfigdir = @libconfigdir@
 libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
@@ -264,6 +268,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 varlibdir = @varlibdir@
 webdir = @webdir@
+
+# SPDX-License-Identifier: GPL-3.0-or-later
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 dist_noinst_DATA = \
 	$(NULL)
@@ -275,8 +281,8 @@ dist_noinst_SCRIPTS = \
 	install-alpine-packages.sh \
 	post-installer.sh \
 	jobs/10-prepare-destination.install.sh \
-	jobs/50-curl-7.53.1.install.sh \
-	jobs/50-bash-4.4.install.sh \
+	jobs/50-curl-7.60.0.install.sh \
+	jobs/50-bash-4.4.18.install.sh \
 	jobs/50-fping-4.0.install.sh \
 	jobs/70-netdata-git.install.sh \
 	jobs/99-makeself.install.sh \
