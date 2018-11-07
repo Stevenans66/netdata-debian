@@ -109,7 +109,7 @@ netdata (1.6.0+dfsg-1) unstable; urgency=medium
   * Add CAP_SETUID permission for the service (Closes: #856500)
   * Change logrotate to weekly (Closes: #857305)
     We do the weekly logrotate for now as SIGHUP is not working correctly.
-    See https://github.com/firehol/netdata/issues/805
+    See https://github.com/netdata/netdata/issues/805
 
  -- Federico Ceratto <federico@debian.org>  Wed, 03 May 2017 14:21:50 +0100
 
