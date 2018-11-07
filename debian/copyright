@@ -3,11 +3,9 @@ Upstream-Name: netdata
 Upstream-Contact: Costa Tsaousis <costa@tsaousis.gr>
 Source: https://github.com/firehol/netdata
 Files-Excluded:
- web/old
- web/fonts
- web/.well-known
- web/css/font-awesome.min.css
- web/demo*
+ web/gui/fonts
+ web/gui/.well-known
+ web/gui/demo*
 Comment:
  Excluded files are available as debian package or are old files still being
  distributed with the tarball.
