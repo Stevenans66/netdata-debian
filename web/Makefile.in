@@ -14,6 +14,8 @@
 
 @SET_MAKE@
 
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -80,19 +82,18 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = web
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(dist_web_DATA) $(dist_webcss_DATA) $(dist_webdnt_DATA) \
-	$(dist_webfonts_DATA) $(dist_webimages_DATA) \
-	$(dist_weblib_DATA) $(dist_webold_DATA) \
-	$(dist_webwellknown_DATA)
+	$(dist_noinst_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_c___atomic.m4 \
-	$(top_srcdir)/m4/ax_c__generic.m4 $(top_srcdir)/m4/ax_c_lto.m4 \
-	$(top_srcdir)/m4/ax_c_mallinfo.m4 \
-	$(top_srcdir)/m4/ax_c_mallopt.m4 \
-	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
-	$(top_srcdir)/m4/ax_gcc_func_attribute.m4 \
-	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/jemalloc.m4 \
-	$(top_srcdir)/m4/tcmalloc.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/build/m4/ax_c___atomic.m4 \
+	$(top_srcdir)/build/m4/ax_c__generic.m4 \
+	$(top_srcdir)/build/m4/ax_c_lto.m4 \
+	$(top_srcdir)/build/m4/ax_c_mallinfo.m4 \
+	$(top_srcdir)/build/m4/ax_c_mallopt.m4 \
+	$(top_srcdir)/build/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/build/m4/ax_gcc_func_attribute.m4 \
+	$(top_srcdir)/build/m4/ax_pthread.m4 \
+	$(top_srcdir)/build/m4/jemalloc.m4 \
+	$(top_srcdir)/build/m4/tcmalloc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -113,48 +114,74 @@ am__v_at_0 = @
 am__v_at_1 = 
 SOURCES =
 DIST_SOURCES =
+RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
+	ctags-recursive dvi-recursive html-recursive info-recursive \
+	install-data-recursive install-dvi-recursive \
+	install-exec-recursive install-html-recursive \
+	install-info-recursive install-pdf-recursive \
+	install-ps-recursive install-recursive installcheck-recursive \
+	installdirs-recursive pdf-recursive ps-recursive \
+	tags-recursive uninstall-recursive
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  test -z "$$files" \
-    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-         $(am__cd) "$$dir" && rm -f $$files; }; \
-  }
-am__installdirs = "$(DESTDIR)$(webdir)" "$(DESTDIR)$(webcssdir)" \
-	"$(DESTDIR)$(webdntdir)" "$(DESTDIR)$(webfontsdir)" \
-	"$(DESTDIR)$(webimagesdir)" "$(DESTDIR)$(weblibdir)" \
-	"$(DESTDIR)$(webolddir)" "$(DESTDIR)$(webwellknowndir)"
-DATA = $(dist_web_DATA) $(dist_webcss_DATA) $(dist_webdnt_DATA) \
-	$(dist_webfonts_DATA) $(dist_webimages_DATA) \
-	$(dist_weblib_DATA) $(dist_webold_DATA) \
-	$(dist_webwellknown_DATA)
+DATA = $(dist_noinst_DATA)
+RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+  distclean-recursive maintainer-clean-recursive
+am__recursive_targets = \
+  $(RECURSIVE_TARGETS) \
+  $(RECURSIVE_CLEAN_TARGETS) \
+  $(am__extra_recursive_targets)
+AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
+	distdir
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
+# Read a list of newline-separated strings from the standard input,
+# and print each of them once, without duplicates.  Input order is
+# *not* preserved.
+am__uniquify_input = $(AWK) '\
+  BEGIN { nonempty = 0; } \
+  { items[$$0] = 1; nonempty = 1; } \
+  END { if (nonempty) { for (i in items) print i; }; } \
+'
+# Make sure the list of sources is unique.  This is necessary because,
+# e.g., the same source file might be shared among _SOURCES variables
+# for different programs/libraries.
+am__define_uniq_tagged_files = \
+  list='$(am__tagged_files)'; \
+  unique=`for i in $$list; do \
+    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+  done | $(am__uniquify_input)`
+ETAGS = etags
+CTAGS = ctags
+DIST_SUBDIRS = $(SUBDIRS)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+am__relativize = \
+  dir0=`pwd`; \
+  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
+  sed_rest='s,^[^/]*/*,,'; \
+  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
+  sed_butlast='s,/*[^/]*$$,,'; \
+  while test -n "$$dir1"; do \
+    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
+    if test "$$first" != "."; then \
+      if test "$$first" = ".."; then \
+        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
+        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
+      else \
+        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
+        if test "$$first2" = "$$first"; then \
+          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
+        else \
+          dir2="../$$dir2"; \
+        fi; \
+        dir0="$$dir0"/"$$first"; \
+      fi; \
+    fi; \
+    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
+  done; \
+  reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -252,6 +279,7 @@ build = @build@
 build_alias = @build_alias@
 build_cpu = @build_cpu@
 build_os = @build_os@
+build_target = @build_target@
 build_vendor = @build_vendor@
 builddir = @builddir@
 cachedir = @cachedir@
@@ -273,6 +301,7 @@ htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
+libconfigdir = @libconfigdir@
 libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
@@ -299,126 +328,19 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 varlibdir = @varlibdir@
 webdir = @webdir@
-
-#
-# Copyright (C) 2015 Alon Bar-Lev <alon.barlev@gmail.com>
-#
+AUTOMAKE_OPTIONS = subdir-objects
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
-dist_web_DATA = \
-	demo.html \
-	demo2.html \
-	demosites.html \
-	demosites2.html \
-	dashboard.html \
-	dashboard.js \
-	dashboard_info.js \
-	dashboard_info_custom_example.js \
-	dashboard.css \
-	dashboard.slate.css \
-	favicon.ico \
-	goto-host-from-alarm.html \
-	index.html \
-	infographic.html \
-	netdata-swagger.yaml \
-	netdata-swagger.json \
-	robots.txt \
-	refresh-badges.js \
-	registry.html \
-	sitemap.xml \
-	tv.html \
-	version.txt \
+SUBDIRS = \
+    api \
+    gui \
+    server \
+    $(NULL)
+
+dist_noinst_DATA = \
+	README.md \
 	$(NULL)
 
-webolddir = $(webdir)/old
-dist_webold_DATA = \
-	old/datasource.html \
-	old/index.html \
-	old/index.js \
-	old/netdata.js \
-	old/theme.css \
-	$(NULL)
-
-weblibdir = $(webdir)/lib
-dist_weblib_DATA = \
-	lib/bootstrap-3.3.7.min.js \
-	lib/bootstrap-slider-10.0.0.min.js \
-	lib/bootstrap-table-1.11.0.min.js \
-	lib/bootstrap-table-export-1.11.0.min.js \
-	lib/bootstrap-toggle-2.2.2.min.js \
-	lib/clipboard-polyfill-be05dad.js \
-	lib/c3-0.4.18.min.js \
-	lib/d3-4.12.2.min.js \
-	lib/d3pie-0.2.1-netdata-3.js \
-	lib/dygraph-c91c859.min.js \
-	lib/dygraph-smooth-plotter-c91c859.js \
-	lib/fontawesome-all-5.0.1.min.js \
-	lib/gauge-1.3.2.min.js \
-	lib/jquery-2.2.4.min.js \
-	lib/jquery.easypiechart-97b5824.min.js \
-	lib/jquery.peity-3.2.0.min.js \
-	lib/jquery.sparkline-2.1.2.min.js \
-	lib/lz-string-1.4.4.min.js \
-	lib/morris-0.5.1.min.js \
-	lib/pako-1.0.6.min.js \
-	lib/perfect-scrollbar-0.6.15.min.js \
-	lib/raphael-2.2.4-min.js \
-	lib/tableExport-1.6.0.min.js \
-	$(NULL)
-
-webcssdir = $(webdir)/css
-dist_webcss_DATA = \
-	css/morris-0.5.1.css \
-	css/bootstrap-3.3.7.css \
-	css/bootstrap-theme-3.3.7.min.css \
-	css/bootstrap-slate-flat-3.3.7.css \
-	css/bootstrap-slider-10.0.0.min.css \
-	css/bootstrap-toggle-2.2.2.min.css \
-	css/c3-0.4.18.min.css \
-	$(NULL)
-
-webfontsdir = $(webdir)/fonts
-dist_webfonts_DATA = \
-	fonts/glyphicons-halflings-regular.eot \
-	fonts/glyphicons-halflings-regular.svg \
-	fonts/glyphicons-halflings-regular.ttf \
-	fonts/glyphicons-halflings-regular.woff \
-	fonts/glyphicons-halflings-regular.woff2 \
-	$(NULL)
-
-webimagesdir = $(webdir)/images
-dist_webimages_DATA = \
-	images/alert-128-orange.png \
-	images/alert-128-red.png \
-	images/alert-multi-size-orange.ico \
-	images/alert-multi-size-red.ico \
-	images/animated.gif \
-	images/check-mark-2-128-green.png \
-	images/check-mark-2-multi-size-green.ico \
-	images/post.png \
-	images/seo-performance-16.png \
-	images/seo-performance-24.png \
-	images/seo-performance-32.png \
-	images/seo-performance-48.png \
-	images/seo-performance-64.png \
-	images/seo-performance-72.png \
-	images/seo-performance-114.png \
-	images/seo-performance-128.png \
-	images/seo-performance-256.png \
-	images/seo-performance-512.png \
-	images/seo-performance-multi-size.ico \
-	images/seo-performance-multi-size.icns \
-	$(NULL)
-
-webwellknowndir = $(webdir)/.well-known
-dist_webwellknown_DATA = \
-	$(NULL)
-
-webdntdir = $(webdir)/.well-known/dnt
-dist_webdnt_DATA = \
-	.well-known/dnt/cookies \
-	$(NULL)
-
-all: all-am
+all: all-recursive
 
 .SUFFIXES:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -451,180 +373,105 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-dist_webDATA: $(dist_web_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_web_DATA)'; test -n "$(webdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webdir)" || exit 1; \
+
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run 'make' without going through this Makefile.
+# To change the values of 'make' variables: instead of editing Makefiles,
+# (1) if the variable is set in 'config.status', edit 'config.status'
+#     (which will cause the Makefiles to be regenerated when you run 'make');
+# (2) otherwise, pass the desired values on the 'make' command line.
+$(am__recursive_targets):
+	@fail=; \
+	if $(am__make_keepgoing); then \
+	  failcom='fail=yes'; \
+	else \
+	  failcom='exit 1'; \
 	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webdir)" || exit $$?; \
-	done
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	case "$@" in \
+	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
+	  *) list='$(SUBDIRS)' ;; \
+	esac; \
+	for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
 
-uninstall-dist_webDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_web_DATA)'; test -n "$(webdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webdir)'; $(am__uninstall_files_from_dir)
-install-dist_webcssDATA: $(dist_webcss_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_webcss_DATA)'; test -n "$(webcssdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webcssdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webcssdir)" || exit 1; \
+ID: $(am__tagged_files)
+	$(am__define_uniq_tagged_files); mkid -fID $$unique
+tags: tags-recursive
+TAGS: tags
+
+tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+	set x; \
+	here=`pwd`; \
+	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
+	  include_option=--etags-include; \
+	  empty_fix=.; \
+	else \
+	  include_option=--include; \
+	  empty_fix=; \
 	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webcssdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webcssdir)" || exit $$?; \
-	done
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test ! -f $$subdir/TAGS || \
+	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
+	  fi; \
+	done; \
+	$(am__define_uniq_tagged_files); \
+	shift; \
+	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
+	  test -n "$$unique" || unique=$$empty_fix; \
+	  if test $$# -gt 0; then \
+	    $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	      "$$@" $$unique; \
+	  else \
+	    $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	      $$unique; \
+	  fi; \
+	fi
+ctags: ctags-recursive
 
-uninstall-dist_webcssDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_webcss_DATA)'; test -n "$(webcssdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webcssdir)'; $(am__uninstall_files_from_dir)
-install-dist_webdntDATA: $(dist_webdnt_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_webdnt_DATA)'; test -n "$(webdntdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webdntdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webdntdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webdntdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webdntdir)" || exit $$?; \
-	done
+CTAGS: ctags
+ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+	$(am__define_uniq_tagged_files); \
+	test -z "$(CTAGS_ARGS)$$unique" \
+	  || $(CTAGS) $(CTAGSFLAGS) $(AM_CTAGSFLAGS) $(CTAGS_ARGS) \
+	     $$unique
 
-uninstall-dist_webdntDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_webdnt_DATA)'; test -n "$(webdntdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webdntdir)'; $(am__uninstall_files_from_dir)
-install-dist_webfontsDATA: $(dist_webfonts_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_webfonts_DATA)'; test -n "$(webfontsdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webfontsdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webfontsdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webfontsdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webfontsdir)" || exit $$?; \
-	done
+GTAGS:
+	here=`$(am__cd) $(top_builddir) && pwd` \
+	  && $(am__cd) $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) "$$here"
+cscopelist: cscopelist-recursive
 
-uninstall-dist_webfontsDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_webfonts_DATA)'; test -n "$(webfontsdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webfontsdir)'; $(am__uninstall_files_from_dir)
-install-dist_webimagesDATA: $(dist_webimages_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_webimages_DATA)'; test -n "$(webimagesdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webimagesdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webimagesdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webimagesdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webimagesdir)" || exit $$?; \
-	done
+cscopelist-am: $(am__tagged_files)
+	list='$(am__tagged_files)'; \
+	case "$(srcdir)" in \
+	  [\\/]* | ?:[\\/]*) sdir="$(srcdir)" ;; \
+	  *) sdir=$(subdir)/$(srcdir) ;; \
+	esac; \
+	for i in $$list; do \
+	  if test -f "$$i"; then \
+	    echo "$(subdir)/$$i"; \
+	  else \
+	    echo "$$sdir/$$i"; \
+	  fi; \
+	done >> $(top_builddir)/cscope.files
 
-uninstall-dist_webimagesDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_webimages_DATA)'; test -n "$(webimagesdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webimagesdir)'; $(am__uninstall_files_from_dir)
-install-dist_weblibDATA: $(dist_weblib_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_weblib_DATA)'; test -n "$(weblibdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(weblibdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(weblibdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(weblibdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(weblibdir)" || exit $$?; \
-	done
-
-uninstall-dist_weblibDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_weblib_DATA)'; test -n "$(weblibdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(weblibdir)'; $(am__uninstall_files_from_dir)
-install-dist_weboldDATA: $(dist_webold_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_webold_DATA)'; test -n "$(webolddir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webolddir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webolddir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webolddir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webolddir)" || exit $$?; \
-	done
-
-uninstall-dist_weboldDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_webold_DATA)'; test -n "$(webolddir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webolddir)'; $(am__uninstall_files_from_dir)
-install-dist_webwellknownDATA: $(dist_webwellknown_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(dist_webwellknown_DATA)'; test -n "$(webwellknowndir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(webwellknowndir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(webwellknowndir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(webwellknowndir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(webwellknowndir)" || exit $$?; \
-	done
-
-uninstall-dist_webwellknownDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_webwellknown_DATA)'; test -n "$(webwellknowndir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(webwellknowndir)'; $(am__uninstall_files_from_dir)
-tags TAGS:
-
-ctags CTAGS:
-
-cscope cscopelist:
-
+distclean-tags:
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
 distdir: $(DISTFILES)
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
@@ -656,22 +503,45 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-check-am: all-am
-check: check-am
-all-am: Makefile $(DATA)
-installdirs:
-	for dir in "$(DESTDIR)$(webdir)" "$(DESTDIR)$(webcssdir)" "$(DESTDIR)$(webdntdir)" "$(DESTDIR)$(webfontsdir)" "$(DESTDIR)$(webimagesdir)" "$(DESTDIR)$(weblibdir)" "$(DESTDIR)$(webolddir)" "$(DESTDIR)$(webwellknowndir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    $(am__make_dryrun) \
+	      || test -d "$(distdir)/$$subdir" \
+	      || $(MKDIR_P) "$(distdir)/$$subdir" \
+	      || exit 1; \
+	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
+	    $(am__relativize); \
+	    new_distdir=$$reldir; \
+	    dir1=$$subdir; dir2="$(top_distdir)"; \
+	    $(am__relativize); \
+	    new_top_distdir=$$reldir; \
+	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
+	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
+	    ($(am__cd) $$subdir && \
+	      $(MAKE) $(AM_MAKEFLAGS) \
+	        top_distdir="$$new_top_distdir" \
+	        distdir="$$new_distdir" \
+		am__remove_distdir=: \
+		am__skip_length_check=: \
+		am__skip_mode_fix=: \
+	        distdir) \
+	      || exit 1; \
+	  fi; \
 	done
-install: install-am
-install-exec: install-exec-am
-install-data: install-data-am
-uninstall: uninstall-am
+check-am: all-am
+check: check-recursive
+all-am: Makefile $(DATA)
+installdirs: installdirs-recursive
+installdirs-am:
+install: install-recursive
+install-exec: install-exec-recursive
+install-data: install-data-recursive
+uninstall: uninstall-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-am
+installcheck: installcheck-recursive
 install-strip:
 	if test -z '$(STRIP)'; then \
 	  $(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
@@ -694,108 +564,86 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
-clean: clean-am
+clean: clean-recursive
 
 clean-am: clean-generic mostlyclean-am
 
-distclean: distclean-am
+distclean: distclean-recursive
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic
+distclean-am: clean-am distclean-generic distclean-tags
 
-dvi: dvi-am
+dvi: dvi-recursive
 
 dvi-am:
 
-html: html-am
+html: html-recursive
 
 html-am:
 
-info: info-am
+info: info-recursive
 
 info-am:
 
-install-data-am: install-dist_webDATA install-dist_webcssDATA \
-	install-dist_webdntDATA install-dist_webfontsDATA \
-	install-dist_webimagesDATA install-dist_weblibDATA \
-	install-dist_weboldDATA install-dist_webwellknownDATA
+install-data-am:
 
-install-dvi: install-dvi-am
+install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
 install-exec-am:
 
-install-html: install-html-am
+install-html: install-html-recursive
 
 install-html-am:
 
-install-info: install-info-am
+install-info: install-info-recursive
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-am
+install-pdf: install-pdf-recursive
 
 install-pdf-am:
 
-install-ps: install-ps-am
+install-ps: install-ps-recursive
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-am
+maintainer-clean: maintainer-clean-recursive
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-am
+mostlyclean: mostlyclean-recursive
 
 mostlyclean-am: mostlyclean-generic
 
-pdf: pdf-am
+pdf: pdf-recursive
 
 pdf-am:
 
-ps: ps-am
+ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-dist_webDATA uninstall-dist_webcssDATA \
-	uninstall-dist_webdntDATA uninstall-dist_webfontsDATA \
-	uninstall-dist_webimagesDATA uninstall-dist_weblibDATA \
-	uninstall-dist_weboldDATA uninstall-dist_webwellknownDATA
+uninstall-am:
 
-.MAKE: install-am install-strip
+.MAKE: $(am__recursive_targets) install-am install-strip
 
-.PHONY: all all-am check check-am clean clean-generic cscopelist-am \
-	ctags-am distclean distclean-generic distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dist_webDATA install-dist_webcssDATA \
-	install-dist_webdntDATA install-dist_webfontsDATA \
-	install-dist_webimagesDATA install-dist_weblibDATA \
-	install-dist_weboldDATA install-dist_webwellknownDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags-am \
-	uninstall uninstall-am uninstall-dist_webDATA \
-	uninstall-dist_webcssDATA uninstall-dist_webdntDATA \
-	uninstall-dist_webfontsDATA uninstall-dist_webimagesDATA \
-	uninstall-dist_weblibDATA uninstall-dist_weboldDATA \
-	uninstall-dist_webwellknownDATA
+.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am check \
+	check-am clean clean-generic cscopelist-am ctags ctags-am \
+	distclean distclean-generic distclean-tags distdir dvi dvi-am \
+	html html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
+	pdf-am ps ps-am tags tags-am uninstall uninstall-am
 
-
-version.txt:
-	if test -d "$(top_srcdir)/.git"; then \
-		git --git-dir="$(top_srcdir)/.git" log -n 1 --format=%H; \
-	fi > $@.tmp
-	test -s $@.tmp || echo 0 > $@.tmp
-	mv $@.tmp $@
-
-.PHONY: version.txt
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
