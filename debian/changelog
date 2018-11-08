@@ -1,3 +1,9 @@
+netdata (1.11.0+dfsg-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+
+ -- Federico Ceratto <federico@debian.org>  Thu, 08 Nov 2018 17:29:35 +0000
+
 netdata (1.10.0+dfsg-3) unstable; urgency=medium
 
   * Running wrap-and-sort on debian/control.
