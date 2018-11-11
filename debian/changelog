@@ -1,6 +1,5 @@
 netdata (1.10.0+dfsg-3~SK9+2) unstable; urgency=medium
 
-  [ Daniel Baumann ]
   * Running wrap-and-sort on debian/control.
   * Updating to standards version 4.2.1.
   * Adding patch from Sander Klein <debian-bugs@roedie.nl> to force
@@ -11,12 +10,7 @@ netdata (1.10.0+dfsg-3~SK9+2) unstable; urgency=medium
   * Adding new cgroup-network binary in netdata package, thanks to Sander
     Klein <debian-bugs@roedie.nl> (Closes: #907550).
 
-  [ roedie ]
-  * Install cgroup binary
-  * Rebuild for own usage
-  * Remove systemd protections
-
- -- Sander Klein <github@roedie.nl>  Mon, 10 Sep 2018 11:08:12 +0200
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Fri, 31 Aug 2018 11:27:56 +0200
 
 netdata (1.10.0+dfsg-2) unstable; urgency=medium
 
@@ -115,7 +109,7 @@ netdata (1.6.0+dfsg-1) unstable; urgency=medium
   * Add CAP_SETUID permission for the service (Closes: #856500)
   * Change logrotate to weekly (Closes: #857305)
     We do the weekly logrotate for now as SIGHUP is not working correctly.
-    See https://github.com/firehol/netdata/issues/805
+    See https://github.com/netdata/netdata/issues/805
 
  -- Federico Ceratto <federico@debian.org>  Wed, 03 May 2017 14:21:50 +0100
 

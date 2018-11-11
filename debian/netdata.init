@@ -14,7 +14,7 @@
 # Documentation
 #  man netdata
 #  file:///usr/share/doc/netdata/html/index.html
-#  https://github.com/firehol/netdata
+#  https://github.com/netdata/netdata
 
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
