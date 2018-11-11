@@ -1,6 +1,11 @@
-netdata (1.10.0+dfsg-3~sk.1) unstable; urgency=medium
+netdata (1.11.0+dfsg-1) UNRELEASED; urgency=medium
 
-  [ Daniel Baumann ]
+  * New upstream release.
+
+ -- Federico Ceratto <federico@debian.org>  Thu, 08 Nov 2018 17:29:35 +0000
+
+netdata (1.10.0+dfsg-3) unstable; urgency=medium
+
   * Running wrap-and-sort on debian/control.
   * Updating to standards version 4.2.1.
   * Adding patch from Sander Klein <debian-bugs@roedie.nl> to force
@@ -11,11 +16,7 @@ netdata (1.10.0+dfsg-3~sk.1) unstable; urgency=medium
   * Adding new cgroup-network binary in netdata package, thanks to Sander
     Klein <debian-bugs@roedie.nl> (Closes: #907550).
 
-  [ roedie ]
-  * Install cgroup binary
-  * Rebuild for own usage
-
- -- Sander Klein <github@roedie.nl>  Wed, 29 Aug 2018 12:10:18 +0200
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Fri, 31 Aug 2018 11:27:56 +0200
 
 netdata (1.10.0+dfsg-2) unstable; urgency=medium
 
