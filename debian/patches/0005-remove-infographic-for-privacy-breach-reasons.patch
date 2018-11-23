@@ -1,32 +1,33 @@
 From: Lennart Weller <lhw@ring0.de>
-Date: Wed, 4 Apr 2018 14:27:27 +0200
+Date: Wed, 14 Nov 2018 14:29:21 +0100
 Subject: remove infographic for privacy breach reasons
 
 ---
- web/Makefile.am      |   1 -
- web/infographic.html | 170 ---------------------------------------------------
- 2 files changed, 171 deletions(-)
- delete mode 100644 web/infographic.html
+ web/gui/Makefile.am      |   1 -
+ web/gui/infographic.html | 171 -----------------------------------------------
+ 2 files changed, 172 deletions(-)
+ delete mode 100644 web/gui/infographic.html
 
-diff --git a/web/Makefile.am b/web/Makefile.am
-index 57595fc..6564740 100644
---- a/web/Makefile.am
-+++ b/web/Makefile.am
-@@ -13,7 +13,6 @@ dist_web_DATA = \
+diff --git a/web/gui/Makefile.am b/web/gui/Makefile.am
+index 2b6f124..42a2779 100644
+--- a/web/gui/Makefile.am
++++ b/web/gui/Makefile.am
+@@ -18,7 +18,6 @@ dist_web_DATA = \
  	favicon.ico \
  	goto-host-from-alarm.html \
  	index.html \
 -	infographic.html \
- 	netdata-swagger.yaml \
- 	netdata-swagger.json \
  	robots.txt \
-diff --git a/web/infographic.html b/web/infographic.html
+ 	refresh-badges.js \
+ 	registry.html \
+diff --git a/web/gui/infographic.html b/web/gui/infographic.html
 deleted file mode 100644
-index 0bb5718..0000000
---- a/web/infographic.html
+index b311278..0000000
+--- a/web/gui/infographic.html
 +++ /dev/null
-@@ -1,170 +0,0 @@
+@@ -1,171 +0,0 @@
 -<!doctype html>
+-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 -<html lang=en-us>
 -<head>
 -    <meta charset=utf-8>
@@ -192,7 +193,7 @@ index 0bb5718..0000000
 -    }(document, 'script', 'facebook-jssdk'));
 -</script>
 -
--<script type="text/javascript" src="https://www.draw.io/embed2.js?s=arrows2;mscae/cloud;azure;office/users;office/servers&fetch=https%3A%2F%2Fraw.githubusercontent.com%2Ffirehol%2Fnetdata%2Fmaster%2Fdiagrams%2Fnetdata-overview.xml"></script>
+-<script type="text/javascript" src="https://www.draw.io/embed2.js?s=arrows2;mscae/cloud;azure;office/users;office/servers&fetch=https%3A%2F%2Fraw.githubusercontent.com%2Fnetdata%2Fnetdata%2Fmaster%2Fdiagrams%2Fnetdata-overview.xml"></script>
 -
 -</html>
 -

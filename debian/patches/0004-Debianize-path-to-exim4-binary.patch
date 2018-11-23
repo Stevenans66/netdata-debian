@@ -1,18 +1,18 @@
 From: Sven Hartge <sven@svenhartge.de>
-Date: Wed, 4 Apr 2018 14:26:50 +0200
+Date: Wed, 14 Nov 2018 14:28:21 +0100
 Subject: Debianize path to exim4 binary
 
 ---
- conf.d/python.d/exim.conf | 2 +-
+ collectors/python.d.plugin/exim/exim.conf | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/conf.d/python.d/exim.conf b/conf.d/python.d/exim.conf
-index 2add7b2..dd36a00 100644
---- a/conf.d/python.d/exim.conf
-+++ b/conf.d/python.d/exim.conf
+diff --git a/collectors/python.d.plugin/exim/exim.conf b/collectors/python.d.plugin/exim/exim.conf
+index 2add7b2..053689b 100644
+--- a/collectors/python.d.plugin/exim/exim.conf
++++ b/collectors/python.d.plugin/exim/exim.conf
 @@ -90,4 +90,4 @@ update_every: 10
  # AUTO-DETECTION JOBS
  
  local:
 -  command: 'exim -bpc'
-+  command: '/usr/sbin/exim4 -bpc'
++  command: '/usr/sbin/exim -bpc'
