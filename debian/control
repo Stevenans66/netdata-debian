@@ -50,6 +50,7 @@ Depends:
  libjs-bootstrap,
  ${misc:Depends},
  ${shlibs:Depends},
+Recommends: netdata (=${source:Version})
 Description: real-time charts for system monitoring (Data)
  Netdata is a daemon that collects data in realtime (per second)
  and presents a web site to view and analyze them. The presentation
