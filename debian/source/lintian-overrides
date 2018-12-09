@@ -1,5 +1,7 @@
 # Long lines in source files
 netdata source: source-is-missing debian/missing-sources/morris-0.5.1.js *
+netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/morris-0.5.1.js line length is 292 characters (>256)
+netdata source: insane-line-length-in-source-file debian/missing-sources/pako-1.0.6.js line length is 872 characters (>512)
 netdata source: source-is-missing debian/missing-sources/perfect-scrollbar-0.6.15.js *
 netdata source: source-is-missing debian/missing-sources/bootstrap-slider-10.0.0.js *
 netdata source: source-is-missing debian/missing-sources/pako-1.0.6.js *
@@ -18,4 +20,5 @@ netdata source: insane-line-length-in-source-file web/dashboard_info.js line len
 netdata source: source-contains-prebuilt-javascript-object web/dashboard_info.js line length is 815 characters (>512)
 netdata source: source-is-missing web/dashboard_info.js *
 netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/bootstrap-slider-10.0.0.js line length is 269 characters (>256)
+netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/fontawesome-all-5.0.1.js line length is 1201 characters (>512)
 netdata source: insane-line-length-in-source-file debian/missing-sources/fontawesome-all-5.0.1.js line length is 1203 characters (>512)
