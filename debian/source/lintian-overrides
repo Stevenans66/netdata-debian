@@ -5,6 +5,42 @@ netdata source: insane-line-length-in-source-file debian/missing-sources/pako-1.
 netdata source: source-is-missing debian/missing-sources/perfect-scrollbar-0.6.15.js *
 netdata source: source-is-missing debian/missing-sources/bootstrap-slider-10.0.0.js *
 netdata source: source-is-missing debian/missing-sources/pako-1.0.6.js *
+netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/pako-1.0.6.js line length is 844 characters (>512)
+netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/perfect-scrollbar-0.6.15.js line length is 480 characters (>256)
+netdata source: source-contains-browserified-javascript debian/missing-sources/raphael-2.2.4.js code fragment:(function webpackuniversalmoduledefinition(root, factory) { ?if(typeof exports === 'obj
+netdata source: insane-line-length-in-source-file web/gui/dashboard_info.js line length is 530 characters (>512)
+netdata source: source-contains-prebuilt-javascript-object web/gui/dashboard_info.js line length is 522 characters (>512)
+netdata source: source-is-missing web/gui/dashboard_info.js line length is 522 characters (>512)
+netdata source: source-contains-prebuilt-javascript-object web/gui/goto-host-from-alarm.html line length is 299 characters (>256)
+netdata source: source-is-missing web/gui/goto-host-from-alarm.html line length is 299 characters (>256)
+netdata source: source-contains-prebuilt-javascript-object web/gui/index.html line length is 307 characters (>256)
+netdata source: source-is-missing web/gui/index.html line length is 307 characters (>256)
+netdata source: source-contains-prebuilt-javascript-object web/gui/registry.html line length is 260 characters (>256)
+netdata source: source-is-missing web/gui/registry.html line length is 260 characters (>256)
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/bootstrap-3.3.7.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/bootstrap-slider-10.0.0.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/bootstrap-table-1.11.0.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/bootstrap-table-export-1.11.0.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/bootstrap-toggle-2.2.2.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/c3-0.4.18.min.js
+netdata source: insane-line-length-in-source-file web/gui/lib/clipboard-polyfill-be05dad.js line length is 3858 characters (>512)
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/clipboard-polyfill-be05dad.js line length is 3855 characters (>512)
+netdata source: source-is-missing web/gui/lib/clipboard-polyfill-be05dad.js line length is 3855 characters (>512)
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/d3-4.12.2.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/dygraph-c91c859.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/fontawesome-all-5.0.1.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/gauge-1.3.2.min.js
+netdata source: source-is-missing web/gui/lib/gauge-1.3.2.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/jquery-2.2.4.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/jquery.easypiechart-97b5824.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/jquery.peity-3.2.0.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/jquery.sparkline-2.1.2.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/lz-string-1.4.4.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/morris-0.5.1.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/pako-1.0.6.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/perfect-scrollbar-0.6.15.min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/raphael-2.2.4-min.js
+netdata source: source-contains-prebuilt-javascript-object web/gui/lib/tableExport-1.6.0.min.js
 
 # Source is present as gauge-d5260c3.coffee
 netdata source: source-is-missing web/lib/gauge-1.3.2.min.js
