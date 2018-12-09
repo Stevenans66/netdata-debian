@@ -26,141 +26,141 @@ Copyright: 2004 Free Software Foundation Inc.
 License: LGPL-3+
 
 Files:
- node.d/node_modules/lib/ber/*
+ collectors/node.d.plugin/node_modules/lib/ber/*
 Copyright: 2011 Mark Cavage <mcavage@gmail.com>
 License: Expat
 
-Files: node.d/node_modules/net-snmp.js
+Files: collectors/node.d.plugin/node_modules/net-snmp.js
 Copyright: 2013 Stephen Vickers <stephen.vickers.sv@gmail.com>
 License: Expat
 
-Files: node.d/node_modules/extend.js
+Files: collectors/node.d.plugin/node_modules/extend.js
 Copyright: 2014 Stefan Thomas
 License: Expat
 
-Files: node.d/node_modules/pixl-xml.js
+Files: collectors/node.d.plugin/node_modules/pixl-xml.js
 Copyright: 2015 Joseph Huckaby
 License: Expat
 
 Files:
- web/css/bootstrap-theme-3.3.7.min.css
- web/lib/bootstrap-3.3.7.min.js
+ web/gui/css/bootstrap-theme-3.3.7.min.css
+ web/gui/lib/bootstrap-3.3.7.min.js
  debian/missing-sources/bootstrap-3.3.7.js
  debian/missing-sources/bootstrap-theme-3.3.7.css
 Copyright: 2011-2016 Twitter, Inc
 License: Expat
 
 Files:
- web/css/bootstrap-slate-flat-3.3.7.css
+ web/gui/css/bootstrap-slate-flat-3.3.7.css
 Copyright: 2016 Thomas Park
 License: Expat
 
 Files:
- web/lib/bootstrap-toggle-2.2.2.min.js
- web/css/bootstrap-toggle-2.2.2.min.css
+ web/gui/lib/bootstrap-toggle-2.2.2.min.js
+ web/gui/css/bootstrap-toggle-2.2.2.min.css
  debian/missing-sources/bootstrap-toggle-2.2.2.js
  debian/missing-sources/bootstrap-toggle-2.2.2.css
 Copyright: 2014 Min Hur, The New York Times Company
 License: Expat
 
 Files:
- web/lib/bootstrap-table-1.11.0.min.js
- web/lib/bootstrap-table-export-1.11.0.min.js
+ web/gui/lib/bootstrap-table-1.11.0.min.js
+ web/gui/lib/bootstrap-table-export-1.11.0.min.js
  debian/missing-sources/bootstrap-table-1.11.0.js
  debian/missing-sources/bootstrap-table-export-1.11.0.js
 Copyright: 2016 Zhixin Wen
 License: Expat
 
 Files:
- web/lib/c3-0.4.18.min.js
- web/css/c3-0.4.18.min.css
+ web/gui/lib/c3-0.4.18.min.js
+ web/gui/css/c3-0.4.18.min.css
  debian/missing-sources/c3-0.4.18.js
  debian/missing-sources/c3-0.4.18.css
 Copyright: 2013 Masayuki Tanaka
 License: Expat
 
 Files:
- web/lib/dygraph-c91c859.min.js
- web/lib/dygraph-smooth-plotter-c91c859.js
+ web/gui/lib/dygraph-c91c859.min.js
+ web/gui/lib/dygraph-smooth-plotter-c91c859.js
  debian/missing-sources/dygraph-c91c859.js
  debian/missing-sources/dygraph-smooth-plotter-c91c859.js
 Copyright: 2014 Dan Vanderkam <danvdk@gmail.com>
 License: Expat
 
 Files:
- web/lib/gauge-1.3.2.min.js
+ web/gui/lib/gauge-1.3.2.min.js
  debian/missing-sources/gauge-1.3.2.coffee
 Copyright: 2016 Bernard Kobos <bkobos@extensa.pl>
 License: Expat
 
 Files:
- web/lib/jquery.easypiechart-97b5824.min.js
+ web/gui/lib/jquery.easypiechart-97b5824.min.js
  debian/missing-sources/jquery.easypiechart-97b5824.js
 Copyright: 2013 Robert Fleischmann
 License: Expat
 
 Files:
- web/lib/perfect-scrollbar-0.6.15.min.js
+ web/gui/lib/perfect-scrollbar-0.6.15.min.js
  debian/missing-sources/perfect-scrollbar-0.6.15.js
 Copyright: 2016 Hyunje Alex Jun
 License: Expat
 
 Files:
- web/lib/jquery.peity-3.2.0.min.js
+ web/gui/lib/jquery.peity-3.2.0.min.js
  debian/missing-sources/jquery.peity-3.2.0.js
 Copyright: 2015 Ben Pickles
 License: Expat
 
 Files:
- web/lib/jquery.sparkline-2.1.2.min.js
+ web/gui/lib/jquery.sparkline-2.1.2.min.js
  debian/missing-sources/jquery.sparkline-2.1.2.js
 Copyright: 2013 Gareth Watts <gareth@splunk.com>, Splunk Inc
 License: BSD-3-clause
 
 Files:
- web/lib/morris-0.5.1.min.js
- web/css/morris-0.5.1.css
+ web/gui/lib/morris-0.5.1.min.js
+ web/gui/css/morris-0.5.1.css
  debian/missing-sources/morris-0.5.1.js
  debian/missing-sources/morris-0.5.1.css
 Copyright: 2014 Olly Smith
 License: BSD-2-clause
 
 Files:
- web/lib/jquery-2.2.4.min.js
+ web/gui/lib/jquery-2.2.4.min.js
  debian/missing-sources/jquery-2.2.4.js
 Copyright: 2016 JS Foundation
 License: Apache-2.0
 
 Files:
- web/lib/d3-4.12.2.min.js
+ web/gui/lib/d3-4.12.2.min.js
  debian/missing-sources/d3-4.12.2.js
 Copyright: Copyright (C) 2013 Michael Bostock
 License: BSD-3-Clause
 
 Files:
- web/images/seo-performance*
- web/images/check-mark*
- web/images/alert-*
- web/images/post.png
+ web/gui/images/seo-performance*
+ web/gui/images/check-mark*
+ web/gui/images/alert-*
+ web/gui/images/post.png
 Copyright: 2016 IconsDB.com Icons
 License: CC0
 
 Files:
- web/lib/tableExport-1.6.0.min.js
+ web/gui/lib/tableExport-1.6.0.min.js
  debian/missing-sources/tableExport-1.6.0.js
 Copyright: 2016 hhurz
            2014 Giri Raj
 License: Expat
 
 Files:
- web/lib/raphael-2.2.4-min.js
+ web/gui/lib/raphael-2.2.4-min.js
  debian/missing-sources/raphael-2.2.4.js
 Copyright: 2016 Dmitry Baranovskiy
            2016 Sencha Labs
 License: Expat
 
 Files:
- web/lib/clipboard-polyfill-be05dad.js
+ web/gui/lib/clipboard-polyfill-be05dad.js
  debian/missing-sources/clipboard-polyfill-be05dad.ts
 Copyright: 2014 Lucas Garron
 License: Expat
