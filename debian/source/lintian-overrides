@@ -19,7 +19,3 @@ netdata source: source-contains-prebuilt-javascript-object web/dashboard_info.js
 netdata source: source-is-missing web/dashboard_info.js *
 netdata source: source-contains-prebuilt-javascript-object debian/missing-sources/bootstrap-slider-10.0.0.js line length is 269 characters (>256)
 netdata source: insane-line-length-in-source-file debian/missing-sources/fontawesome-all-5.0.1.js line length is 1203 characters (>512)
-
-# Versions are way off
-netdata-data: embedded-javascript-library usr/share/netdata/web/lib/bootstrap-3.3.7.min.js *
-netdata-data: embedded-javascript-library usr/share/netdata/web/lib/jquery-2.2.4.min.js *
