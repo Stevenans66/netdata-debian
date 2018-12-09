@@ -20,7 +20,7 @@ Copyright: 2016 Matthew Newton <mcn4@leicester.ac.uk>
            2017 Federico Ceratto <federico@debian.org>
 License: GPL-3+
 
-Files: src/avl.*
+Files: libnetdata/avl/*
 Copyright: 2004 Free Software Foundation Inc.
            2016 Costa Tsaousis
 License: LGPL-3+
