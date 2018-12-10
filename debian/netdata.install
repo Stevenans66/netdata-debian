@@ -2,6 +2,7 @@
 debian/netdata.conf /etc/netdata/
 etc/netdata/
 usr/lib/*/netdata/charts.d/*.sh
+usr/lib/*/netdata/conf.d
 usr/lib/*/netdata/plugins.d/*.plugin
 usr/lib/*/netdata/plugins.d/*.sh
 usr/lib/*/netdata/plugins.d/loopsleepms.sh.inc
