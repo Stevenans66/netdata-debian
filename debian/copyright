@@ -166,7 +166,7 @@ Copyright: 2014 Lucas Garron
 License: Expat
 
 Files:
- python.d/python_modules/third_party/lm_sensors.py
+ collectors/python.d.plugin/python_modules/third_party/lm_sensors.py
 Copyright: 2015 Pavel Rojtberg
 License: LGPL-2.1
 
@@ -176,12 +176,7 @@ Copyright: 2016 Pawel Krupa
 License: GPL-3+
 
 Files:
- python.d/python_modules/pyyaml*
-Copyright: 2006 Kirill Simonov
-License: Expat
-
-Files:
- python.d/python_modules/urllib3/*
+ collectors/python.d.plugin/python_modules/urllib3/*
 Copyright: 2008-2016 Andrey Petrov and others
 License: Expat
 
