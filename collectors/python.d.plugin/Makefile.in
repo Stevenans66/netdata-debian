@@ -400,6 +400,24 @@
 # IT IS INCLUDED BY ITS PARENT'S Makefile.am
 # IT IS REQUIRED TO REFERENCE ALL FILES RELATIVE TO THE PARENT
 
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# THIS IS NOT A COMPLETE Makefile
+# IT IS INCLUDED BY ITS PARENT'S Makefile.am
+# IT IS REQUIRED TO REFERENCE ALL FILES RELATIVE TO THE PARENT
+
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# THIS IS NOT A COMPLETE Makefile
+# IT IS INCLUDED BY ITS PARENT'S Makefile.am
+# IT IS REQUIRED TO REFERENCE ALL FILES RELATIVE TO THE PARENT
+
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# THIS IS NOT A COMPLETE Makefile
+# IT IS INCLUDED BY ITS PARENT'S Makefile.am
+# IT IS REQUIRED TO REFERENCE ALL FILES RELATIVE TO THE PARENT
+
 
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
@@ -489,10 +507,12 @@ DIST_COMMON = $(top_srcdir)/build/subst.inc \
 	$(srcdir)/memcached/Makefile.inc \
 	$(srcdir)/mongodb/Makefile.inc $(srcdir)/monit/Makefile.inc \
 	$(srcdir)/mysql/Makefile.inc $(srcdir)/nginx/Makefile.inc \
-	$(srcdir)/nginx_plus/Makefile.inc $(srcdir)/nsd/Makefile.inc \
+	$(srcdir)/nginx_plus/Makefile.inc \
+	$(srcdir)/nvidia_smi/Makefile.inc $(srcdir)/nsd/Makefile.inc \
 	$(srcdir)/ntpd/Makefile.inc \
 	$(srcdir)/ovpn_status_log/Makefile.inc \
-	$(srcdir)/phpfpm/Makefile.inc $(srcdir)/portcheck/Makefile.inc \
+	$(srcdir)/openldap/Makefile.inc $(srcdir)/phpfpm/Makefile.inc \
+	$(srcdir)/portcheck/Makefile.inc \
 	$(srcdir)/postfix/Makefile.inc $(srcdir)/postgres/Makefile.inc \
 	$(srcdir)/powerdns/Makefile.inc \
 	$(srcdir)/proxysql/Makefile.inc $(srcdir)/puppet/Makefile.inc \
@@ -503,14 +523,14 @@ DIST_COMMON = $(top_srcdir)/build/subst.inc \
 	$(srcdir)/smartd_log/Makefile.inc \
 	$(srcdir)/spigotmc/Makefile.inc \
 	$(srcdir)/springboot/Makefile.inc $(srcdir)/squid/Makefile.inc \
-	$(srcdir)/tomcat/Makefile.inc $(srcdir)/traefik/Makefile.inc \
-	$(srcdir)/unbound/Makefile.inc $(srcdir)/uwsgi/Makefile.inc \
-	$(srcdir)/varnish/Makefile.inc $(srcdir)/w1sensor/Makefile.inc \
-	$(srcdir)/web_log/Makefile.inc $(srcdir)/Makefile.in \
-	$(srcdir)/Makefile.am $(dist_plugins_SCRIPTS) \
-	$(dist_python_SCRIPTS) $(dist_bases_DATA) \
-	$(dist_bases_framework_services_DATA) $(dist_libconfig_DATA) \
-	$(dist_noinst_DATA) $(dist_python_DATA) \
+	$(srcdir)/tomcat/Makefile.inc $(srcdir)/tor/Makefile.inc \
+	$(srcdir)/traefik/Makefile.inc $(srcdir)/unbound/Makefile.inc \
+	$(srcdir)/uwsgi/Makefile.inc $(srcdir)/varnish/Makefile.inc \
+	$(srcdir)/w1sensor/Makefile.inc $(srcdir)/web_log/Makefile.inc \
+	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
+	$(dist_plugins_SCRIPTS) $(dist_python_SCRIPTS) \
+	$(dist_bases_DATA) $(dist_bases_framework_services_DATA) \
+	$(dist_libconfig_DATA) $(dist_noinst_DATA) $(dist_python_DATA) \
 	$(dist_python_urllib3_DATA) \
 	$(dist_python_urllib3_backports_DATA) \
 	$(dist_python_urllib3_contrib_DATA) \
@@ -903,6 +923,12 @@ dist_plugins_SCRIPTS = \
 # do not install these files, but include them in the distribution
 
 # do not install these files, but include them in the distribution
+
+# do not install these files, but include them in the distribution
+
+# do not install these files, but include them in the distribution
+
+# do not install these files, but include them in the distribution
 dist_noinst_DATA = python.d.plugin.in README.md $(NULL) \
 	adaptec_raid/README.md adaptec_raid/Makefile.inc \
 	apache/README.md apache/Makefile.inc beanstalk/README.md \
@@ -931,29 +957,38 @@ dist_noinst_DATA = python.d.plugin.in README.md $(NULL) \
 	memcached/Makefile.inc mongodb/README.md mongodb/Makefile.inc \
 	monit/README.md monit/Makefile.inc mysql/README.md \
 	mysql/Makefile.inc nginx/README.md nginx/Makefile.inc \
-	nginx_plus/README.md nginx_plus/Makefile.inc nsd/README.md \
+	nginx_plus/README.md nginx_plus/Makefile.inc \
+	nvidia_smi/README.md nvidia_smi/Makefile.inc nsd/README.md \
 	nsd/Makefile.inc ntpd/README.md ntpd/Makefile.inc \
 	ovpn_status_log/README.md ovpn_status_log/Makefile.inc \
-	phpfpm/README.md phpfpm/Makefile.inc portcheck/README.md \
-	portcheck/Makefile.inc postfix/README.md postfix/Makefile.inc \
-	postgres/README.md postgres/Makefile.inc powerdns/README.md \
-	powerdns/Makefile.inc proxysql/README.md proxysql/Makefile.inc \
-	puppet/README.md puppet/Makefile.inc rabbitmq/README.md \
-	rabbitmq/Makefile.inc redis/README.md redis/Makefile.inc \
-	rethinkdbs/README.md rethinkdbs/Makefile.inc \
-	retroshare/README.md retroshare/Makefile.inc samba/README.md \
-	samba/Makefile.inc sensors/README.md sensors/Makefile.inc \
-	smartd_log/README.md smartd_log/Makefile.inc \
-	spigotmc/README.md spigotmc/Makefile.inc springboot/README.md \
+	openldap/README.md openldap/Makefile.inc phpfpm/README.md \
+	phpfpm/Makefile.inc portcheck/README.md portcheck/Makefile.inc \
+	postfix/README.md postfix/Makefile.inc postgres/README.md \
+	postgres/Makefile.inc powerdns/README.md powerdns/Makefile.inc \
+	proxysql/README.md proxysql/Makefile.inc puppet/README.md \
+	puppet/Makefile.inc rabbitmq/README.md rabbitmq/Makefile.inc \
+	redis/README.md redis/Makefile.inc rethinkdbs/README.md \
+	rethinkdbs/Makefile.inc retroshare/README.md \
+	retroshare/Makefile.inc samba/README.md samba/Makefile.inc \
+	sensors/README.md sensors/Makefile.inc smartd_log/README.md \
+	smartd_log/Makefile.inc spigotmc/README.md \
+	spigotmc/Makefile.inc springboot/README.md \
 	springboot/Makefile.inc squid/README.md squid/Makefile.inc \
-	tomcat/README.md tomcat/Makefile.inc traefik/README.md \
-	traefik/Makefile.inc unbound/README.md unbound/Makefile.inc \
-	uwsgi/README.md uwsgi/Makefile.inc varnish/README.md \
-	varnish/Makefile.inc w1sensor/README.md w1sensor/Makefile.inc \
-	web_log/README.md web_log/Makefile.inc
+	tomcat/README.md tomcat/Makefile.inc tor/README.md \
+	tor/Makefile.inc traefik/README.md traefik/Makefile.inc \
+	unbound/README.md unbound/Makefile.inc uwsgi/README.md \
+	uwsgi/Makefile.inc varnish/README.md varnish/Makefile.inc \
+	w1sensor/README.md w1sensor/Makefile.inc web_log/README.md \
+	web_log/Makefile.inc
 dist_python_SCRIPTS = \
     $(NULL)
 
+
+# install these files
+
+# install these files
+
+# install these files
 
 # install these files
 
@@ -1101,17 +1136,19 @@ dist_python_DATA = $(NULL) adaptec_raid/adaptec_raid.chart.py \
 	mdstat/mdstat.chart.py megacli/megacli.chart.py \
 	memcached/memcached.chart.py mongodb/mongodb.chart.py \
 	monit/monit.chart.py mysql/mysql.chart.py nginx/nginx.chart.py \
-	nginx_plus/nginx_plus.chart.py nsd/nsd.chart.py \
-	ntpd/ntpd.chart.py ovpn_status_log/ovpn_status_log.chart.py \
-	phpfpm/phpfpm.chart.py portcheck/portcheck.chart.py \
-	postfix/postfix.chart.py postgres/postgres.chart.py \
-	powerdns/powerdns.chart.py proxysql/proxysql.chart.py \
-	puppet/puppet.chart.py rabbitmq/rabbitmq.chart.py \
-	redis/redis.chart.py rethinkdbs/rethinkdbs.chart.py \
-	retroshare/retroshare.chart.py samba/samba.chart.py \
-	sensors/sensors.chart.py smartd_log/smartd_log.chart.py \
-	spigotmc/spigotmc.chart.py springboot/springboot.chart.py \
-	squid/squid.chart.py tomcat/tomcat.chart.py \
+	nginx_plus/nginx_plus.chart.py nvidia_smi/nvidia_smi.chart.py \
+	nsd/nsd.chart.py ntpd/ntpd.chart.py \
+	ovpn_status_log/ovpn_status_log.chart.py \
+	openldap/openldap.chart.py phpfpm/phpfpm.chart.py \
+	portcheck/portcheck.chart.py postfix/postfix.chart.py \
+	postgres/postgres.chart.py powerdns/powerdns.chart.py \
+	proxysql/proxysql.chart.py puppet/puppet.chart.py \
+	rabbitmq/rabbitmq.chart.py redis/redis.chart.py \
+	rethinkdbs/rethinkdbs.chart.py retroshare/retroshare.chart.py \
+	samba/samba.chart.py sensors/sensors.chart.py \
+	smartd_log/smartd_log.chart.py spigotmc/spigotmc.chart.py \
+	springboot/springboot.chart.py squid/squid.chart.py \
+	tomcat/tomcat.chart.py tor/tor.chart.py \
 	traefik/traefik.chart.py unbound/unbound.chart.py \
 	uwsgi/uwsgi.chart.py varnish/varnish.chart.py \
 	w1sensor/w1sensor.chart.py web_log/web_log.chart.py
@@ -1138,8 +1175,9 @@ dist_pythonconfig_DATA = $(top_srcdir)/installer/.keep $(NULL) \
 	litespeed/litespeed.conf logind/logind.conf mdstat/mdstat.conf \
 	megacli/megacli.conf memcached/memcached.conf \
 	mongodb/mongodb.conf monit/monit.conf mysql/mysql.conf \
-	nginx/nginx.conf nginx_plus/nginx_plus.conf nsd/nsd.conf \
-	ntpd/ntpd.conf ovpn_status_log/ovpn_status_log.conf \
+	nginx/nginx.conf nginx_plus/nginx_plus.conf \
+	nvidia_smi/nvidia_smi.conf nsd/nsd.conf ntpd/ntpd.conf \
+	ovpn_status_log/ovpn_status_log.conf openldap/openldap.conf \
 	phpfpm/phpfpm.conf portcheck/portcheck.conf \
 	postfix/postfix.conf postgres/postgres.conf \
 	powerdns/powerdns.conf proxysql/proxysql.conf \
@@ -1148,8 +1186,8 @@ dist_pythonconfig_DATA = $(top_srcdir)/installer/.keep $(NULL) \
 	samba/samba.conf sensors/sensors.conf \
 	smartd_log/smartd_log.conf spigotmc/spigotmc.conf \
 	springboot/springboot.conf squid/squid.conf tomcat/tomcat.conf \
-	traefik/traefik.conf unbound/unbound.conf uwsgi/uwsgi.conf \
-	varnish/varnish.conf w1sensor/w1sensor.conf \
+	tor/tor.conf traefik/traefik.conf unbound/unbound.conf \
+	uwsgi/uwsgi.conf varnish/varnish.conf w1sensor/w1sensor.conf \
 	web_log/web_log.conf
 pythonmodulesdir = $(pythondir)/python_modules
 dist_pythonmodules_DATA = \
@@ -1296,7 +1334,7 @@ all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .in
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/build/subst.inc $(srcdir)/adaptec_raid/Makefile.inc $(srcdir)/apache/Makefile.inc $(srcdir)/beanstalk/Makefile.inc $(srcdir)/bind_rndc/Makefile.inc $(srcdir)/boinc/Makefile.inc $(srcdir)/ceph/Makefile.inc $(srcdir)/chrony/Makefile.inc $(srcdir)/couchdb/Makefile.inc $(srcdir)/cpufreq/Makefile.inc $(srcdir)/cpuidle/Makefile.inc $(srcdir)/dnsdist/Makefile.inc $(srcdir)/dns_query_time/Makefile.inc $(srcdir)/dockerd/Makefile.inc $(srcdir)/dovecot/Makefile.inc $(srcdir)/elasticsearch/Makefile.inc $(srcdir)/example/Makefile.inc $(srcdir)/exim/Makefile.inc $(srcdir)/fail2ban/Makefile.inc $(srcdir)/freeradius/Makefile.inc $(srcdir)/go_expvar/Makefile.inc $(srcdir)/haproxy/Makefile.inc $(srcdir)/hddtemp/Makefile.inc $(srcdir)/httpcheck/Makefile.inc $(srcdir)/icecast/Makefile.inc $(srcdir)/ipfs/Makefile.inc $(srcdir)/isc_dhcpd/Makefile.inc $(srcdir)/linux_power_supply/Makefile.inc $(srcdir)/litespeed/Makefile.inc $(srcdir)/logind/Makefile.inc $(srcdir)/mdstat/Makefile.inc $(srcdir)/megacli/Makefile.inc $(srcdir)/memcached/Makefile.inc $(srcdir)/mongodb/Makefile.inc $(srcdir)/monit/Makefile.inc $(srcdir)/mysql/Makefile.inc $(srcdir)/nginx/Makefile.inc $(srcdir)/nginx_plus/Makefile.inc $(srcdir)/nsd/Makefile.inc $(srcdir)/ntpd/Makefile.inc $(srcdir)/ovpn_status_log/Makefile.inc $(srcdir)/phpfpm/Makefile.inc $(srcdir)/portcheck/Makefile.inc $(srcdir)/postfix/Makefile.inc $(srcdir)/postgres/Makefile.inc $(srcdir)/powerdns/Makefile.inc $(srcdir)/proxysql/Makefile.inc $(srcdir)/puppet/Makefile.inc $(srcdir)/rabbitmq/Makefile.inc $(srcdir)/redis/Makefile.inc $(srcdir)/rethinkdbs/Makefile.inc $(srcdir)/retroshare/Makefile.inc $(srcdir)/samba/Makefile.inc $(srcdir)/sensors/Makefile.inc $(srcdir)/smartd_log/Makefile.inc $(srcdir)/spigotmc/Makefile.inc $(srcdir)/springboot/Makefile.inc $(srcdir)/squid/Makefile.inc $(srcdir)/tomcat/Makefile.inc $(srcdir)/traefik/Makefile.inc $(srcdir)/unbound/Makefile.inc $(srcdir)/uwsgi/Makefile.inc $(srcdir)/varnish/Makefile.inc $(srcdir)/w1sensor/Makefile.inc $(srcdir)/web_log/Makefile.inc $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/build/subst.inc $(srcdir)/adaptec_raid/Makefile.inc $(srcdir)/apache/Makefile.inc $(srcdir)/beanstalk/Makefile.inc $(srcdir)/bind_rndc/Makefile.inc $(srcdir)/boinc/Makefile.inc $(srcdir)/ceph/Makefile.inc $(srcdir)/chrony/Makefile.inc $(srcdir)/couchdb/Makefile.inc $(srcdir)/cpufreq/Makefile.inc $(srcdir)/cpuidle/Makefile.inc $(srcdir)/dnsdist/Makefile.inc $(srcdir)/dns_query_time/Makefile.inc $(srcdir)/dockerd/Makefile.inc $(srcdir)/dovecot/Makefile.inc $(srcdir)/elasticsearch/Makefile.inc $(srcdir)/example/Makefile.inc $(srcdir)/exim/Makefile.inc $(srcdir)/fail2ban/Makefile.inc $(srcdir)/freeradius/Makefile.inc $(srcdir)/go_expvar/Makefile.inc $(srcdir)/haproxy/Makefile.inc $(srcdir)/hddtemp/Makefile.inc $(srcdir)/httpcheck/Makefile.inc $(srcdir)/icecast/Makefile.inc $(srcdir)/ipfs/Makefile.inc $(srcdir)/isc_dhcpd/Makefile.inc $(srcdir)/linux_power_supply/Makefile.inc $(srcdir)/litespeed/Makefile.inc $(srcdir)/logind/Makefile.inc $(srcdir)/mdstat/Makefile.inc $(srcdir)/megacli/Makefile.inc $(srcdir)/memcached/Makefile.inc $(srcdir)/mongodb/Makefile.inc $(srcdir)/monit/Makefile.inc $(srcdir)/mysql/Makefile.inc $(srcdir)/nginx/Makefile.inc $(srcdir)/nginx_plus/Makefile.inc $(srcdir)/nvidia_smi/Makefile.inc $(srcdir)/nsd/Makefile.inc $(srcdir)/ntpd/Makefile.inc $(srcdir)/ovpn_status_log/Makefile.inc $(srcdir)/openldap/Makefile.inc $(srcdir)/phpfpm/Makefile.inc $(srcdir)/portcheck/Makefile.inc $(srcdir)/postfix/Makefile.inc $(srcdir)/postgres/Makefile.inc $(srcdir)/powerdns/Makefile.inc $(srcdir)/proxysql/Makefile.inc $(srcdir)/puppet/Makefile.inc $(srcdir)/rabbitmq/Makefile.inc $(srcdir)/redis/Makefile.inc $(srcdir)/rethinkdbs/Makefile.inc $(srcdir)/retroshare/Makefile.inc $(srcdir)/samba/Makefile.inc $(srcdir)/sensors/Makefile.inc $(srcdir)/smartd_log/Makefile.inc $(srcdir)/spigotmc/Makefile.inc $(srcdir)/springboot/Makefile.inc $(srcdir)/squid/Makefile.inc $(srcdir)/tomcat/Makefile.inc $(srcdir)/tor/Makefile.inc $(srcdir)/traefik/Makefile.inc $(srcdir)/unbound/Makefile.inc $(srcdir)/uwsgi/Makefile.inc $(srcdir)/varnish/Makefile.inc $(srcdir)/w1sensor/Makefile.inc $(srcdir)/web_log/Makefile.inc $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -1317,7 +1355,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
 	esac;
-$(top_srcdir)/build/subst.inc $(srcdir)/adaptec_raid/Makefile.inc $(srcdir)/apache/Makefile.inc $(srcdir)/beanstalk/Makefile.inc $(srcdir)/bind_rndc/Makefile.inc $(srcdir)/boinc/Makefile.inc $(srcdir)/ceph/Makefile.inc $(srcdir)/chrony/Makefile.inc $(srcdir)/couchdb/Makefile.inc $(srcdir)/cpufreq/Makefile.inc $(srcdir)/cpuidle/Makefile.inc $(srcdir)/dnsdist/Makefile.inc $(srcdir)/dns_query_time/Makefile.inc $(srcdir)/dockerd/Makefile.inc $(srcdir)/dovecot/Makefile.inc $(srcdir)/elasticsearch/Makefile.inc $(srcdir)/example/Makefile.inc $(srcdir)/exim/Makefile.inc $(srcdir)/fail2ban/Makefile.inc $(srcdir)/freeradius/Makefile.inc $(srcdir)/go_expvar/Makefile.inc $(srcdir)/haproxy/Makefile.inc $(srcdir)/hddtemp/Makefile.inc $(srcdir)/httpcheck/Makefile.inc $(srcdir)/icecast/Makefile.inc $(srcdir)/ipfs/Makefile.inc $(srcdir)/isc_dhcpd/Makefile.inc $(srcdir)/linux_power_supply/Makefile.inc $(srcdir)/litespeed/Makefile.inc $(srcdir)/logind/Makefile.inc $(srcdir)/mdstat/Makefile.inc $(srcdir)/megacli/Makefile.inc $(srcdir)/memcached/Makefile.inc $(srcdir)/mongodb/Makefile.inc $(srcdir)/monit/Makefile.inc $(srcdir)/mysql/Makefile.inc $(srcdir)/nginx/Makefile.inc $(srcdir)/nginx_plus/Makefile.inc $(srcdir)/nsd/Makefile.inc $(srcdir)/ntpd/Makefile.inc $(srcdir)/ovpn_status_log/Makefile.inc $(srcdir)/phpfpm/Makefile.inc $(srcdir)/portcheck/Makefile.inc $(srcdir)/postfix/Makefile.inc $(srcdir)/postgres/Makefile.inc $(srcdir)/powerdns/Makefile.inc $(srcdir)/proxysql/Makefile.inc $(srcdir)/puppet/Makefile.inc $(srcdir)/rabbitmq/Makefile.inc $(srcdir)/redis/Makefile.inc $(srcdir)/rethinkdbs/Makefile.inc $(srcdir)/retroshare/Makefile.inc $(srcdir)/samba/Makefile.inc $(srcdir)/sensors/Makefile.inc $(srcdir)/smartd_log/Makefile.inc $(srcdir)/spigotmc/Makefile.inc $(srcdir)/springboot/Makefile.inc $(srcdir)/squid/Makefile.inc $(srcdir)/tomcat/Makefile.inc $(srcdir)/traefik/Makefile.inc $(srcdir)/unbound/Makefile.inc $(srcdir)/uwsgi/Makefile.inc $(srcdir)/varnish/Makefile.inc $(srcdir)/w1sensor/Makefile.inc $(srcdir)/web_log/Makefile.inc:
+$(top_srcdir)/build/subst.inc $(srcdir)/adaptec_raid/Makefile.inc $(srcdir)/apache/Makefile.inc $(srcdir)/beanstalk/Makefile.inc $(srcdir)/bind_rndc/Makefile.inc $(srcdir)/boinc/Makefile.inc $(srcdir)/ceph/Makefile.inc $(srcdir)/chrony/Makefile.inc $(srcdir)/couchdb/Makefile.inc $(srcdir)/cpufreq/Makefile.inc $(srcdir)/cpuidle/Makefile.inc $(srcdir)/dnsdist/Makefile.inc $(srcdir)/dns_query_time/Makefile.inc $(srcdir)/dockerd/Makefile.inc $(srcdir)/dovecot/Makefile.inc $(srcdir)/elasticsearch/Makefile.inc $(srcdir)/example/Makefile.inc $(srcdir)/exim/Makefile.inc $(srcdir)/fail2ban/Makefile.inc $(srcdir)/freeradius/Makefile.inc $(srcdir)/go_expvar/Makefile.inc $(srcdir)/haproxy/Makefile.inc $(srcdir)/hddtemp/Makefile.inc $(srcdir)/httpcheck/Makefile.inc $(srcdir)/icecast/Makefile.inc $(srcdir)/ipfs/Makefile.inc $(srcdir)/isc_dhcpd/Makefile.inc $(srcdir)/linux_power_supply/Makefile.inc $(srcdir)/litespeed/Makefile.inc $(srcdir)/logind/Makefile.inc $(srcdir)/mdstat/Makefile.inc $(srcdir)/megacli/Makefile.inc $(srcdir)/memcached/Makefile.inc $(srcdir)/mongodb/Makefile.inc $(srcdir)/monit/Makefile.inc $(srcdir)/mysql/Makefile.inc $(srcdir)/nginx/Makefile.inc $(srcdir)/nginx_plus/Makefile.inc $(srcdir)/nvidia_smi/Makefile.inc $(srcdir)/nsd/Makefile.inc $(srcdir)/ntpd/Makefile.inc $(srcdir)/ovpn_status_log/Makefile.inc $(srcdir)/openldap/Makefile.inc $(srcdir)/phpfpm/Makefile.inc $(srcdir)/portcheck/Makefile.inc $(srcdir)/postfix/Makefile.inc $(srcdir)/postgres/Makefile.inc $(srcdir)/powerdns/Makefile.inc $(srcdir)/proxysql/Makefile.inc $(srcdir)/puppet/Makefile.inc $(srcdir)/rabbitmq/Makefile.inc $(srcdir)/redis/Makefile.inc $(srcdir)/rethinkdbs/Makefile.inc $(srcdir)/retroshare/Makefile.inc $(srcdir)/samba/Makefile.inc $(srcdir)/sensors/Makefile.inc $(srcdir)/smartd_log/Makefile.inc $(srcdir)/spigotmc/Makefile.inc $(srcdir)/springboot/Makefile.inc $(srcdir)/squid/Makefile.inc $(srcdir)/tomcat/Makefile.inc $(srcdir)/tor/Makefile.inc $(srcdir)/traefik/Makefile.inc $(srcdir)/unbound/Makefile.inc $(srcdir)/uwsgi/Makefile.inc $(srcdir)/varnish/Makefile.inc $(srcdir)/w1sensor/Makefile.inc $(srcdir)/web_log/Makefile.inc:
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh

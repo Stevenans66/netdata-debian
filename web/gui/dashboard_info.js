@@ -2,10 +2,10 @@
 
 var netdataDashboard = window.netdataDashboard || {};
 
-// ----------------------------------------------------------------------------
-// menus
+// Informational content for the various sections of the GUI (menus, sections, charts, etc.)
 
-// information about the main menus
+// ----------------------------------------------------------------------------
+// Menus
 
 netdataDashboard.menu = {
     'system': {
@@ -31,7 +31,7 @@ netdataDashboard.menu = {
         title: 'Quality of Service',
         icon: '<i class="fas fa-globe"></i>',
         info: 'Netdata collects and visualizes <code>tc</code> class utilization using its ' +
-            '<a href="https://github.com/netdata/netdata/blob/master/plugins.d/tc-qos-helper.sh" target="_blank">tc-helper plugin</a>. ' +
+            '<a href="https://github.com/netdata/netdata/blob/master/collectors/tc.plugin/tc-qos-helper.sh.in" target="_blank">tc-helper plugin</a>. ' +
             'If you also use <a href="http://firehol.org/#fireqos" target="_blank">FireQOS</a> for setting up QoS, ' +
             'netdata automatically collects interface and class names. If your QoS configuration includes overheads ' +
             'calculation, the values shown here will include these overheads (the total bandwidth for the same ' +
@@ -163,7 +163,7 @@ netdataDashboard.menu = {
     'apps': {
         title: 'Applications',
         icon: '<i class="fas fa-heartbeat"></i>',
-        info: 'Per application statistics are collected using netdata\'s <code>apps.plugin</code>. This plugin walks through all processes and aggregates statistics for applications of interest, defined in <code>/etc/netdata/apps_groups.conf</code> (the default is <a href="https://github.com/netdata/netdata/blob/master/conf.d/apps_groups.conf" target="_blank">here</a>). The plugin internally builds a process tree (much like <code>ps fax</code> does), and groups processes together (evaluating both child and parent processes) so that the result is always a chart with a predefined set of dimensions (of course, only application groups found running are reported). The reported values are compatible with <code>top</code>, although the netdata plugin counts also the resources of exited children (unlike <code>top</code> which shows only the resources of the currently running processes). So for processes like shell scripts, the reported values include the resources used by the commands these scripts run within each timeframe.',
+        info: 'Per application statistics are collected using netdata\'s <code>apps.plugin</code>. This plugin walks through all processes and aggregates statistics for applications of interest, defined in <code>/etc/netdata/apps_groups.conf</code>, which can be edited by running <code>$ /etc/netdata/edit-config apps_groups.conf</code> (the default is <a href="https://github.com/netdata/netdata/blob/master/collectors/apps.plugin/apps_groups.conf" target="_blank">here</a>). The plugin internally builds a process tree (much like <code>ps fax</code> does), and groups processes together (evaluating both child and parent processes) so that the result is always a chart with a predefined set of dimensions (of course, only application groups found running are reported). The reported values are compatible with <code>top</code>, although the netdata plugin counts also the resources of exited children (unlike <code>top</code> which shows only the resources of the currently running processes). So for processes like shell scripts, the reported values include the resources used by the commands these scripts run within each timeframe.',
         height: 1.5
     },
 
@@ -892,7 +892,7 @@ netdataDashboard.context = {
     },
 
     'apps.vmem': {
-        info: 'Virtual memory allocated by applications. Please check <a href="https://github.com/netdata/netdata/wiki/netdata-virtual-memory-size" target="_blank">this article</a> for more information.'
+        info: 'Virtual memory allocated by applications. Please check <a href="https://github.com/netdata/netdata/tree/master/daemon#virtual-memory" target="_blank">this article</a> for more information.'
     },
 
     'apps.preads': {
@@ -915,7 +915,7 @@ netdataDashboard.context = {
     },
 
     'users.vmem': {
-        info: 'Virtual memory allocated per user. Please check <a href="https://github.com/netdata/netdata/wiki/netdata-virtual-memory-size" target="_blank">this article</a> for more information.'
+        info: 'Virtual memory allocated per user. Please check <a href="https://github.com/netdata/netdata/tree/master/daemon#virtual-memory" target="_blank">this article</a> for more information.'
     },
 
     'users.preads': {
@@ -938,7 +938,7 @@ netdataDashboard.context = {
     },
 
     'groups.vmem': {
-        info: 'Virtual memory allocated per user group. Please check <a href="https://github.com/netdata/netdata/wiki/netdata-virtual-memory-size" target="_blank">this article</a> for more information.'
+        info: 'Virtual memory allocated per user group. Please check <a href="https://github.com/netdata/netdata/tree/master/daemon#virtual-memory" target="_blank">this article</a> for more information.'
     },
 
     'groups.preads': {
@@ -2021,7 +2021,7 @@ netdataDashboard.context = {
     },
 
     'btrfs.disk': {
-        info: 'Physical disk usage of BTRFS. The disk space reported here is the raw physical disk space assigned to the BTRFS volume (i.e. <b>before any RAID levels</b>). BTRFS uses a two-stage allocator, first allocating large regions of disk space for one type of block (data, metadata, or system), and then using a regular block allocator inside those regions. <code>unallocated</code> is the physical disk space that is not allocated yet and is available to become data, metdata or system on demand. When <code>unallocated</code> is zero, all available disk space has been allocated to a specific function. Healthy volumes should ideally have at least five percent of their total space <code>unallocated</code>. You can keep your volume healthy by running the <code>btrfs balance</code> command on it regularly (check <code>man btrfs-balance</code> for more info).  Note that some of the spac elisted as <code>unallocated</code> may not actually be usable if the volume uses devices of different sizes.',
+        info: 'Physical disk usage of BTRFS. The disk space reported here is the raw physical disk space assigned to the BTRFS volume (i.e. <b>before any RAID levels</b>). BTRFS uses a two-stage allocator, first allocating large regions of disk space for one type of block (data, metadata, or system), and then using a regular block allocator inside those regions. <code>unallocated</code> is the physical disk space that is not allocated yet and is available to become data, metdata or system on demand. When <code>unallocated</code> is zero, all available disk space has been allocated to a specific function. Healthy volumes should ideally have at least five percent of their total space <code>unallocated</code>. You can keep your volume healthy by running the <code>btrfs balance</code> command on it regularly (check <code>man btrfs-balance</code> for more info).  Note that some of the space listed as <code>unallocated</code> may not actually be usable if the volume uses devices of different sizes.',
         colors: [NETDATA.colors[12]]
     },
 
