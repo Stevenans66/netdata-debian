@@ -28,7 +28,6 @@ Depends:
  python3-urllib3 (>= 1.22),
  python3-yaml,
  ${misc:Depends},
- ${misc:Pre-Depends},
  ${shlibs:Depends},
 Recommends:
  curl,
