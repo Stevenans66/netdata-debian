@@ -1,3 +1,9 @@
+netdata (1.11.1+dfsg-1~exp1) UNRELEASED; urgency=medium
+
+  * Merging upstream version 1.11.0+dfsg.
+
+ -- Daniel Baumann <daniel@daniel>  Fri, 28 Dec 2018 16:05:45 +0100
+
 netdata (1.11.0+dfsg-1~exp1) experimental; urgency=medium
 
   [ Federico Ceratto ]
