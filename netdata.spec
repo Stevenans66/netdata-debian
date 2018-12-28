@@ -81,11 +81,11 @@ Recommends:	python2-psycopg2 \
 
 Summary:	Real-time performance monitoring, done right
 Name:		netdata
-Version:	1.10.1
+Version:	1.11.0
 Release:	1%{?dist}
 License:	GPLv3+
 Group:		Applications/System
-Source0:	https://github.com/netdata/%{name}/releases/download/v1.11.0_rolling/%{name}-1.11.0_rolling.tar.gz
+Source0:	https://github.com/netdata/%{name}/releases/download/v1.11.1_rolling/%{name}-1.11.1_rolling.tar.gz
 URL:		http://my-netdata.io
 BuildRequires:	pkgconfig
 BuildRequires:	xz
@@ -126,7 +126,7 @@ so that you can get insights of what is happening now and what just
 happened, on your systems and applications.
 
 %prep
-%setup -q -n netdata-1.11.0_rolling
+%setup -q -n netdata-1.11.1_rolling
 
 %build
 %configure \
