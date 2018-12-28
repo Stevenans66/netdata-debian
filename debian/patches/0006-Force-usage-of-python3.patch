@@ -1,18 +1,12 @@
-From: Sander Klein <debian-bugs@roedie.nl>
-Date: Wed, 14 Nov 2018 14:36:37 +0100
-Subject: Force usage of python3
-
+Author: Sander Klein <debian-bugs@roedie.nl>
+Description: Force usage of python3
  Debian uses Python2 by default. The netdata package installs the
  Python3 dependencies. So, in order to work correctly it must use
  Python3.
----
- collectors/python.d.plugin/python.d.plugin | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/collectors/python.d.plugin/python.d.plugin b/collectors/python.d.plugin/python.d.plugin
-index 264c338..9437405 100644
---- a/collectors/python.d.plugin/python.d.plugin
-+++ b/collectors/python.d.plugin/python.d.plugin
+diff -Naurp netdata.orig/collectors/python.d.plugin/python.d.plugin netdata/collectors/python.d.plugin/python.d.plugin
+--- netdata.orig/collectors/python.d.plugin/python.d.plugin
++++ netdata/collectors/python.d.plugin/python.d.plugin
 @@ -1,6 +1,4 @@
 -#!/usr/bin/env bash
 -'''':; exec "$(command -v python || command -v python3 || command -v python2 ||
