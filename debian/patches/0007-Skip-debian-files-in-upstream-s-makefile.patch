@@ -1,16 +1,10 @@
-From: Daniel Baumann <daniel.baumann@progress-linux.org>
-Date: Wed, 14 Nov 2018 14:38:22 +0100
-Subject: Skip debian files in upstream's makefile.
+Author: Daniel Baumann <daniel.baumann@progress-linux.org>
+Description: Skip debian files in upstream's makefile.
 
----
- contrib/Makefile.am | 19 -------------------
- 1 file changed, 19 deletions(-)
-
-diff --git a/contrib/Makefile.am b/contrib/Makefile.am
-index 80d80d3..cff936f 100644
---- a/contrib/Makefile.am
-+++ b/contrib/Makefile.am
-@@ -4,28 +4,9 @@ MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
+diff -Naurp netdata.orig/contrib/Makefile.am netdata/contrib/Makefile.am
+--- netdata.orig/contrib/Makefile.am
++++ netdata/contrib/Makefile.am
+@@ -4,28 +4,9 @@ MAINTAINERCLEANFILES = $(srcdir)/Makefil
  
  dist_noinst_DATA = \
  	README.md \
