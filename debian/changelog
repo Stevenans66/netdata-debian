@@ -1,8 +1,21 @@
-netdata (1.11.1+dfsg-1~exp1) UNRELEASED; urgency=medium
+netdata (1.11.1+dfsg-1~exp1) experimental; urgency=medium
 
-  * Merging upstream version 1.11.0+dfsg.
+  * Merging upstream version 1.11.1+dfsg
+  * Bumping changelog.
+  * Refreshing python-libraries-removed-from-make.patch.
+  * Refreshing remove-file-serve-restrictions-for-symlinks.patch.
+  * Refreshing hide-update-button.patch, using comment instead of
+    'display: none' which is rendering-friendlier.
+  * Refreshing Debianize-path-to-exim4-binary.patch.
+  * Refreshing remove-infographic-for-privacy-breach-reasons.patch,
+    removing removal of infographic.html via diff, not needed anymore.
+  * Refreshing Force-usage-of-python3.patch.
+  * Refreshing Skip-debian-files-in-upstream-s-makefile.patch.
+  * Harmonizing patch filenames.
+  * Adding entries with CVE numbers to previous upstream version in debian
+    changelog.
 
- -- Daniel Baumann <daniel@daniel>  Fri, 28 Dec 2018 16:05:45 +0100
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Fri, 28 Dec 2018 17:54:28 +0100
 
 netdata (1.11.0+dfsg-1~exp1) experimental; urgency=medium
 
