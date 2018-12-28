@@ -1,8 +1,36 @@
-netdata (1.11.0+dfsg-1) UNRELEASED; urgency=medium
+netdata (1.11.0+dfsg-1~exp1) experimental; urgency=medium
 
-  * New upstream release.
+  [ Federico Ceratto ]
+  * Update watch file
 
- -- Federico Ceratto <federico@debian.org>  Thu, 08 Nov 2018 17:29:35 +0000
+  [ Daniel Baumann ]
+  * Merging upstream version 1.11.0+dfsg.
+  * Updating excluded files in copyright file.
+  * Updating upstream url in various debian packaging files.
+
+  [ Federico Ceratto ]
+  * Update debian/watch pattern
+
+  [ Lennart Weller ]
+  * Updated patches for 1.11
+
+  [ Federico Ceratto ]
+  * Move overrides to netdata-data.lintian-overrides
+  * Update copyright
+  * Add Recommends
+  * Add overrides
+  * Update copyright: file locations
+  * Add lintian overrides
+  * Add install path
+  * Sort installs
+  * Remove dh-autoreconf dep
+  * Update copyright
+
+  [ Daniel Baumann ]
+  * Updating to debhelper compat 12.
+  * Updating to standards version 4.3.0.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Fri, 28 Dec 2018 15:29:13 +0100
 
 netdata (1.10.0+dfsg-3) unstable; urgency=medium
 
