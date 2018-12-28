@@ -1,18 +1,10 @@
-From: Lennart Weller <lhw@ring0.de>
-Date: Wed, 14 Nov 2018 14:21:40 +0100
-Subject: python libraries removed from make. remove unused contrib files
+Author: Lennart Weller <lhw@ring0.de>
+Description: python libraries removed from make. remove unused contrib files
 
----
- collectors/python.d.plugin/Makefile.am             | 106 ---------------------
- .../python_modules/bases/loaders.py                |   4 +-
- web/gui/Makefile.am                                |  23 -----
- 3 files changed, 2 insertions(+), 131 deletions(-)
-
-diff --git a/collectors/python.d.plugin/Makefile.am b/collectors/python.d.plugin/Makefile.am
-index 5f214e4..79c9dc3 100644
---- a/collectors/python.d.plugin/Makefile.am
-+++ b/collectors/python.d.plugin/Makefile.am
-@@ -136,109 +136,3 @@ dist_third_party_DATA = \
+diff -Naurp netdata.orig/collectors/python.d.plugin/Makefile.am netdata/collectors/python.d.plugin/Makefile.am
+--- netdata.orig/collectors/python.d.plugin/Makefile.am
++++ netdata/collectors/python.d.plugin/Makefile.am
+@@ -139,109 +139,3 @@ dist_third_party_DATA = \
      python_modules/third_party/boinc_client.py \
      python_modules/third_party/monotonic.py \
      $(NULL)
@@ -122,10 +114,9 @@ index 5f214e4..79c9dc3 100644
 -    python_modules/urllib3/contrib/_securetransport/bindings.py \
 -    python_modules/urllib3/contrib/_securetransport/low_level.py \
 -    $(NULL)
-diff --git a/collectors/python.d.plugin/python_modules/bases/loaders.py b/collectors/python.d.plugin/python_modules/bases/loaders.py
-index 9eb268c..28c67d7 100644
---- a/collectors/python.d.plugin/python_modules/bases/loaders.py
-+++ b/collectors/python.d.plugin/python_modules/bases/loaders.py
+diff -Naurp netdata.orig/collectors/python.d.plugin/python_modules/bases/loaders.py netdata/collectors/python.d.plugin/python_modules/bases/loaders.py
+--- netdata.orig/collectors/python.d.plugin/python_modules/bases/loaders.py
++++ netdata/collectors/python.d.plugin/python_modules/bases/loaders.py
 @@ -11,9 +11,9 @@ PY_VERSION = version_info[:2]
  
  try:
@@ -138,11 +129,10 @@ index 9eb268c..28c67d7 100644
  except ImportError:
      from yaml import SafeLoader as YamlSafeLoader
  
-diff --git a/web/gui/Makefile.am b/web/gui/Makefile.am
-index 314ca37..2b6f124 100644
---- a/web/gui/Makefile.am
-+++ b/web/gui/Makefile.am
-@@ -9,10 +9,6 @@ dist_noinst_DATA = \
+diff -Naurp netdata.orig/web/gui/Makefile.am netdata/web/gui/Makefile.am
+--- netdata.orig/web/gui/Makefile.am
++++ netdata/web/gui/Makefile.am
+@@ -46,10 +46,6 @@ dist_noinst_DATA = \
  	$(NULL)
  
  dist_web_DATA = \
@@ -153,7 +143,7 @@ index 314ca37..2b6f124 100644
  	dashboard.html \
  	dashboard.js \
  	dashboard_info.js \
-@@ -69,15 +65,6 @@ dist_webcss_DATA = \
+@@ -107,15 +103,6 @@ dist_webcss_DATA = \
  	css/c3-0.4.18.min.css \
  	$(NULL)
  
@@ -169,11 +159,10 @@ index 314ca37..2b6f124 100644
  webimagesdir=$(webdir)/images
  dist_webimages_DATA = \
  	images/alert-128-orange.png \
-@@ -103,16 +90,6 @@ dist_webimages_DATA = \
- 	images/seo-performance-multi-size.icns \
- 	$(NULL)
+@@ -159,15 +146,6 @@ dashboard.js: $(DASHBOARD_JS_FILES)
+ 	if test -f $@; then rm -f $@; fi
+ 	cat $(DASHBOARD_JS_FILES) > $@.tmp && mv $@.tmp $@
  
--
 -webwellknowndir=$(webdir)/.well-known
 -dist_webwellknown_DATA = \
 -	$(NULL)
