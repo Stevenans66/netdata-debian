@@ -10,7 +10,13 @@ netdata (1.11.0+dfsg-1~exp1) experimental; urgency=medium
   * Update watch file
 
   [ Daniel Baumann ]
-  * Merging upstream version 1.11.0+dfsg.
+  * Merging upstream version 1.11.0+dfsg:
+    - Fixed JSON Header Injection (an attacker could send \n encoded in the
+      request to inject a JSON fragment into the response) [CVE-2018-18836].
+    - Fixed HTTP Header Injection (an attacker could send \n encoded in the
+      request to inject an HTTP header into the response) [CVE-2018-18837].
+    - Fixed LOG Injection (an attacker could send \n encoded in the request
+      to inject a log line at access.log) [CVE-2018-18838].
   * Updating excluded files in copyright file.
   * Updating upstream url in various debian packaging files.
 
