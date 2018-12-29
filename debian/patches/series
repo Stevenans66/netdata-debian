@@ -5,3 +5,4 @@
 0005-remove-infographic-for-privacy-breach-reasons.patch
 0006-force-usage-of-python3.patch
 0007-skip-debian-files-in-upstream-makefile.patch
+0008-compile-on-kfreebsd.patch

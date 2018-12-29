@@ -1,0 +1,524 @@
+diff -Naurp netdata.orig/collectors/apps.plugin/apps_plugin.c netdata/collectors/apps.plugin/apps_plugin.c
+--- netdata.orig/collectors/apps.plugin/apps_plugin.c
++++ netdata/collectors/apps.plugin/apps_plugin.c
+@@ -62,7 +62,7 @@ static inline void debug_log_dummy(void)
+ 
+ // ----------------------------------------------------------------------------
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ #include <sys/user.h>
+ #endif
+ 
+@@ -78,7 +78,7 @@ static inline void debug_log_dummy(void)
+ // set this to 1
+ // when set to 0, apps.plugin builds a sort list of processes, in order
+ // to process children processes, before parent processes
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ #define ALL_PIDS_ARE_READ_INSTANTLY 1
+ #else
+ #define ALL_PIDS_ARE_READ_INSTANTLY 0
+@@ -114,7 +114,7 @@ static inline void debug_log_dummy(void)
+ static int
+         update_every = 1,
+         enable_guest_charts = 0,
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+         enable_file_charts = 0,
+ #else
+         enable_file_charts = 1,
+@@ -279,7 +279,7 @@ size_t
+ struct pid_fd {
+     int fd;
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     ino_t inode;
+     char *filename;
+     uint32_t link_hash;
+@@ -362,7 +362,7 @@ struct pid_stat {
+     kernel_uint_t status_rssfile;
+     kernel_uint_t status_rssshmem;
+     kernel_uint_t status_vmswap;
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     ARL_BASE *status_arl;
+ #endif
+ 
+@@ -760,7 +760,7 @@ static inline void del_pid_entry(pid_t p
+     if(p->prev) p->prev->next = p->next;
+ 
+     // free the filename
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     {
+         size_t i;
+         for(i = 0; i < p->fds_size; i++)
+@@ -773,7 +773,7 @@ static inline void del_pid_entry(pid_t p
+     freez(p->fds_dirname);
+     freez(p->stat_filename);
+     freez(p->status_filename);
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     arl_free(p->status_arl);
+ #endif
+     freez(p->io_filename);
+@@ -796,7 +796,7 @@ static inline int managed_log(struct pid
+                 p->log_thrown |= log;
+                 switch(log) {
+                     case PID_LOG_IO:
+-                        #ifdef __FreeBSD__
++                        #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+                         error("Cannot fetch process %d I/O info (command '%s')", p->pid, p->comm);
+                         #else
+                         error("Cannot process %s/proc/%d/io (command '%s')", netdata_configured_host_prefix, p->pid, p->comm);
+@@ -804,7 +804,7 @@ static inline int managed_log(struct pid
+                         break;
+ 
+                     case PID_LOG_STATUS:
+-                        #ifdef __FreeBSD__
++                        #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+                         error("Cannot fetch process %d status info (command '%s')", p->pid, p->comm);
+                         #else
+                         error("Cannot process %s/proc/%d/status (command '%s')", netdata_configured_host_prefix, p->pid, p->comm);
+@@ -812,7 +812,7 @@ static inline int managed_log(struct pid
+                         break;
+ 
+                     case PID_LOG_CMDLINE:
+-                        #ifdef __FreeBSD__
++                        #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+                         error("Cannot fetch process %d command line (command '%s')", p->pid, p->comm);
+                         #else
+                         error("Cannot process %s/proc/%d/cmdline (command '%s')", netdata_configured_host_prefix, p->pid, p->comm);
+@@ -820,7 +820,7 @@ static inline int managed_log(struct pid
+                         break;
+ 
+                     case PID_LOG_FDS:
+-                        #ifdef __FreeBSD__
++                        #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+                         error("Cannot fetch process %d files (command '%s')", p->pid, p->comm);
+                         #else
+                         error("Cannot process entries in %s/proc/%d/fd (command '%s')", netdata_configured_host_prefix, p->pid, p->comm);
+@@ -886,7 +886,7 @@ static inline void assign_target_to_pid(
+ static inline int read_proc_pid_cmdline(struct pid_stat *p) {
+     static char cmdline[MAX_CMDLINE + 1];
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     size_t i, bytes = MAX_CMDLINE;
+     int mib[4];
+ 
+@@ -949,7 +949,7 @@ cleanup:
+ 
+ // ----------------------------------------------------------------------------
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+ struct arl_callback_ptr {
+     struct pid_stat *p;
+     procfile *ff;
+@@ -1023,7 +1023,7 @@ void arl_callback_status_rssshmem(const
+ 
+     aptr->p->status_rssshmem = str2kernel_uint_t(procfile_lineword(aptr->ff, aptr->line, 1));
+ }
+-#endif // !__FreeBSD__
++#endif // !__FreeBSD__, !__FreeBSD_kernel__
+ 
+ static inline int read_proc_pid_status(struct pid_stat *p, void *ptr) {
+     p->status_vmsize           = 0;
+@@ -1033,7 +1033,7 @@ static inline int read_proc_pid_status(s
+     p->status_rssshmem         = 0;
+     p->status_vmswap           = 0;
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     struct kinfo_proc *proc_info = (struct kinfo_proc *)ptr;
+ 
+     p->uid                  = proc_info->ki_uid;
+@@ -1102,7 +1102,7 @@ static inline int read_proc_pid_status(s
+ static inline int read_proc_pid_stat(struct pid_stat *p, void *ptr) {
+     (void)ptr;
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     struct kinfo_proc *proc_info = (struct kinfo_proc *)ptr;
+ 
+     if (unlikely(proc_info->ki_tdflags & TDF_IDLETD))
+@@ -1133,7 +1133,7 @@ static inline int read_proc_pid_stat(str
+     p->stat_collected_usec = now_monotonic_usec();
+     calls_counter++;
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     char *comm          = proc_info->ki_comm;
+     p->ppid             = proc_info->ki_ppid;
+ #else
+@@ -1165,7 +1165,7 @@ static inline int read_proc_pid_stat(str
+         assign_target_to_pid(p);
+     }
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     pid_incremental_rate(stat, p->minflt,  (kernel_uint_t)proc_info->ki_rusage.ru_minflt);
+     pid_incremental_rate(stat, p->cminflt, (kernel_uint_t)proc_info->ki_rusage_ch.ru_minflt);
+     pid_incremental_rate(stat, p->majflt,  (kernel_uint_t)proc_info->ki_rusage.ru_majflt);
+@@ -1265,7 +1265,7 @@ cleanup:
+ 
+ static inline int read_proc_pid_io(struct pid_stat *p, void *ptr) {
+     (void)ptr;
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     struct kinfo_proc *proc_info = (struct kinfo_proc *)ptr;
+ #else
+     static procfile *ff = NULL;
+@@ -1289,7 +1289,7 @@ static inline int read_proc_pid_io(struc
+     p->last_io_collected_usec = p->io_collected_usec;
+     p->io_collected_usec = now_monotonic_usec();
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     pid_incremental_rate(io, p->io_storage_bytes_read,       proc_info->ki_rusage.ru_inblock);
+     pid_incremental_rate(io, p->io_storage_bytes_written,    proc_info->ki_rusage.ru_oublock);
+ #else
+@@ -1314,7 +1314,7 @@ static inline int read_proc_pid_io(struc
+ 
+     return 1;
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+ cleanup:
+     p->io_logical_bytes_read        = 0;
+     p->io_logical_bytes_written     = 0;
+@@ -1611,7 +1611,7 @@ static inline int file_descriptor_find_o
+ static inline void clear_pid_fd(struct pid_fd *pfd) {
+     pfd->fd = 0;
+ 
+-    #ifndef __FreeBSD__
++    #if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     pfd->link_hash = 0;
+     pfd->inode = 0;
+     pfd->cache_iterations_counter = 0;
+@@ -1647,7 +1647,7 @@ static inline void init_pid_fds(struct p
+     size_t i = first;
+ 
+     while(pfd < pfdend) {
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+         pfd->filename = NULL;
+ #endif
+         clear_pid_fd(pfd);
+@@ -1658,7 +1658,7 @@ static inline void init_pid_fds(struct p
+ 
+ static inline int read_pid_file_descriptors(struct pid_stat *p, void *ptr) {
+     (void)ptr;
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     int mib[4];
+     size_t size;
+     struct kinfo_file *fds;
+@@ -2281,7 +2281,7 @@ static inline int collect_data_for_pid(p
+ static int collect_data_for_all_processes(void) {
+     struct pid_stat *p = NULL;
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     int i, procnum;
+ 
+     static size_t procbase_size = 0;
+@@ -2361,7 +2361,7 @@ static int collect_data_for_all_processe
+ #endif
+     }
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     for (i = 0 ; i < procnum ; ++i) {
+         pid_t pid = procbase[i].ki_pid;
+         collect_data_for_pid(pid, &procbase[i]);
+@@ -3188,7 +3188,7 @@ static void send_collected_data_to_netda
+     }
+     send_END();
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     send_BEGIN(type, "swap", dt);
+     for (w = root; w ; w = w->next) {
+         if(unlikely(w->exposed))
+@@ -3211,7 +3211,7 @@ static void send_collected_data_to_netda
+     }
+     send_END();
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     send_BEGIN(type, "lreads", dt);
+     for (w = root; w ; w = w->next) {
+         if(unlikely(w->exposed))
+@@ -3340,7 +3340,7 @@ static void send_charts_updates_to_netda
+         }
+     }
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+     fprintf(stdout, "CHART %s.swap '' '%s Swap Memory' 'MB' swap %s.swap stacked 20011 %d\n", type, title, type, update_every);
+     for (w = root; w ; w = w->next) {
+         if(unlikely(w->exposed))
+@@ -3360,7 +3360,7 @@ static void send_charts_updates_to_netda
+             fprintf(stdout, "DIMENSION %s '' absolute 1 %llu\n", w->name, RATES_DETAIL);
+     }
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     fprintf(stdout, "CHART %s.preads '' '%s Disk Reads' 'blocks/s' disk %s.preads stacked 20002 %d\n", type, title, type, update_every);
+     for (w = root; w ; w = w->next) {
+         if(unlikely(w->exposed))
+@@ -3478,7 +3478,7 @@ static void parse_args(int argc, char **
+             continue;
+         }
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+         if(strcmp("fds-cache-secs", argv[i]) == 0) {
+             if(argc <= i + 1) {
+                 fprintf(stderr, "Parameter 'fds-cache-secs' requires a number as argument.\n");
+@@ -3560,7 +3560,7 @@ static void parse_args(int argc, char **
+                     " without-files     enable / disable reporting files, sockets, pipes\n"
+                     "                   (default is enabled)\n"
+                     "\n"
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+                     " fds-cache-secs N  cache the files of processed for N seconds\n"
+                     "                   caching is adaptive per file (when a file\n"
+                     "                   is found, it starts at 0 and while the file\n"
+@@ -3572,7 +3572,7 @@ static void parse_args(int argc, char **
+                     " version or -v or -V print program version and exit\n"
+                     "\n"
+                     , VERSION
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+                     , max_fds_cache_seconds
+ #endif
+             );
+diff -Naurp netdata.orig/collectors/freebsd.plugin/freebsd_getifaddrs.c netdata/collectors/freebsd.plugin/freebsd_getifaddrs.c
+--- netdata.orig/collectors/freebsd.plugin/freebsd_getifaddrs.c
++++ netdata/collectors/freebsd.plugin/freebsd_getifaddrs.c
+@@ -539,7 +539,7 @@ int do_getifaddrs(int update_every, usec
+ 
+                 if (ifm->do_drops == CONFIG_BOOLEAN_YES || (ifm->do_drops == CONFIG_BOOLEAN_AUTO &&
+                                                             (IFA_DATA(iqdrops)
+-                                                             #if __FreeBSD__ >= 11
++                                                             #if __FreeBSD_version >= 1100000
+                                                              || IFA_DATA(oqdrops)
+ #endif
+                 ))) {
+@@ -561,14 +561,14 @@ int do_getifaddrs(int update_every, usec
+                         rrdset_flag_set(ifm->st_drops, RRDSET_FLAG_DETAIL);
+ 
+                         ifm->rd_drops_in  = rrddim_add(ifm->st_drops, "inbound",  NULL,  1, 1, RRD_ALGORITHM_INCREMENTAL);
+-#if __FreeBSD__ >= 11
++#if __FreeBSD_version >= 1100000
+                         ifm->rd_drops_out = rrddim_add(ifm->st_drops, "outbound", NULL, -1, 1, RRD_ALGORITHM_INCREMENTAL);
+ #endif
+                     } else
+                         rrdset_next(ifm->st_drops);
+ 
+                     rrddim_set_by_pointer(ifm->st_drops, ifm->rd_drops_in,  IFA_DATA(iqdrops));
+-#if __FreeBSD__ >= 11
++#if __FreeBSD_version >= 1100000
+                     rrddim_set_by_pointer(ifm->st_drops, ifm->rd_drops_out, IFA_DATA(oqdrops));
+ #endif
+                     rrdset_done(ifm->st_drops);
+diff -Naurp netdata.orig/collectors/freebsd.plugin/freebsd_ipfw.c netdata/collectors/freebsd.plugin/freebsd_ipfw.c
+--- netdata.orig/collectors/freebsd.plugin/freebsd_ipfw.c
++++ netdata/collectors/freebsd.plugin/freebsd_ipfw.c
+@@ -17,7 +17,7 @@
+ 
+ int do_ipfw(int update_every, usec_t dt) {
+     (void)dt;
+-#if __FreeBSD__ >= 11
++#if __FreeBSD_version >= 1100000
+ 
+     static int do_static = -1, do_dynamic = -1, do_mem = -1;
+ 
+diff -Naurp netdata.orig/collectors/freebsd.plugin/freebsd_sysctl.c netdata/collectors/freebsd.plugin/freebsd_sysctl.c
+--- netdata.orig/collectors/freebsd.plugin/freebsd_sysctl.c
++++ netdata/collectors/freebsd.plugin/freebsd_sysctl.c
+@@ -1876,7 +1876,7 @@ int do_net_inet_tcp_stats(int update_eve
+                 } else
+                     rrdset_next(st);
+ 
+-#if __FreeBSD__ >= 11
++#if __FreeBSD_version >= 11
+                 rrddim_set_by_pointer(st, rd_in_errs,      tcpstat.tcps_rcvbadoff + tcpstat.tcps_rcvreassfull +
+                                                            tcpstat.tcps_rcvshort);
+ #else
+diff -Naurp netdata.orig/collectors/proc.plugin/zfs_common.c netdata/collectors/proc.plugin/zfs_common.c
+--- netdata.orig/collectors/proc.plugin/zfs_common.c
++++ netdata/collectors/proc.plugin/zfs_common.c
+@@ -454,11 +454,11 @@ void generate_charts_arc_summary(const c
+ 
+     {
+         static RRDSET *st_memory = NULL;
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+         static RRDDIM *rd_direct = NULL;
+ #endif
+         static RRDDIM *rd_throttled = NULL;
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+         static RRDDIM *rd_indirect = NULL;
+ #endif
+ 
+@@ -478,22 +478,22 @@ void generate_charts_arc_summary(const c
+                     , RRDSET_TYPE_LINE
+             );
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+             rd_direct    = rrddim_add(st_memory, "direct",    NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+ #endif
+             rd_throttled = rrddim_add(st_memory, "throttled", NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+             rd_indirect  = rrddim_add(st_memory, "indirect",  NULL, 1, 1, RRD_ALGORITHM_INCREMENTAL);
+ #endif
+         }
+         else
+             rrdset_next(st_memory);
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+         rrddim_set_by_pointer(st_memory, rd_direct,    arcstats.memory_direct_count);
+ #endif
+         rrddim_set_by_pointer(st_memory, rd_throttled, arcstats.memory_throttle_count);
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+         rrddim_set_by_pointer(st_memory, rd_indirect,  arcstats.memory_indirect_count);
+ #endif
+         rrdset_done(st_memory);
+diff -Naurp netdata.orig/daemon/global_statistics.c netdata/daemon/global_statistics.c
+--- netdata.orig/daemon/global_statistics.c
++++ netdata/daemon/global_statistics.c
+@@ -192,7 +192,7 @@ void global_statistics_charts(void) {
+         static RRDDIM *rd_cpu_thread_user = NULL,
+                       *rd_cpu_thread_system = NULL;
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+         if (unlikely(!st_cpu_thread)) {
+             st_cpu_thread = rrdset_create_localhost(
+                     "netdata"
+diff -Naurp netdata.orig/libnetdata/libnetdata.c netdata/libnetdata/libnetdata.c
+--- netdata.orig/libnetdata/libnetdata.c
++++ netdata/libnetdata/libnetdata.c
+@@ -5,10 +5,10 @@
+ #ifdef __APPLE__
+ #define INHERIT_NONE 0
+ #endif /* __APPLE__ */
+-#if defined(__FreeBSD__) || defined(__APPLE__)
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__APPLE__)
+ #    define O_NOATIME     0
+ #    define MADV_DONTFORK INHERIT_NONE
+-#endif /* __FreeBSD__ || __APPLE__*/
++#endif /* __FreeBSD__ || __FreeBSD_kernel__ || __APPLE__*/
+ 
+ struct rlimit rlimit_nofile = { .rlim_cur = 1024, .rlim_max = 1024 };
+ int enable_ksm = 1;
+@@ -1179,7 +1179,7 @@ int recursively_delete_dir(const char *p
+ 
+ static int is_virtual_filesystem(const char *path, char **reason) {
+ 
+-#if defined(__APPLE__) || defined(__FreeBSD__)
++#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     (void)path;
+     (void)reason;
+ #else
+diff -Naurp netdata.orig/libnetdata/libnetdata.h netdata/libnetdata/libnetdata.h
+--- netdata.orig/libnetdata/libnetdata.h
++++ netdata/libnetdata/libnetdata.h
+@@ -30,22 +30,22 @@
+ 
+ #else /* !defined(ENABLE_JEMALLOC) && !defined(ENABLE_TCMALLOC) */
+ 
+-#if !(defined(__FreeBSD__) || defined(__APPLE__))
++#if ( !(defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) ) || defined(__APPLE__))
+ #include <malloc.h>
+-#endif /* __FreeBSD__ || __APPLE__ */
++#endif /* __FreeBSD__, __FreeBSD_kernel__ || __APPLE__ */
+ 
+ #endif /* !defined(ENABLE_JEMALLOC) && !defined(ENABLE_TCMALLOC) */
+ 
+ // ----------------------------------------------------------------------------
+ 
+-#if defined(__FreeBSD__)
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ #include <pthread_np.h>
+ #define NETDATA_OS_TYPE "freebsd"
+ #elif defined(__APPLE__)
+ #define NETDATA_OS_TYPE "macos"
+ #else
+ #define NETDATA_OS_TYPE "linux"
+-#endif /* __FreeBSD__, __APPLE__*/
++#endif /* __FreeBSD__, __FreeBSD_kernel__, __APPLE__*/
+ 
+ #include <pthread.h>
+ #include <errno.h>
+diff -Naurp netdata.orig/libnetdata/os.c netdata/libnetdata/os.c
+--- netdata.orig/libnetdata/os.c
++++ netdata/libnetdata/os.c
+@@ -20,7 +20,7 @@ long get_system_cpus(void) {
+         }
+ 
+         return processors;
+-#elif __FreeBSD__
++#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     int32_t tmp_processors;
+ 
+         if (unlikely(GETSYSCTL_BY_NAME("hw.ncpu", tmp_processors))) {
+@@ -62,7 +62,7 @@ long get_system_cpus(void) {
+     debug(D_SYSTEM, "System has %d processors.", processors);
+     return processors;
+ 
+-#endif /* __APPLE__, __FreeBSD__ */
++#endif /* __APPLE__, __FreeBSD__, __FreeBSD_kernel__ */
+ }
+ 
+ pid_t pid_max = 32768;
+@@ -72,7 +72,7 @@ pid_t get_system_pid_max(void) {
+         // we use the number defined in bsd/sys/proc_internal.h in XNU sources
+         pid_max = 99999;
+         return pid_max;
+-#elif __FreeBSD__
++#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     int32_t tmp_pid_max;
+ 
+         if (unlikely(GETSYSCTL_BY_NAME("kern.pid_max", tmp_pid_max))) {
+@@ -106,7 +106,7 @@ pid_t get_system_pid_max(void) {
+     pid_max = (pid_t) max;
+     return pid_max;
+ 
+-#endif /* __APPLE__, __FreeBSD__ */
++#endif /* __APPLE__, __FreeBSD__, __FreeBSD_kernel__ */
+ }
+ 
+ unsigned int system_hz;
+diff -Naurp netdata.orig/libnetdata/threads/threads.c netdata/libnetdata/threads/threads.c
+--- netdata.orig/libnetdata/threads/threads.c
++++ netdata/libnetdata/threads/threads.c
+@@ -26,7 +26,7 @@ const char *netdata_thread_tag(void) {
+ // compatibility library functions
+ 
+ pid_t gettid(void) {
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ 
+     return (pid_t)pthread_getthreadid_np();
+ 
+@@ -44,7 +44,7 @@ pid_t gettid(void) {
+ 
+     return (pid_t)syscall(SYS_gettid);
+ 
+-#endif /* __FreeBSD__, __APPLE__*/
++#endif /* __FreeBSD__, __FreeBSD_kernel__, __APPLE__*/
+ }
+ 
+ // ----------------------------------------------------------------------------
