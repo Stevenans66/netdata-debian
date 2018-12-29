@@ -1,3 +1,17 @@
+netdata (1.11.1+dfsg-1~exp2) experimental; urgency=medium
+
+  * Minimizing depends wrt/ versions prior stretch.
+  * Removing notes about autoreconf in rules, this is run by dh 10 by
+    default already.
+  * Running wrap-and-sort -bast on debian packaging.
+  * Removing unused misc:Pre-Depends, used to be needed for early multi-
+    arch only.
+  * Removing unused shlibs:Depends on netdata-data which is arch-all
+    anyway.
+  * Adding new patch to try building on kfreebsd.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 29 Dec 2018 08:30:52 +0100
+
 netdata (1.11.1+dfsg-1~exp1) experimental; urgency=medium
 
   * Merging upstream version 1.11.1+dfsg
