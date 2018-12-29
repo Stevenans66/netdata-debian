@@ -33,11 +33,14 @@ Recommends:
  curl,
  fping,
  nodejs,
-Description: real-time charts for system monitoring
- Netdata is a daemon that collects data in realtime (per second)
- and presents a web site to view and analyze them. The presentation
- is also real-time and full of interactive charts that precisely
- render all collected values.
+Description: real-time performance monitoring
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
+ .
+ It can run autonomously without any third party components or it can be
+ integrated to existing monitoring tool chains (Prometheus, Graphite,
+ OpenTSDB, Kafka, Grafana, etc).
 
 Package: netdata-data
 Architecture: all
@@ -48,10 +51,9 @@ Depends:
  ${misc:Depends},
 Recommends:
  netdata (=${source:Version}),
-Description: real-time charts for system monitoring (Data)
- Netdata is a daemon that collects data in realtime (per second)
- and presents a web site to view and analyze them. The presentation
- is also real-time and full of interactive charts that precisely
- render all collected values.
+Description: real-time performance monitoring (data)
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
  .
- This package contains all the architecture independent data
+ This package contains the architecture independent data.
