@@ -1,5 +1,5 @@
 Author: Lennart Weller <lhw@ring0.de>
-Description: remove infographic for privacy breach reasons
+Description: Remove infographic for privacy breach reasons.
 
 diff -Naurp netdata.orig/web/gui/Makefile.am netdata/web/gui/Makefile.am
 --- netdata.orig/web/gui/Makefile.am

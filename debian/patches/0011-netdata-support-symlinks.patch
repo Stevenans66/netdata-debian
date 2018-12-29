@@ -1,5 +1,5 @@
 Author: Lennart Weller <lhw@ring0.de>
-Description: remove file serve restrictions for symlinks
+Description: Remove file serve restrictions for symlinks.
 
 diff -Naurp netdata.orig/web/server/web_client.c netdata/web/server/web_client.c
 --- netdata.orig/web/server/web_client.c

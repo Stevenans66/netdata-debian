@@ -1,5 +1,5 @@
 Author: Daniel Baumann <daniel.baumann@progress-linux.org>
-Description: Skip debian files in upstream's makefile.
+Description: Ignore upstream debian packaging.
 
 diff -Naurp netdata.orig/contrib/Makefile.am netdata/contrib/Makefile.am
 --- netdata.orig/contrib/Makefile.am

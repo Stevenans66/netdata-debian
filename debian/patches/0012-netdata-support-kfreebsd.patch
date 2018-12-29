@@ -1,5 +1,5 @@
 Author: Lennart Weller <lhw@ring0.de>, Daniel Baumann <daniel.baumann@progress-linux.org>
-Description: compile on kfreebsd/hurd
+Description: Build on kfreebsd.
 
 diff -Naurp netdata.orig/collectors/apps.plugin/apps_plugin.c netdata/collectors/apps.plugin/apps_plugin.c
 --- netdata.orig/collectors/apps.plugin/apps_plugin.c

@@ -1,5 +1,5 @@
 Author: Federico Ceratto <federico.ceratto@gmail.com>
-Description: hide update button
+Description: Remove update button in web gui.
 
 diff -Naurp netdata.orig/web/gui/index.html netdata/web/gui/index.html
 --- netdata.orig/web/gui/index.html

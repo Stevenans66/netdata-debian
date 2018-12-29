@@ -1,8 +1,5 @@
 Author: Sander Klein <debian-bugs@roedie.nl>
-Description: Force usage of python3
- Debian uses Python2 by default. The netdata package installs the
- Python3 dependencies. So, in order to work correctly it must use
- Python3.
+Description: Debian uses by default python 2 instead of python3.
 
 diff -Naurp netdata.orig/collectors/python.d.plugin/python.d.plugin netdata/collectors/python.d.plugin/python.d.plugin
 --- netdata.orig/collectors/python.d.plugin/python.d.plugin

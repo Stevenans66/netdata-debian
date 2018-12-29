@@ -1,5 +1,5 @@
 Author: Sven Hartge <sven@svenhartge.de>
-Description: Debianize path to exim4 binary
+Description: Debian has exim in /usr/sbin which is not in the default path.
 
 diff -Naurp netdata.orig/collectors/python.d.plugin/exim/exim.conf netdata/collectors/python.d.plugin/exim/exim.conf
 --- netdata.orig/collectors/python.d.plugin/exim/exim.conf
