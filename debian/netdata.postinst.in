@@ -53,8 +53,6 @@ case "$1" in
           chmod 4754 /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin
         chown netdata:adm /var/log/netdata
         chmod 02750 /var/log/netdata
-
-#PERMS#
         ;;
 esac
 
