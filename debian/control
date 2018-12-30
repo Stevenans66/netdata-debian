@@ -7,6 +7,7 @@ Uploaders:
  Daniel Baumann <daniel.baumann@progress-linux.org>,
 Build-Depends:
  debhelper (>= 12~),
+ freebsd-glue [kfreebsd-amd64 kfreebsd-i386],
  pkg-config,
  uuid-dev,
  zlib1g-dev,
