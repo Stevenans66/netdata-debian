@@ -1,3 +1,19 @@
+netdata (1.11.1+dfsg-1~exp3) experimental; urgency=medium
+
+  * Removing unused PERMS placeholder in postinst.
+  * Adding dep-header in compile-on-kfreebsd.patch.
+  * Updating package descriptions based on upstream documentation.
+  * Adding TODO file.
+  * Update spelling of upstream project name in copyright.
+  * Adding patch to hide social-media buttons in navbar to declutter the
+    interface.
+  * Splitting some patches and grouping them thematically together.
+  * Moving source lintian-overrides to their prefered location.
+  * Adding build-depends on freebsd-glue to try to fix remaining FTBFS on
+    kfreebsd.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 30 Dec 2018 21:52:56 +0100
+
 netdata (1.11.1+dfsg-1~exp2) experimental; urgency=medium
 
   * Minimizing depends wrt/ versions prior stretch.
