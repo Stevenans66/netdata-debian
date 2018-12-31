@@ -23,6 +23,9 @@ MULTIARCH_INSTALL = debian/netdata.postinst
 	dh $@
 
 override_dh_autoreconf:
+	rm -f debian/configure.ac.orig
+	cp configure.ac debian/configure.ac.orig
+
 	sed -i	-e 's/^\(define(\[VERSION_MAJOR]\).*/\1, [$(VERSION_MAJOR)])/' \
 		-e 's/^\(define(\[VERSION_MINOR]\).*/\1, [$(VERSION_MINOR)])/' \
 		-e 's/^\(define(\[VERSION_FIX]\).*/\1, [$(VERSION_FIX)])/' \
@@ -30,6 +33,15 @@ override_dh_autoreconf:
 	configure.ac
 
 	dh_autoreconf
+
+override_dh_autoreconf_clean:
+	if [ -e debian/configure.ac.orig ]; \
+	then \
+		rm -f configure.ac; \
+		mv debian/configure.ac.orig configure.ac; \
+	fi
+
+	dh_autoreconf_clean
 
 override_dh_auto_configure:
 	dh_auto_configure -- --libexecdir=/usr/lib/$(DEB_HOST_MULTIARCH) --with-math
