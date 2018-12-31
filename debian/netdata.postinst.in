@@ -2,34 +2,8 @@
 
 set -e
 
-CONFFILE="/etc/netdata/health_alarm_notify.conf"
-
-. /usr/share/debconf/confmodule
-
 case "$1" in
   configure)
-        db_get netdata/send_email
-        SEND_EMAIL="${RET:-true}" # boolean
-
-        db_stop
-
-        case "${SEND_EMAIL}" in
-          true)
-            SEND_EMAIL="YES"
-            ;;
-
-          *)
-            SEND_EMAIL="NO"
-            ;;
-        esac
-
-        if [ -e "${CONFFILE}" ]; then
-          sed -e "s|^ *SEND_EMAIL=.*|SEND_EMAIL=\"${SEND_EMAIL}\"|" \
-            < "${CONFFILE}" > "${CONFFILE}.tmp"
-
-          mv -f "${CONFFILE}.tmp" "${CONFFILE}"
-        fi
-
         if [ -z "$2" ]; then
           if ! getent group netdata >/dev/null; then
               addgroup --quiet --system netdata
