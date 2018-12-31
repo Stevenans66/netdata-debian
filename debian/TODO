@@ -9,3 +9,5 @@
   - netdata-daemon: just the daemon and systemd/init integration
   - netdata-web:    webfrontend, not needed on small devices
   - netdata-common: plugins, checks, etc.
+
+* keep depends minimal and put everything to recommends/suggests
