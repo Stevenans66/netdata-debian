@@ -7,7 +7,6 @@ Uploaders:
  Daniel Baumann <daniel.baumann@progress-linux.org>,
 Build-Depends:
  debhelper (>= 12~),
- freebsd-glue [kfreebsd-amd64 kfreebsd-i386],
  pkg-config,
  uuid-dev,
  zlib1g-dev,
@@ -18,7 +17,7 @@ Vcs-Browser: https://salsa.debian.org/debian/netdata
 Vcs-Git: https://salsa.debian.org/debian/netdata.git
 
 Package: netdata
-Architecture: any
+Architecture: linux-any
 Depends:
  adduser,
  libcap2-bin,
