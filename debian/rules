@@ -50,12 +50,10 @@ $(MULTIARCH_INSTALL): % : %.in
 	sed 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/g' $< > $@
 
 override_dh_install: $(MULTIARCH_INSTALL)
-	dh_install
-
-override_dh_install-arch: $(MULTIARCH_INSTALL)
-	dh_install
 	# Remove unneeded .keep files
-	find "$(TOP)" -name .keep -delete
+	find debian/tmp -name .keep -delete
+
+	dh_install
 
 override_dh_install-indep:
 	dh_install
