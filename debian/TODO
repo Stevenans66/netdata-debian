@@ -5,10 +5,14 @@
   the package to avoid need for rebuilding upstream tarballs.
 
 * rethink package splitting, i.e. something like...
-  - netdata:        meta package, depending on netdata-daemon, netdata-web
-  - netdata-daemon: just the daemon and systemd/init integration
-  - netdata-web:    webfrontend, not needed on small devices
-  - netdata-common: plugins, checks, etc.
+  - netdata:               meta package, depending on netdata-daemon, netdata-web
+  - netdata-daemon:        just the daemon and systemd/init integration, -O3 and sse2
+  - netdata-daemon-legacy: daemon compiled with -O2 and without sse2 etc.
+  - netdata-web:           webfrontend, not needed on small devices
+  - netdata-common:        plugins, checks, etc (everything arch all).
+
+  - netdata-doc:           htmldoc that can be used via apache2
+  - netdata-apache2:       apache2 conf snipped to enable netdata via reverse proxy
 
 * keep depends minimal and put everything to recommends/suggests
 
