@@ -11,3 +11,5 @@
   - netdata-common: plugins, checks, etc.
 
 * keep depends minimal and put everything to recommends/suggests
+
+* check netdata.conf, netdata.init, netdata.service etc. with upstream
