@@ -8,7 +8,7 @@ netdata (1.11.1+dfsg-1~exp3) experimental; urgency=medium
   * Adding patch to hide social-media buttons in navbar to declutter the
     interface.
   * Splitting some patches and grouping them thematically together.
-  * Moving source lintian-overrides to their prefered location.
+  * Moving source lintian-overrides to their preferred location.
   * Adding build-depends on freebsd-glue to try to fix remaining FTBFS on
     kfreebsd.
 
