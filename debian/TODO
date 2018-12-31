@@ -1,3 +1,11 @@
-- switch fonts-font-awesome to fonts-fork-awesome (or even using alternative depends?)
-- next upstream version: don't exclude html files, just don't install them into the package
-  to avoid need for rebuilding upstream tarballs.
+* switch fonts-font-awesome to fonts-fork-awesome (or even using alternative
+  depends?)
+
+* next upstream version: don't exclude html files, just don't install them into
+  the package to avoid need for rebuilding upstream tarballs.
+
+* rethink package splitting, i.e. something like...
+  - netdata:        meta package, depending on netdata-daemon, netdata-web
+  - netdata-daemon: just the daemon and systemd/init integration
+  - netdata-web:    webfrontend, not needed on small devices
+  - netdata-common: plugins, checks, etc.
