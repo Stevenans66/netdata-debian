@@ -1,1 +1,3 @@
 - switch fonts-font-awesome to fonts-fork-awesome (or even using alternative depends?)
+- next upstream version: don't exclude html files, just don't install them into the package
+  to avoid need for rebuilding upstream tarballs.
