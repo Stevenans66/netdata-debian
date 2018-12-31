@@ -13,9 +13,12 @@
 
   - netdata-doc:           htmldoc that can be used via apache2
   - netdata-apache2:       apache2 conf snipped to enable netdata via reverse proxy
+                           and (optional) basic auth.
 
 * keep depends minimal and put everything to recommends/suggests
 
 * check netdata.conf, netdata.init, netdata.service etc. with upstream
 
 * check if freeipmi plugin can be run with caps instead setuid
+
+* netdata.conf: preseeding of ip, port, registry, and history.
