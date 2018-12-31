@@ -1,3 +1,14 @@
+netdata (1.11.1+dfsg-1) unstable; urgency=medium
+
+  * Temporarily disable use of SSE to make netdata usable on old machines
+    (Closes: #879765).
+  * Removing debconf-handling of health_alarm_notify.conf for now, will
+    reintroduce it properly with ucf after some reworking/generalization
+    (Closes: #904459).
+  * Updating TODO file.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Mon, 31 Dec 2018 19:11:39 +0100
+
 netdata (1.11.1+dfsg-1~exp4) experimental; urgency=medium
 
   * Building on linux only, building on kfreebsd doesn't really work at
