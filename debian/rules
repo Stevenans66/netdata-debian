@@ -6,6 +6,10 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 TOP = $(CURDIR)/debian/netdata
 
 VERSION := $(shell dpkg-parsechangelog -SVersion)
+VERSION_MAJOR := $(word 1, $(subst ., ,$(VERSION)))
+VERSION_MINOR := $(word 2, $(subst ., ,$(VERSION)))
+VERSION_FIX := $(word 3, $(subst -, ,$(subst ., ,$(VERSION))))
+VERSION_SUFFIX := -$(word 4, $(subst -, ,$(subst ., ,$(VERSION))))
 
 export DH_VERBOSE = 1
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
@@ -17,6 +21,15 @@ MULTIARCH_INSTALL = debian/netdata.postinst
 
 %:
 	dh $@
+
+override_dh_autoreconf:
+	sed -i	-e 's/^\(define(\[VERSION_MAJOR]\).*/\1, [$(VERSION_MAJOR)])/' \
+		-e 's/^\(define(\[VERSION_MINOR]\).*/\1, [$(VERSION_MINOR)])/' \
+		-e 's/^\(define(\[VERSION_FIX]\).*/\1, [$(VERSION_FIX)])/' \
+		-e 's/^\(define(\[VERSION_SUFFIX]\).*/\1, [$(VERSION_SUFFIX)])/' \
+	configure.ac
+
+	dh_autoreconf
 
 override_dh_auto_configure:
 	dh_auto_configure -- --libexecdir=/usr/lib/$(DEB_HOST_MULTIARCH) --with-math
