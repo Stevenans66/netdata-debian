@@ -1,6 +1,3 @@
 # See Debian policy 10.9. apps.plugin has extra capabilities, so don't let
 # normal users run it.
 netdata: non-standard-executable-perm usr/lib/*/netdata/plugins.d/apps.plugin 0754 != 0755
-# Debian ships jQuery 3 which is not supported
-# https://github.com/netdata/netdata/issues/42#issuecomment-253560208
-netdata-data: embedded-javascript-library usr/share/netdata/web/lib/jquery-2.2.4.min.js
