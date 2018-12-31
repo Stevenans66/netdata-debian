@@ -18,6 +18,8 @@ Vcs-Git: https://salsa.debian.org/debian/netdata.git
 
 Package: netdata
 Architecture: linux-any
+Pre-Depends:
+ ${misc:Pre-Depends},
 Depends:
  adduser,
  libcap2-bin,
