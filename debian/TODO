@@ -13,3 +13,5 @@
 * keep depends minimal and put everything to recommends/suggests
 
 * check netdata.conf, netdata.init, netdata.service etc. with upstream
+
+* check if freeipmi plugin can be run with caps instead setuid
