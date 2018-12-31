@@ -44,7 +44,7 @@ override_dh_autoreconf_clean:
 	dh_autoreconf_clean
 
 override_dh_auto_configure:
-	dh_auto_configure -- --libexecdir=/usr/lib/$(DEB_HOST_MULTIARCH) --with-math
+	dh_auto_configure -- --libexecdir=/usr/lib/$(DEB_HOST_MULTIARCH) --enable-plugin-freeipmi --with-math
 
 $(MULTIARCH_INSTALL): % : %.in
 	sed 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/g' $< > $@
