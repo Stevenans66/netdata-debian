@@ -1,3 +1,10 @@
+netdata (1.11.1+dfsg-2) unstable; urgency=medium
+
+  * brown paper bag: I've built the wrong branch by accident that had
+    WIP maintainer scripts, uploading the proper 1.11.1+dfsg-1 now.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Mon, 31 Dec 2018 20:05:07 +0100
+
 netdata (1.11.1+dfsg-1) unstable; urgency=medium
 
   * Temporarily disable use of SSE to make netdata usable on old machines
