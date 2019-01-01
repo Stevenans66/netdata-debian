@@ -19,21 +19,16 @@ Vcs-Git: https://salsa.debian.org/debian/netdata.git
 
 Package: netdata
 Section: net
-Architecture: linux-any
-Pre-Depends:
- ${misc:Pre-Depends},
+Architecture: all
 Depends:
- libcap2-bin,
- lsb-base,
+ netdata-core (=${source:Version}),
  netdata-plugins-bash (=${source:Version}),
- netdata-plugins-nodejs (=${source:Version}),
- netdata-plugins-python (=${source:Version}),
  netdata-web (=${source:Version}),
  ${misc:Depends},
- ${shlibs:Depends},
 Recommends:
- curl,
-Description: real-time performance monitoring
+ netdata-plugins-nodejs (=${source:Version}),
+ netdata-plugins-python (=${source:Version}),
+Description: real-time performance monitoring (metapackage)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
  systems it runs using interactive web dashboards.
@@ -41,18 +36,42 @@ Description: real-time performance monitoring
  It can run autonomously without any third party components or it can be
  integrated to existing monitoring tool chains (Prometheus, Graphite,
  OpenTSDB, Kafka, Grafana, etc).
+ .
+ This package is a metapackage depending on the typical netdata components.
+
+Package: netdata-core
+Section: net
+Architecture: linux-any
+Pre-Depends:
+ ${misc:Pre-Depends},
+Depends:
+ libcap2-bin,
+ lsb-base,
+ ${misc:Depends},
+ ${shlibs:Depends},
+Recommends:
+ curl,
+Breaks:
+ netdata (<< 1.11.1+dfsg-3~),
+Description: real-time performance monitoring (core)
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
+ .
+ This package contains the minimal core.
 
 Package: netdata-plugins-bash
+Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
  bash,
- netdata (=${source:Version}),
+ netdata-core (=${source:Version}),
  ${misc:Depends},
 Suggests:
  fping,
 Enhances:
- netdata,
+ netdata-core,
 Description: real-time performance monitoring (bash plugins)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -61,14 +80,15 @@ Description: real-time performance monitoring (bash plugins)
  This package contains the plugins using bash.
 
 Package: netdata-plugins-nodejs
+Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
- netdata (=${source:Version}),
+ netdata-core (=${source:Version}),
  nodejs,
  ${misc:Depends},
 Enhances:
- netdata,
+ netdata-core,
 Description: real-time performance monitoring (nodejs plugins)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -77,17 +97,18 @@ Description: real-time performance monitoring (nodejs plugins)
  This package contains the plugins using nodejs.
 
 Package: netdata-plugins-python
+Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
- netdata (=${source:Version}),
+ netdata-core (=${source:Version}),
  python3,
  python3-six,
  python3-urllib3 (>= 1.22),
  python3-yaml,
  ${misc:Depends},
 Enhances:
- netdata,
+ netdata-core,
 Description: real-time performance monitoring (python plugins)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -101,14 +122,14 @@ Architecture: all
 Depends:
  fonts-font-awesome,
  libjs-bootstrap,
- netdata (=${source:Version}),
+ netdata-core (=${source:Version}),
  ${misc:Depends},
 Conflicts:
  netdata-data,
 Replaces:
  netdata-data,
 Enhances:
- netdata,
+ netdata-core,
 Description: real-time performance monitoring (web)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
