@@ -25,7 +25,7 @@ Pre-Depends:
 Depends:
  libcap2-bin,
  lsb-base,
- netdata-data (=${source:Version}),
+ netdata-web (=${source:Version}),
  python3,
  python3-six,
  python3-urllib3 (>= 1.22),
@@ -45,18 +45,23 @@ Description: real-time performance monitoring
  integrated to existing monitoring tool chains (Prometheus, Graphite,
  OpenTSDB, Kafka, Grafana, etc).
 
-Package: netdata-data
+Package: netdata-web
 Section: net
 Architecture: all
 Depends:
  fonts-font-awesome,
  libjs-bootstrap,
- ${misc:Depends},
-Recommends:
  netdata (=${source:Version}),
-Description: real-time performance monitoring (data)
+ ${misc:Depends},
+Conflicts:
+ netdata-data,
+Replaces:
+ netdata-data,
+Enhances:
+ netdata,
+Description: real-time performance monitoring (web)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
  systems it runs using interactive web dashboards.
  .
- This package contains the architecture independent data.
+ This package contains the web frontend.
