@@ -60,6 +60,9 @@ override_dh_install-indep:
 	# Setting package version (update check)
 	echo $(VERSION) > $(TOP)-data/usr/share/netdata/web/version.txt
 
+override_dh_missing:
+	dh_missing --fail-missing
+
 override_dh_fixperms-arch:
 	dh_fixperms
 
