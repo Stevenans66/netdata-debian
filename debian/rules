@@ -47,6 +47,28 @@ override_dh_install:
 
 	dh_install
 
+	# Move architecture dependent plugins
+	mkdir -p $(TOP)/usr/lib/netdata/plugins.d
+	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
+	do \
+		mv $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
+		   $(TOP)/usr/lib/netdata/plugins.d; \
+	done
+
+	mkdir -p $(TOP)-plugins-nodejs/usr/lib/netdata/plugins.d
+	for plugin in node.d.plugin; \
+	do \
+		mv $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
+		   $(TOP)-plugins-nodejs/usr/lib/netdata/plugins.d; \
+	done
+
+	mkdir -p $(TOP)-plugins-python/usr/lib/netdata/plugins.d
+	for plugin in python.d.plugin; \
+	do \
+		mv $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
+		   $(TOP)-plugins-python/usr/lib/netdata/plugins.d; \
+	done
+
 override_dh_install-indep:
 	dh_install
 	# Setting package version (update check)
@@ -60,9 +82,8 @@ override_dh_fixperms-arch:
 
 	# apps.plugin should only be runnable by the netdata user. It will be
 	# given extra capabilities in the postinst script.
-	#
 	chmod 0754 $(TOP)/usr/lib/netdata/plugins.d/apps.plugin
-	chmod 0644 $(TOP)/usr/lib/netdata/plugins.d/loopsleepms.sh.inc
 	chmod 4754 $(TOP)/usr/lib/netdata/plugins.d/freeipmi.plugin
-	chmod 0644 $(TOP)/usr/lib/netdata/charts.d/*.sh
-	chmod 0644 $(TOP)/usr/lib/netdata/python.d/*.py
+	chmod 0644 $(TOP)-plugins-bash/usr/lib/netdata/charts.d/*.sh
+	chmod 0644 $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/*.sh.inc
+	chmod 0644 $(TOP)-plugins-python/usr/lib/netdata/python.d/*.py

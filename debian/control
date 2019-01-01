@@ -25,17 +25,14 @@ Pre-Depends:
 Depends:
  libcap2-bin,
  lsb-base,
+ netdata-plugins-bash (=${source:Version}),
+ netdata-plugins-nodejs (=${source:Version}),
+ netdata-plugins-python (=${source:Version}),
  netdata-web (=${source:Version}),
- python3,
- python3-six,
- python3-urllib3 (>= 1.22),
- python3-yaml,
  ${misc:Depends},
  ${shlibs:Depends},
 Recommends:
  curl,
- fping,
- nodejs,
 Description: real-time performance monitoring
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -44,6 +41,59 @@ Description: real-time performance monitoring
  It can run autonomously without any third party components or it can be
  integrated to existing monitoring tool chains (Prometheus, Graphite,
  OpenTSDB, Kafka, Grafana, etc).
+
+Package: netdata-plugins-bash
+Architecture: all
+Multi-Arch: foreign
+Depends:
+ bash,
+ netdata (=${source:Version}),
+ ${misc:Depends},
+Suggests:
+ fping,
+Enhances:
+ netdata,
+Description: real-time performance monitoring (bash plugins)
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
+ .
+ This package contains the plugins using bash.
+
+Package: netdata-plugins-nodejs
+Architecture: all
+Multi-Arch: foreign
+Depends:
+ netdata (=${source:Version}),
+ nodejs,
+ ${misc:Depends},
+Enhances:
+ netdata,
+Description: real-time performance monitoring (nodejs plugins)
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
+ .
+ This package contains the plugins using nodejs.
+
+Package: netdata-plugins-python
+Architecture: all
+Multi-Arch: foreign
+Depends:
+ netdata (=${source:Version}),
+ python3,
+ python3-six,
+ python3-urllib3 (>= 1.22),
+ python3-yaml,
+ ${misc:Depends},
+Enhances:
+ netdata,
+Description: real-time performance monitoring (python plugins)
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
+ .
+ This package contains the plugins using python.
 
 Package: netdata-web
 Section: net

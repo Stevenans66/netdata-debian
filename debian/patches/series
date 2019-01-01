@@ -4,6 +4,7 @@
 0004-debian-use-python3.patch
 0005-debian-remove-infographic.patch
 0006-debian-remove-contrib-files.patch
+0007-debian-use-sh.patch
 0011-netdata-support-symlinks.patch
 0021-gui-remove-update-button.patch
 0022-gui-remove-social-media-buttons.patch
