@@ -29,9 +29,9 @@ case "${1}" in
 		done
 
 		# handling plugin capabilities (or setuid as fallback)
-		chown -R root:netdata /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d
-		setcap cap_dac_read_search,cap_sys_ptrace+ep /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin || \
-			chmod 4754 /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin
+		chown -R root:netdata /usr/lib/netdata/plugins.d
+		setcap cap_dac_read_search,cap_sys_ptrace+ep /usr/lib/netdata/plugins.d/apps.plugin || \
+			chmod 4754 /usr/lib/netdata/plugins.d/apps.plugin
 
 		# handling log owner and permissions
 		chown netdata:adm /var/log/netdata

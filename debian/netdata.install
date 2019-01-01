@@ -1,14 +1,11 @@
-/etc/netdata/
-/usr/sbin
-/usr/lib/*/netdata/charts.d/*.sh
-/usr/lib/*/netdata/conf.d
-/usr/lib/*/netdata/node.d/*.js
-/usr/lib/*/netdata/node.d/node_modules
-/usr/lib/*/netdata/plugins.d/*.plugin
-/usr/lib/*/netdata/plugins.d/*.sh
-/usr/lib/*/netdata/plugins.d/*.sh.inc
-/usr/lib/*/netdata/plugins.d/cgroup-network
-/usr/lib/*/netdata/python.d/*.py
-/usr/lib/*/netdata/python.d/python_modules
-
-debian/netdata.conf /etc/netdata/
+/etc/netdata
+/usr/lib/netdata/charts.d/*.sh
+/usr/lib/netdata/conf.d
+/usr/lib/netdata/node.d/*.js
+/usr/lib/netdata/node.d/node_modules
+/usr/lib/netdata/plugins.d/*.plugin
+/usr/lib/netdata/plugins.d/*.sh
+/usr/lib/netdata/plugins.d/*.sh.inc
+/usr/lib/netdata/plugins.d/cgroup-network
+/usr/lib/netdata/python.d/*.py
+/usr/lib/netdata/python.d/python_modules

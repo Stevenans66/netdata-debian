@@ -48,7 +48,6 @@ Description: real-time performance monitoring
 Package: netdata-data
 Section: net
 Architecture: all
-Multi-Arch: foreign
 Depends:
  fonts-font-awesome,
  libjs-bootstrap,

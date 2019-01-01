@@ -1,8 +1,5 @@
 #!/usr/bin/make -f
 
-# Find the arch we are building for, as this determines
-# the location of plugins in /usr/lib
-DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 TOP = $(CURDIR)/debian/netdata
 
 VERSION := $(shell dpkg-parsechangelog -SVersion)
@@ -16,8 +13,6 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 export DEB_CFLAGS_MAINT_APPEND  = -Wall -O3
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-
-MULTIARCH_INSTALL = debian/netdata.postinst
 
 %:
 	dh $@
@@ -44,12 +39,9 @@ override_dh_autoreconf_clean:
 	dh_autoreconf_clean
 
 override_dh_auto_configure:
-	dh_auto_configure -- --libexecdir=/usr/lib/$(DEB_HOST_MULTIARCH) --disable-x86-sse --enable-plugin-freeipmi --with-math
+	dh_auto_configure -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --enable-plugin-freeipmi --with-math
 
-$(MULTIARCH_INSTALL): % : %.in
-	sed 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/g' $< > $@
-
-override_dh_install: $(MULTIARCH_INSTALL)
+override_dh_install:
 	# Remove unneeded .keep files
 	find debian/tmp -name .keep -delete
 
@@ -69,8 +61,8 @@ override_dh_fixperms-arch:
 	# apps.plugin should only be runnable by the netdata user. It will be
 	# given extra capabilities in the postinst script.
 	#
-	chmod 0754 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/plugins.d/apps.plugin
-	chmod 0644 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/plugins.d/loopsleepms.sh.inc
-	chmod 4754 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/plugins.d/freeipmi.plugin
-	chmod 0644 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/charts.d/*.sh
-	chmod 0644 $(TOP)/usr/lib/$(DEB_HOST_MULTIARCH)/netdata/python.d/*.py
+	chmod 0754 $(TOP)/usr/lib/netdata/plugins.d/apps.plugin
+	chmod 0644 $(TOP)/usr/lib/netdata/plugins.d/loopsleepms.sh.inc
+	chmod 4754 $(TOP)/usr/lib/netdata/plugins.d/freeipmi.plugin
+	chmod 0644 $(TOP)/usr/lib/netdata/charts.d/*.sh
+	chmod 0644 $(TOP)/usr/lib/netdata/python.d/*.py
