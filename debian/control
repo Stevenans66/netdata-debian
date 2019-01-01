@@ -22,7 +22,6 @@ Architecture: linux-any
 Pre-Depends:
  ${misc:Pre-Depends},
 Depends:
- adduser,
  libcap2-bin,
  lsb-base,
  netdata-data (=${source:Version}),

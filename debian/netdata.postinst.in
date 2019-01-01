@@ -6,11 +6,11 @@ case "$1" in
   configure)
         if [ -z "$2" ]; then
           if ! getent group netdata >/dev/null; then
-              addgroup --quiet --system netdata
+              groupadd --system netdata
           fi
 
           if ! getent passwd netdata >/dev/null; then
-              adduser --quiet --system --ingroup netdata --home /var/lib/netdata --no-create-home netdata
+              useradd --system --groups netdata --home-dir /var/lib/netdata --no-create-home netdata
               mkdir -p /var/lib/netdata
           fi
 

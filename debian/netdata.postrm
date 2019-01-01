@@ -16,11 +16,11 @@ case "$1" in
         rm -rf /var/cache/netdata /var/log/netdata
 
         if getent passwd netdata >/dev/null; then
-            deluser --quiet --system netdata || echo "Unable to remove netdata user"
+            userdel netdata || echo "Unable to remove netdata user"
         fi
 
         if getent group netdata >/dev/null; then
-            delgroup --quiet --system netdata || echo "Unable to remove netdata group"
+            groupdel netdata || echo "Unable to remove netdata group"
         fi
 
         ;;
