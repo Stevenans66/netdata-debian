@@ -2,6 +2,8 @@
 
 TOP = $(CURDIR)/debian/netdata
 
+PACKAGES := $(shell dh_listpackages -a)
+
 VERSION := $(shell dpkg-parsechangelog -SVersion)
 VERSION_MAJOR := $(word 1, $(subst ., ,$(VERSION)))
 VERSION_MINOR := $(word 2, $(subst ., ,$(VERSION)))
@@ -38,14 +40,52 @@ override_dh_autoreconf_clean:
 
 	dh_autoreconf_clean
 
+override_dh_auto_clean:
+	dh_auto_clean
+
+	rm -rf build-optimized
+	rm -rf build-no-sse debian/tmp-no-sse
+
 override_dh_auto_configure:
-	dh_auto_configure -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --enable-plugin-freeipmi --with-math
+	mkdir -p build-optimized
+	dh_auto_configure -B build-optimized -- --libdir=/usr/lib --libexecdir=/usr/lib --enable-x86-sse --enable-plugin-freeipmi --with-math
+	cp -a web/gui/src build-optimized/web/gui
+
+ifdef $(findstring no-sse,$(PACKAGES))
+	mkdir -p build-no-sse
+	dh_auto_configure -B build-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
+	cp -a web/gui/src build-no-sse/web/gui
+endif
+
+override_dh_auto_build:
+	dh_auto_build -B build-optimized
+
+ifdef $(findstring no-sse,$(PACKAGES))
+	dh_auto_build -B build-no-sse
+endif
+
+override_dh_auto_install:
+	dh_auto_install -B build-optimized -- DESTDIR=$(CURDIR)/debian/tmp
+
+ifdef $(findstring no-sse,$(PACKAGES))
+	dh_auto_install -B build-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-no-sse
+endif
 
 override_dh_install:
-	# Remove unneeded .keep files
-	find debian/tmp -name .keep -delete
+ifdef $(findstring no-sse,$(PACKAGES))
+	find debian/tmp-no-sse -name .keep -delete
+	dh_install -p netdata-core-no-sse --sourcedir=debian/tmp-no-sse
 
-	dh_install
+	mkdir -p $(TOP)-core-no-sse/usr/lib/netdata/plugins.d
+	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
+	do \
+		cp debian/tmp-no-sse/usr/lib/netdata/plugins.d/$${plugin} \
+		   $(TOP)-core-no-sse/usr/lib/netdata/plugins.d; \
+	done
+endif
+
+	find debian/tmp -name .keep -delete
+	dh_install --remaining-packages
 
 	# Move architecture dependent plugins
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
@@ -76,14 +116,17 @@ override_dh_install-indep:
 
 override_dh_installinit:
 	dh_installinit -p netdata-core --name=netdata
+	dh_installinit -p netdata-core-no-sse --name=netdata
 	dh_installinit --remaining-packages
 
 override_dh_installsystemd:
 	dh_installsystemd -p netdata-core --name=netdata
-	dh_installsystemd --remaining-packages
+	dh_installsystemd -p netdata-core-no-sse --name=netdata
+	dh_installinit --remaining-packages
 
 override_dh_installlogrotate:
 	dh_installlogrotate -p netdata-core --name=netdata
+	dh_installlogrotate -p netdata-core-no-sse --name=netdata
 	dh_installlogrotate --remaining-packages
 
 override_dh_missing:
@@ -96,6 +139,10 @@ override_dh_fixperms-arch:
 	# given extra capabilities in the postinst script.
 	chmod 0754 $(TOP)-core/usr/lib/netdata/plugins.d/apps.plugin
 	chmod 4754 $(TOP)-core/usr/lib/netdata/plugins.d/freeipmi.plugin
+ifdef $(findstring no-sse,$(PACKAGES))
+	chmod 0754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/apps.plugin
+	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/freeipmi.plugin
+endif
 	chmod 0644 $(TOP)-plugins-bash/usr/lib/netdata/charts.d/*.sh
 	chmod 0644 $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/*.sh.inc
 	chmod 0644 $(TOP)-plugins-python/usr/lib/netdata/python.d/*.py
