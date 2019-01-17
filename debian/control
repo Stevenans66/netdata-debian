@@ -6,7 +6,7 @@ Uploaders:
  Federico Ceratto <federico@debian.org>,
  Daniel Baumann <daniel.baumann@progress-linux.org>,
 Build-Depends:
- debhelper (>= 12~),
+ debhelper-compat (= 12),
  libipmimonitoring-dev,
  pkg-config,
  uuid-dev,
