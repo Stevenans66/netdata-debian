@@ -1,3 +1,15 @@
+netdata (1.11.1+dfsg-3) unstable; urgency=medium
+
+  * Building with dh_missing --fail-missing.
+  * Using passwd instead of adduser to lower depends footprint.
+  * Using build-depends to specify debhelper compat level instead of
+    d/compat.
+  * Using consistent formatting of comments in netdata-data.links.
+  * Using /bin/sh in netdata.init as it doesn't contain any bashisms.
+  * Fixing a few inconsistent indentings in netdata.init.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 20 Jan 2019 08:46:54 +0100
+
 netdata (1.11.1+dfsg-2) unstable; urgency=medium
 
   * brown paper bag: I've built the wrong branch by accident that had
