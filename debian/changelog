@@ -1,3 +1,13 @@
+netdata (1.11.1+dfsg-4) unstable; urgency=medium
+
+  * Repeating Section for binary packages in control.
+  * Reordering, formating and ordering maintainer scripts to make them
+    more robust (Closes: #919973).
+  * Correcting spelling typo in netdata.conf comments.
+  * Sorting netdata.install file.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 27 Jan 2019 12:42:01 +0100
+
 netdata (1.11.1+dfsg-3) unstable; urgency=medium
 
   * Building with dh_missing --fail-missing.
