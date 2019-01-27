@@ -18,6 +18,7 @@ Vcs-Browser: https://salsa.debian.org/debian/netdata
 Vcs-Git: https://salsa.debian.org/debian/netdata.git
 
 Package: netdata
+Section: net
 Architecture: linux-any
 Pre-Depends:
  ${misc:Pre-Depends},
@@ -45,6 +46,7 @@ Description: real-time performance monitoring
  OpenTSDB, Kafka, Grafana, etc).
 
 Package: netdata-data
+Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
