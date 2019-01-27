@@ -1,3 +1,21 @@
+netdata (1.11.1+dfsg-5) unstable; urgency=medium
+
+  * Moving netdata plugins to /usr/lib/netdata.
+  * Renaming netdata-data to netdata-web.
+  * Moving architecture-independent plugins to interpreter specific
+    netdata-plugins packages to installations with targeted/minimized
+    depends.
+  * Renaming netdata to netdata-core, making netdata a meta package
+    depending on the (typical) netdata components that it contained before
+    the package reshuffeling.
+  * Renumbering patches.
+  * Adding netdata-core-no-sse on i386 with SSE2 optimizations turned off.
+  * Updating TODO file.
+  * Updating depends between packages for binNMU-safety.
+  * Removing TODO file, keeping it in the experimental branch.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 27 Jan 2019 21:52:00 +0100
+
 netdata (1.11.1+dfsg-4) unstable; urgency=medium
 
   * Repeating Section for binary packages in control.
