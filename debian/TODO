@@ -1,19 +1,17 @@
-* switch fonts-font-awesome to fonts-fork-awesome (or even using alternative
-  depends?)
+* package splitting:
+  - think about a workaround for not having the dh_missing for debian/tmp-no-sse
+    (e.g. diff the core and core-no-sse file lists?)
+  - add alternative depends on core and core-no-sse via substvars on affected
+    archtectures only
+  - split out arch-all stuff from core/core-no-sse to netdata-common or so
+    (check if worthwile; micropackaging vs. lazy)
+  - add netdata-doc if htmldoc is buildable again
 
-* next upstream version: don't exclude html files, just don't install them into
-  the package to avoid need for rebuilding upstream tarballs.
+* add multiselect preseeding for netdata-web (as if it's netdata-apache2,
+  containing apache2 conf snipped to enable netdata via reverse proxy
+  and (optional) basic auth)
 
-* rethink package splitting, i.e. something like...
-  - netdata:               meta package, depending on netdata-daemon, netdata-web
-  - netdata-daemon:        just the daemon and systemd/init integration, -O3 and sse2
-  - netdata-daemon-legacy: daemon compiled with -O2 and without sse2 etc.
-  - netdata-web:           webfrontend, not needed on small devices
-  - netdata-common:        plugins, checks, etc (everything arch all).
-
-  - netdata-doc:           htmldoc that can be used via apache2
-  - netdata-apache2:       apache2 conf snipped to enable netdata via reverse proxy
-                           and (optional) basic auth.
+* finish ucf handling for netdata.conf
 
 * keep depends minimal and put everything to recommends/suggests
 
@@ -22,3 +20,8 @@
 * check if freeipmi plugin can be run with caps instead setuid
 
 * netdata.conf: preseeding of ip, port, registry, and history.
+
+* upstream:
+  - 'netdata -W set' seems broken
+  - update to bootstrap 4
+  - switch to fonts-fork-awesome
