@@ -2,31 +2,43 @@
 
 set -e
 
-case "$1" in
-    remove)
-        ;;
+case "${1}" in
+	remove)
+		# removing directory overrides
+		for DIRECTORY in /var/cache/netdata /var/lib/netdata
+		do
+			if dpkg-statoverride --list | grep -qw "${DIRECTORY}"
+			then
+				dpkg-statoverride --remove "${DIRECTORY}"
+			fi
+		done
 
-    purge)
-        for dir_name in /var/cache/netdata /var/lib/netdata; do
-            if dpkg-statoverride --list | grep -qw "$dir_name"; then
-                dpkg-statoverride --remove "$dir_name"
-            fi
-        done
+		# removing user
+		if getent passwd netdata > /dev/null 2>&1
+		then
+			userdel netdata || echo "Unable to remove netdata user"
+		fi
 
-        rm -rf /var/cache/netdata /var/log/netdata
+		# removing group
+		if getent group netdata > /dev/null 2>&1
+		then
+			groupdel netdata || echo "Unable to remove netdata group"
+		fi
+		;;
 
-        if getent passwd netdata >/dev/null; then
-            userdel netdata || echo "Unable to remove netdata user"
-        fi
+	purge)
+		# removing directories
+		rm -rf /var/cache/netdata /var/lib/netdata /var/log/netdata
+		;;
 
-        if getent group netdata >/dev/null; then
-            groupdel netdata || echo "Unable to remove netdata group"
-        fi
+	upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
 
-        ;;
+		;;
 
-    *)
-        ;;
+	*)
+		echo "postrm called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
 esac
 
 #DEBHELPER#

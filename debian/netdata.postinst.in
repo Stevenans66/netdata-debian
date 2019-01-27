@@ -1,33 +1,51 @@
-#! /bin/sh
+#!/bin/sh
 
 set -e
 
-case "$1" in
-  configure)
-        if [ -z "$2" ]; then
-          if ! getent group netdata >/dev/null; then
-              groupadd --system netdata
-          fi
+case "${1}" in
+	configure)
+		# creating group
+		if ! getent group netdata > /dev/null 2>&1
+		then
+			 groupadd --system netdata
+		fi
 
-          if ! getent passwd netdata >/dev/null; then
-              useradd --system --groups netdata --home-dir /var/lib/netdata --no-create-home netdata
-              mkdir -p /var/lib/netdata
-          fi
+		# creating user
+		if ! getent passwd netdata > /dev/null 2>&1
+		then
+			useradd --system -g netdata --home-dir /var/lib/netdata --no-create-home netdata
+			mkdir -p /var/lib/netdata
+		fi
 
-          for dir_name in /var/cache/netdata /var/lib/netdata; do
-              if ! dpkg-statoverride --list "$dir_name" >/dev/null 2>&1; then
-                  dpkg-statoverride --update --add netdata netdata 0755 "$dir_name"
-              fi
+		# creating directory overrides
+		for DIRECTORY in /var/cache/netdata /var/lib/netdata
+		do
+			mkdir -p "${DIRECTORY}"
 
-          done
-        fi
+			if ! dpkg-statoverride --list "${DIRECTORY}" > /dev/null 2>&1
+			then
+				dpkg-statoverride --update --add netdata netdata 0755 "${DIRECTORY}"
+			fi
+		done
 
-        chown -R root:netdata /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d
-        setcap cap_dac_read_search,cap_sys_ptrace+ep /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin || \
-          chmod 4754 /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin
-        chown netdata:adm /var/log/netdata
-        chmod 02750 /var/log/netdata
-        ;;
+		# handling plugin capabilities (or setuid as fallback)
+		chown -R root:netdata /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d
+		setcap cap_dac_read_search,cap_sys_ptrace+ep /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin || \
+			chmod 4754 /usr/lib/@DEB_HOST_MULTIARCH@/netdata/plugins.d/apps.plugin
+
+		# handling log owner and permissions
+		chown netdata:adm /var/log/netdata
+		chmod 2750 /var/log/netdata
+		;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+
+		;;
+
+	*)
+		echo "postinst called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
 esac
 
 #DEBHELPER#
