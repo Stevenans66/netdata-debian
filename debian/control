@@ -21,13 +21,13 @@ Package: netdata
 Section: net
 Architecture: all
 Depends:
- netdata-core (=${source:Version}) | netdata-core-no-sse (=${source:Version}),
- netdata-plugins-bash (=${source:Version}),
- netdata-web (=${source:Version}),
+ netdata-core | netdata-core-no-sse,
+ netdata-plugins-bash,
+ netdata-web,
  ${misc:Depends},
 Recommends:
- netdata-plugins-nodejs (=${source:Version}),
- netdata-plugins-python (=${source:Version}),
+ netdata-plugins-nodejs,
+ netdata-plugins-python,
 Description: real-time performance monitoring (metapackage)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -98,7 +98,7 @@ Architecture: all
 Multi-Arch: foreign
 Depends:
  bash,
- netdata-core (=${source:Version}) | netdata-core-no-sse (=${source:Version}),
+ netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  ${misc:Depends},
 Suggests:
  fping,
@@ -117,7 +117,7 @@ Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
- netdata-core (=${source:Version}) | netdata-core-no-sse (=${source:Version}),
+ netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  nodejs,
  ${misc:Depends},
 Enhances:
@@ -135,7 +135,7 @@ Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
- netdata-core (=${source:Version}) | netdata-core-no-sse (=${source:Version}),
+ netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  python3,
  python3-six,
  python3-urllib3 (>= 1.22),
@@ -157,7 +157,7 @@ Architecture: all
 Depends:
  fonts-font-awesome,
  libjs-bootstrap,
- netdata-core (=${source:Version}) | netdata-core-no-sse (=${source:Version}),
+ netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  ${misc:Depends},
 Conflicts:
  netdata-data,
