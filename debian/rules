@@ -71,7 +71,17 @@ ifdef $(findstring no-sse,$(PACKAGES))
 	dh_auto_install -B build-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-no-sse
 endif
 
-override_dh_install:
+override_dh_install-arch:
+	find debian/tmp -name .keep -delete
+
+	# Copy architecture dependent plugins
+	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
+	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
+	do \
+		cp debian/tmp/usr/lib/netdata/plugins.d/$${plugin} \
+		   $(TOP)-core/usr/lib/netdata/plugins.d; \
+	done
+
 ifdef $(findstring no-sse,$(PACKAGES))
 	find debian/tmp-no-sse -name .keep -delete
 	dh_install -p netdata-core-no-sse --sourcedir=debian/tmp-no-sse
@@ -82,16 +92,22 @@ ifdef $(findstring no-sse,$(PACKAGES))
 		cp debian/tmp-no-sse/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core-no-sse/usr/lib/netdata/plugins.d; \
 	done
+
+	dh_install -a --remaining-packages
+else
+	dh_install -a
 endif
 
+override_dh_install-indep:
 	find debian/tmp -name .keep -delete
-	dh_install --remaining-packages
+
+	dh_install -i
 
 	# Move architecture dependent plugins
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
 	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
 	do \
-		mv $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
+		mv -f $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core/usr/lib/netdata/plugins.d; \
 	done
 
@@ -109,8 +125,6 @@ endif
 		   $(TOP)-plugins-python/usr/lib/netdata/plugins.d; \
 	done
 
-override_dh_install-indep:
-	dh_install
 	# Setting package version (update check)
 	echo $(VERSION) > $(TOP)-web/usr/share/netdata/web/version.txt
 
@@ -133,7 +147,7 @@ override_dh_missing:
 	dh_missing --fail-missing
 
 override_dh_fixperms-arch:
-	dh_fixperms
+	dh_fixperms -a
 
 	# apps.plugin should only be runnable by the netdata user. It will be
 	# given extra capabilities in the postinst script.
@@ -143,6 +157,12 @@ ifdef $(findstring no-sse,$(PACKAGES))
 	chmod 0754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/apps.plugin
 	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/freeipmi.plugin
 endif
+
+override_dh_fixperms-indep:
+	dh_fixperms -i
+
+	# apps.plugin should only be runnable by the netdata user. It will be
+	# given extra capabilities in the postinst script.
 	chmod 0644 $(TOP)-plugins-bash/usr/lib/netdata/charts.d/*.sh
 	chmod 0644 $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/*.sh.inc
 	chmod 0644 $(TOP)-plugins-python/usr/lib/netdata/python.d/*.py
