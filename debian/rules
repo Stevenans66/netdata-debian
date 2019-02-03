@@ -43,32 +43,32 @@ override_dh_autoreconf_clean:
 override_dh_auto_clean:
 	dh_auto_clean
 
-	rm -rf build-optimized
-	rm -rf build-no-sse debian/tmp-no-sse
+	rm -rf build-core
+	rm -rf build-core-no-sse debian/tmp-core-no-sse
 
 override_dh_auto_configure:
-	mkdir -p build-optimized
-	dh_auto_configure -B build-optimized -- --libdir=/usr/lib --libexecdir=/usr/lib --enable-x86-sse --enable-plugin-freeipmi --with-math
-	cp -a web/gui/src build-optimized/web/gui
+	mkdir -p build-core
+	dh_auto_configure -B build-core -- --libdir=/usr/lib --libexecdir=/usr/lib --enable-x86-sse --enable-plugin-freeipmi --with-math
+	cp -a web/gui/src build-core/web/gui
 
 ifdef $(findstring no-sse,$(PACKAGES))
-	mkdir -p build-no-sse
-	dh_auto_configure -B build-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
-	cp -a web/gui/src build-no-sse/web/gui
+	mkdir -p build-core-no-sse
+	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
+	cp -a web/gui/src build-core-no-sse/web/gui
 endif
 
 override_dh_auto_build:
-	dh_auto_build -B build-optimized
+	dh_auto_build -B build-core
 
 ifdef $(findstring no-sse,$(PACKAGES))
-	dh_auto_build -B build-no-sse
+	dh_auto_build -B build-core-no-sse
 endif
 
 override_dh_auto_install:
-	dh_auto_install -B build-optimized -- DESTDIR=$(CURDIR)/debian/tmp
+	dh_auto_install -B build-core -- DESTDIR=$(CURDIR)/debian/tmp
 
 ifdef $(findstring no-sse,$(PACKAGES))
-	dh_auto_install -B build-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-no-sse
+	dh_auto_install -B build-core-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-core-no-sse
 endif
 
 override_dh_install-arch:
@@ -83,13 +83,13 @@ override_dh_install-arch:
 	done
 
 ifdef $(findstring no-sse,$(PACKAGES))
-	find debian/tmp-no-sse -name .keep -delete
-	dh_install -p netdata-core-no-sse --sourcedir=debian/tmp-no-sse
+	find debian/tmp-core-no-sse -name .keep -delete
+	dh_install -p netdata-core-no-sse --sourcedir=debian/tmp-core-no-sse
 
 	mkdir -p $(TOP)-core-no-sse/usr/lib/netdata/plugins.d
 	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
 	do \
-		cp debian/tmp-no-sse/usr/lib/netdata/plugins.d/$${plugin} \
+		cp debian/tmp-core-no-sse/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core-no-sse/usr/lib/netdata/plugins.d; \
 	done
 
