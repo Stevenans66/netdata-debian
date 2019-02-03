@@ -1,3 +1,13 @@
+netdata (1.11.1+dfsg-6) unstable; urgency=high
+
+  * Disabling gitlab-ci for the moment until we get it working.
+  * Fixing rules when building binary-any only (Closes: #907199).
+  * Using consistent naming for internal build directories.
+  * Disabling debhelper verbose output during build.
+  * Updating copyright file with missing entries (Closes: #920671).
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 03 Feb 2019 13:29:18 +0100
+
 netdata (1.11.1+dfsg-5) unstable; urgency=medium
 
   * Moving netdata plugins to /usr/lib/netdata.
