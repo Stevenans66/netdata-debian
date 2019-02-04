@@ -3,7 +3,7 @@
 set -e
 
 case "${1}" in
-	remove)
+	purge)
 		# removing directory overrides
 		for DIRECTORY in /var/cache/netdata /var/lib/netdata
 		do
@@ -24,14 +24,12 @@ case "${1}" in
 		then
 			groupdel netdata || echo "Unable to remove netdata group"
 		fi
-		;;
 
-	purge)
 		# removing directories
 		rm -rf /var/cache/netdata /var/lib/netdata /var/log/netdata
 		;;
 
-	upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
 
 		;;
 
