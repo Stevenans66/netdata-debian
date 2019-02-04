@@ -1,7 +1,7 @@
 netdata (1.11.1+dfsg-6) unstable; urgency=high
 
   * Disabling gitlab-ci for the moment until we get it working.
-  * Fixing rules when building binary-any only (Closes: #907199).
+  * Fixing rules when building binary-any only (Closes: #920837).
   * Using consistent naming for internal build directories.
   * Disabling debhelper verbose output during build.
   * Updating copyright file with missing entries (Closes: #920671).
