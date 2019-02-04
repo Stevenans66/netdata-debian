@@ -12,7 +12,6 @@ ConditionPathExists=/etc/netdata/netdata.conf
 Type=simple
 Environment="netdata_LOG_LOCATION=/var/log/netdata/log"
 ExecStart=/usr/sbin/netdata -D
-ExecReload=/usr/sbin/netdata reload
 TimeoutStopSec=10
 KillMode=mixed
 KillSignal=SIGTERM
