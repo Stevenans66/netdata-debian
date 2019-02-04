@@ -47,7 +47,7 @@ Pre-Depends:
 Depends:
  libcap2-bin,
  lsb-base,
- sse2-support,
+ sse2-support [i386],
  ${misc:Depends},
  ${shlibs:Depends},
 Conflicts:
