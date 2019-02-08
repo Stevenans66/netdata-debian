@@ -2,16 +2,9 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: Netdata
 Upstream-Contact: Costa Tsaousis <costa@tsaousis.gr>
 Source: https://github.com/netdata/netdata
-Files-Excluded:
- web/gui/fonts
- web/gui/.well-known
- web/gui/demo*
-Comment:
- Excluded files are available as debian package or are old files still being
- distributed with the tarball.
 
 Files: *
-Copyright: 2014-2018 Costa Tsaousis
+Copyright: 2014-2019 Costa Tsaousis
 License: GPL-3+
 
 Files: system/Makefile.* web/gui/Makefile.*
