@@ -47,11 +47,13 @@ override_dh_auto_clean:
 override_dh_auto_configure:
 	mkdir -p build-core
 	dh_auto_configure -B build-core -- --libdir=/usr/lib --libexecdir=/usr/lib --enable-x86-sse --enable-plugin-freeipmi --with-math
+	cp -a tests build-core
 	cp -a web/gui/src build-core/web/gui
 
 ifdef $(findstring no-sse,$(PACKAGES))
 	mkdir -p build-core-no-sse
 	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
+	cp -a tests build-core-no-sse
 	cp -a web/gui/src build-core-no-sse/web/gui
 endif
 
