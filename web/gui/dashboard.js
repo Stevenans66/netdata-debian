@@ -77,7 +77,8 @@
 // ----------------------------------------------------------------------------
 // global namespace
 
-const NETDATA = window.NETDATA || {};
+// Should stay var!
+var NETDATA = window.NETDATA || {};
 
 (function(window, document, $, undefined) {
 
@@ -158,7 +159,7 @@ NETDATA.seconds4human = function (seconds, options) {
     if (typeof options !== 'object') {
         options = defaultOptions;
     } else {
-        for (const x in defaultOptions) {
+        for (var x in defaultOptions) {
             if (typeof options[x] !== 'string') {
                 options[x] = defaultOptions[x];
             }
@@ -690,7 +691,7 @@ NETDATA.xss = {
                 } else {
                     // console.log('checking object "' + name + '"');
 
-                    for (const i in obj) {
+                    for (var i in obj) {
                         if (obj.hasOwnProperty(i) === false) {
                             continue;
                         }
@@ -805,12 +806,34 @@ NETDATA.unitsConversion = {
             'GB/s': 1024 * 1024,
             'TB/s': 1024 * 1024 * 1024
         },
+        'KiB/s': {
+            'B/s': 1 / 1024,
+            'KiB/s': 1,
+            'MiB/s': 1024,
+            'GiB/s': 1024 * 1024,
+            'TiB/s': 1024 * 1024 * 1024
+        },
+        'B': {
+            'B': 1,
+            'KiB': 1024,
+            'MiB': 1024 * 1024,
+            'GiB': 1024 * 1024 * 1024,
+            'TiB': 1024 * 1024 * 1024 * 1024,
+            'PiB': 1024 * 1024 * 1024 * 1024 * 1024
+        },
         'KB': {
             'B': 1 / 1024,
             'KB': 1,
             'MB': 1024,
             'GB': 1024 * 1024,
             'TB': 1024 * 1024 * 1024
+        },
+        'KiB': {
+            'B': 1 / 1024,
+            'KiB': 1,
+            'MiB': 1024,
+            'GiB': 1024 * 1024,
+            'TiB': 1024 * 1024 * 1024
         },
         'MB': {
             'B': 1 / (1024 * 1024),
@@ -820,6 +843,14 @@ NETDATA.unitsConversion = {
             'TB': 1024 * 1024,
             'PB': 1024 * 1024 * 1024
         },
+        'MiB': {
+            'B': 1 / (1024 * 1024),
+            'KiB': 1 / 1024,
+            'MiB': 1,
+            'GiB': 1024,
+            'TiB': 1024 * 1024,
+            'PiB': 1024 * 1024 * 1024
+        },
         'GB': {
             'B': 1 / (1024 * 1024 * 1024),
             'KB': 1 / (1024 * 1024),
@@ -828,6 +859,15 @@ NETDATA.unitsConversion = {
             'TB': 1024,
             'PB': 1024 * 1024,
             'EB': 1024 * 1024 * 1024
+        },
+        'GiB': {
+            'B': 1 / (1024 * 1024 * 1024),
+            'KiB': 1 / (1024 * 1024),
+            'MiB': 1 / 1024,
+            'GiB': 1,
+            'TiB': 1024,
+            'PiB': 1024 * 1024,
+            'EiB': 1024 * 1024 * 1024
         }
         /*
         'milliseconds': {
@@ -1027,7 +1067,7 @@ NETDATA.unitsConversion = {
                 //     }
                 // }
                 const sunit = this.scalableUnits[units];
-                for (const x of Object.keys(sunit)) {
+                for (var x of Object.keys(sunit)) {
                     let m = sunit[x];
                     if (m <= max && m > tdivider) {
                         tunits = x;
@@ -1063,7 +1103,7 @@ NETDATA.unitsConversion = {
 
                     // find the max divider of all charts
                     let common_units = t[uuid];
-                    for (const x in t) {
+                    for (var x in t) {
                         if (t.hasOwnProperty(x) && t[x].divider > common_units.divider) {
                             common_units = t[x];
                         }
@@ -1130,7 +1170,7 @@ NETDATA.unitsConversion = {
         } else if (typeof this.convertibleUnits[units] !== 'undefined') {
             // units that can be converted
             if (desired_units === 'auto') {
-                for (const x in this.convertibleUnits[units]) {
+                for (var x in this.convertibleUnits[units]) {
                     if (this.convertibleUnits[units].hasOwnProperty(x)) {
                         if (this.convertibleUnits[units][x].check(max)) {
                             //console.log('DEBUG: ' + uuid.toString() + ' converting ' + units.toString() + ' to: ' + x.toString());
@@ -1186,7 +1226,7 @@ if (typeof netdataIcons === 'object') {
     //     if (NETDATA.icons.hasOwnProperty(icon) && typeof(netdataIcons[icon]) === 'string')
     //         NETDATA.icons[icon] = netdataIcons[icon];
     // }
-    for (const icon of Object.keys(NETDATA.icons)) {
+    for (var icon of Object.keys(NETDATA.icons)) {
         if (typeof(netdataIcons[icon]) === 'string') {
             NETDATA.icons[icon] = netdataIcons[icon]
         }
@@ -1206,7 +1246,7 @@ if (typeof netdataShowAlarms === 'undefined') {
 }
 
 if (typeof netdataRegistryAfterMs !== 'number' || netdataRegistryAfterMs < 0) {
-    netdataRegistryAfterMs = 1500;
+    netdataRegistryAfterMs = 0; // 1500;
 }
 
 if (typeof netdataRegistry === 'undefined') {
@@ -1664,6 +1704,8 @@ NETDATA.timeout = {
 };
 
 NETDATA.timeout.init();
+// Codacy declarations
+/* global netdataTheme */
 
 NETDATA.themes = {
     white: {
@@ -1755,6 +1797,10 @@ NETDATA.colors = NETDATA.themes.current.colors;
 //                         (blue)     (red)      (orange)   (green)    (pink)     (brown)    (purple)   (yellow)   (gray)
 //NETDATA.colors        = [ '#5DA5DA', '#F15854', '#FAA43A', '#60BD68', '#F17CB0', '#B2912F', '#B276B2', '#DECF3F', '#4D4D4D' ];
 // dygraph
+
+// Codacy declarations
+/* global smoothPlotter */
+/* global Dygraph */
 
 NETDATA.dygraph = {
     smooth: false
@@ -4746,7 +4792,7 @@ NETDATA.commonMin = {
         // for (let i in t) {
         //     if (t.hasOwnProperty(i) && t[i] < m) m = t[i];
         // }
-        for (const ti of Object.values(t)) {
+        for (var ti of Object.values(t)) {
             if (ti < m) {
                 m = ti;
             }
@@ -4810,7 +4856,7 @@ NETDATA.commonMax = {
         // for (let i in t) {
         //     if (t.hasOwnProperty(i) && t[i] > m) m = t[i];
         // }
-        for (const ti of Object.values(t)) {
+        for (var ti of Object.values(t)) {
             if (ti > m) {
                 m = ti;
             }
@@ -4939,6 +4985,9 @@ NETDATA.commonColors = {
 };
 
 // *** src/dashboard.js/main.js
+
+// Codacy declarations
+/* global clipboard */
 
 if (NETDATA.options.debug.main_loop) {
     console.log('welcome to NETDATA');
@@ -9637,6 +9686,8 @@ NETDATA.alarms = {
 
 NETDATA.registry = {
     server: null,         // the netdata registry server
+    isCloudEnabled: false,// is netdata.cloud functionality enabled?
+    cloudBaseURL: null,   // the netdata cloud base url
     person_guid: null,    // the unique ID of this browser / user
     machine_guid: null,   // the unique ID the netdata server that served dashboard.js
     hostname: 'unknown',  // the hostname of the netdata server that served dashboard.js
@@ -9644,8 +9695,17 @@ NETDATA.registry = {
     machines_array: null, // the user's other URLs in an array
     person_urls: null,
 
+    MASKED_DATA: "***",
+
+    isUsingGlobalRegistry: function() {
+        return NETDATA.registry.server == "https://registry.my-netdata.io";
+    },
+
+    isRegistryEnabled: function() {
+        return !(NETDATA.registry.isUsingGlobalRegistry() || isSignedIn())
+    },
+
     parsePersonUrls: function (person_urls) {
-        // console.log(person_urls);
         NETDATA.registry.person_urls = person_urls;
 
         if (person_urls) {
@@ -9698,13 +9758,21 @@ NETDATA.registry = {
         NETDATA.registry.hello(NETDATA.serverDefault, function (data) {
             if (data) {
                 NETDATA.registry.server = data.registry;
+                if (data.cloud_base_url != "") {
+                    NETDATA.registry.isCloudEnabled = true;
+                    NETDATA.registry.cloudBaseURL = data.cloud_base_url;
+                } else {
+                    NETDATA.registry.isCloudEnabled = false;
+                    NETDATA.registry.cloudBaseURL = "";
+                }
                 NETDATA.registry.machine_guid = data.machine_guid;
                 NETDATA.registry.hostname = data.hostname;
-
+                if (dataLayer) {
+                    if (data.anonymous_statistics) dataLayer.push({"anonymous_statistics" : "true", "machine_guid" : data.machine_guid});
+                }
                 NETDATA.registry.access(2, function (person_urls) {
                     NETDATA.registry.parsePersonUrls(person_urls);
-
-                });
+                });    
             }
         });
     },
@@ -9747,13 +9815,25 @@ NETDATA.registry = {
     },
 
     access: function (max_redirects, callback) {
+        let name = NETDATA.registry.MASKED_DATA;
+        let url = NETDATA.registry.MASKED_DATA;
+
+        if (!NETDATA.registry.isUsingGlobalRegistry()) {
+            // If the user is using a private registry keep sending identifiable
+            // data.
+            name = NETDATA.registry.hostname;
+            url = NETDATA.serverDefault;
+        } 
+
+        console.log("ACCESS", name, url);
+
         // send ACCESS to a netdata registry:
         // 1. it lets it know we are accessing a netdata server (its machine GUID and its URL)
         // 2. it responds with a list of netdata servers we know
         // the registry identifies us using a cookie it sets the first time we access it
         // the registry may respond with a redirect URL to send us to another registry
         $.ajax({
-            url: NETDATA.registry.server + '/api/v1/registry?action=access&machine=' + NETDATA.registry.machine_guid + '&name=' + encodeURIComponent(NETDATA.registry.hostname) + '&url=' + encodeURIComponent(NETDATA.serverDefault), // + '&visible_url=' + encodeURIComponent(document.location),
+            url: NETDATA.registry.server + '/api/v1/registry?action=access&machine=' + NETDATA.registry.machine_guid + '&name=' + encodeURIComponent(name) + '&url=' + encodeURIComponent(url), // + '&visible_url=' + encodeURIComponent(document.location),
             async: true,
             cache: false,
             headers: {
@@ -9785,14 +9865,14 @@ NETDATA.registry = {
                             return callback(null);
                         }
                     }
-                }
-                else {
+                } else {
                     if (typeof data.person_guid === 'string') {
                         NETDATA.registry.person_guid = data.person_guid;
                     }
 
                     if (typeof callback === 'function') {
-                        return callback(data.urls);
+                        const urls = data.urls.filter((u) => u[1] !== NETDATA.registry.MASKED_DATA);
+                        return callback(urls);
                     }
                 }
             })

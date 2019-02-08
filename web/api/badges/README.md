@@ -261,24 +261,6 @@ character|name|escape sequence
 ` \ `|backslash (when you need a `/`)|`%5C`
 ` \| `|pipe (delimiting parameters)|`%7C`
 
----
-
-## Using the path instead of the query string
-
-The badges can also be generated using the URL path for passing parameters. The format is exactly the same.
-
-So instead of:
-
-  `http://your.netdata:19999/api/v1/badge.svg?option1&option2&option3&...`
-
-you can write:
-
-  `http://your.netdata:19999/api/v1/badge.svg/option1/option2/option3/...`
-
-You can also append anything else you like, like this:
-
-  `http://your.netdata:19999/api/v1/badge.svg/option1/option2/option3/my-super-badge.svg`
-
 ## FAQ
 
 #### Is it fast?
@@ -322,3 +304,5 @@ You can refresh them from your browser console though. Press F12 to open the web
 ```js
 var len = document.images.length; while(len--) { document.images[len].src = document.images[len].src.replace(/\?cacheBuster=\d*/, "") + "?cacheBuster=" + new Date().getTime().toString(); };
 ```
+
+[![analytics](https://www.google-analytics.com/collect?v=1&aip=1&t=pageview&_s=1&ds=github&dr=https%3A%2F%2Fgithub.com%2Fnetdata%2Fnetdata&dl=https%3A%2F%2Fmy-netdata.io%2Fgithub%2Fweb%2Fapi%2Fbadges%2FREADME&_u=MAC~&cid=5792dfd7-8dc4-476b-af31-da2fdb9f93d2&tid=UA-64295674-3)]()
