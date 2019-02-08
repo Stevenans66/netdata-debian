@@ -50,7 +50,7 @@ override_dh_auto_configure:
 	cp -a tests build-core
 	cp -a web/gui/src build-core/web/gui
 
-ifdef $(findstring no-sse,$(PACKAGES))
+ifneq (,,$(findstring no-sse,$(PACKAGES)))
 	mkdir -p build-core-no-sse
 	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
 	cp -a tests build-core-no-sse
@@ -60,14 +60,14 @@ endif
 override_dh_auto_build:
 	dh_auto_build -B build-core
 
-ifdef $(findstring no-sse,$(PACKAGES))
+ifneq (,,$(findstring no-sse,$(PACKAGES)))
 	dh_auto_build -B build-core-no-sse
 endif
 
 override_dh_auto_install:
 	dh_auto_install -B build-core -- DESTDIR=$(CURDIR)/debian/tmp
 
-ifdef $(findstring no-sse,$(PACKAGES))
+ifneq (,,$(findstring no-sse,$(PACKAGES)))
 	dh_auto_install -B build-core-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-core-no-sse
 endif
 
@@ -82,7 +82,7 @@ override_dh_install-arch:
 		   $(TOP)-core/usr/lib/netdata/plugins.d; \
 	done
 
-ifdef $(findstring no-sse,$(PACKAGES))
+ifneq (,,$(findstring no-sse,$(PACKAGES)))
 	find debian/tmp-core-no-sse -name .keep -delete
 	dh_install -p netdata-core-no-sse --sourcedir=debian/tmp-core-no-sse
 
@@ -153,7 +153,7 @@ override_dh_fixperms-arch:
 	# given extra capabilities in the postinst script.
 	chmod 0754 $(TOP)-core/usr/lib/netdata/plugins.d/apps.plugin
 	chmod 4754 $(TOP)-core/usr/lib/netdata/plugins.d/freeipmi.plugin
-ifdef $(findstring no-sse,$(PACKAGES))
+ifneq (,,$(findstring no-sse,$(PACKAGES)))
 	chmod 0754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/apps.plugin
 	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/freeipmi.plugin
 endif
