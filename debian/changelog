@@ -36,6 +36,16 @@ netdata (1.11.1+dfsg-5) unstable; urgency=medium
 
  -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 27 Jan 2019 21:52:00 +0100
 
+netdata (1.12.0~rc3-2) experimental; urgency=medium
+
+  * Repeating Section for binary packages in control.
+  * Reordering, formating and ordering maintainer scripts to make them
+    more robust (Closes: #919973).
+  * Correcting spelling typo in netdata.conf comments.
+  * Sorting netdata.install file.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 27 Jan 2019 12:42:30 +0100
+
 netdata (1.11.1+dfsg-4) unstable; urgency=medium
 
   * Repeating Section for binary packages in control.
@@ -45,6 +55,26 @@ netdata (1.11.1+dfsg-4) unstable; urgency=medium
   * Sorting netdata.install file.
 
  -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 27 Jan 2019 12:42:01 +0100
+
+netdata (1.12.0~rc3-1) experimental; urgency=medium
+
+  * Merging upstream version 1.12.0~rc3.
+  * Removing debian-use-system-packaging.patch, not needed anymore.
+  * Refreshing debian-use-system-python.patch.
+  * Refreshing debian-use-system-exim4.patch.
+  * Refreshing debian-use-python3.patch.
+  * Refreshing debian-remove-infographic.patch.
+  * Refreshing debian-remove-contrib-files.patch.
+  * Refreshing netdata-support-symlinks.patch.
+  * Refreshing gui-remove-update-button.patch.
+  * Refreshing gui-remove-social-media-buttons.patch.
+  * Renumbering patches.
+  * Adding glyphicons to debian/copyright.
+  * Removing notes about files excluded from the upstream tarball as the
+    unmodified upstream tarball is used instead.
+  * Updating todo file.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 20 Jan 2019 10:23:51 +0100
 
 netdata (1.11.1+dfsg-3) unstable; urgency=medium
 
