@@ -1,9 +1,9 @@
 Author: Sander Klein <debian-bugs@roedie.nl>
 Description: Debian uses by default python 2 instead of python3.
 
-diff -Naurp netdata.orig/collectors/python.d.plugin/python.d.plugin netdata/collectors/python.d.plugin/python.d.plugin
---- netdata.orig/collectors/python.d.plugin/python.d.plugin
-+++ netdata/collectors/python.d.plugin/python.d.plugin
+diff -Naurp netdata.orig/collectors/python.d.plugin/python.d.plugin.in netdata/collectors/python.d.plugin/python.d.plugin.in
+--- netdata.orig/collectors/python.d.plugin/python.d.plugin.in
++++ netdata/collectors/python.d.plugin/python.d.plugin.in
 @@ -1,6 +1,4 @@
 -#!/usr/bin/env bash
 -'''':; exec "$(command -v python || command -v python3 || command -v python2 ||

@@ -4,7 +4,7 @@ Description: Ignore embedded python modules.
 diff -Naurp netdata.orig/collectors/python.d.plugin/Makefile.am netdata/collectors/python.d.plugin/Makefile.am
 --- netdata.orig/collectors/python.d.plugin/Makefile.am
 +++ netdata/collectors/python.d.plugin/Makefile.am
-@@ -139,109 +139,3 @@ dist_third_party_DATA = \
+@@ -138,109 +138,3 @@ dist_third_party_DATA = \
      python_modules/third_party/boinc_client.py \
      python_modules/third_party/monotonic.py \
      $(NULL)

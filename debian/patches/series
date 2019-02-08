@@ -1,10 +1,9 @@
-0001-debian-use-system-packaging.patch
-0002-debian-use-system-python.patch
-0003-debian-use-system-exim4.patch
-0004-debian-use-python3.patch
-0005-debian-use-sh.patch
-0006-debian-remove-infographic.patch
-0007-debian-remove-contrib-files.patch
+0001-debian-use-system-python.patch
+0002-debian-use-system-exim4.patch
+0003-debian-use-python3.patch
+0004-debian-use-sh.patch
+0005-debian-remove-infographic.patch
+0006-debian-remove-contrib-files.patch
 0011-netdata-support-symlinks.patch
 0021-gui-remove-update-button.patch
 0022-gui-remove-social-media-buttons.patch

@@ -4,7 +4,7 @@ Description: Remove file serve restrictions for symlinks.
 diff -Naurp netdata.orig/web/server/web_client.c netdata/web/server/web_client.c
 --- netdata.orig/web/server/web_client.c
 +++ netdata/web/server/web_client.c
-@@ -372,7 +372,7 @@ int mysendfile(struct web_client *w, cha
+@@ -376,7 +376,7 @@ int mysendfile(struct web_client *w, cha
      int done = 0;
      while(!done) {
          // check if the file exists
