@@ -1,4 +1,4 @@
-# Netdata External Plugins
+# External plugins overview
 
 `plugins.d` is the netdata internal plugin that collects metrics
 from external processes, thus allowing netdata to use **external plugins**.
@@ -9,6 +9,7 @@ plugin|language|O/S|description
 :---:|:---:|:---:|:---
 [apps.plugin](../apps.plugin/)|`C`|linux, freebsd|monitors the whole process tree on Linux and FreeBSD and breaks down system resource usage by **process**, **user** and **user group**.
 [charts.d.plugin](../charts.d.plugin/)|`BASH`|all|a **plugin orchestrator** for data collection modules written in `BASH` v4+.
+[cups.plugin](../cups.plugin/)|`C`|all|monitors **CUPS**
 [fping.plugin](../fping.plugin/)|`C`|all|measures network latency, jitter and packet loss between the monitored node and any number of remote network end points.
 [freeipmi.plugin](../freeipmi.plugin/)|`C`|linux|collects metrics from enterprise hardware sensors, on Linux servers.
 [node.d.plugin](../node.d.plugin/)|`node.js`|all|a **plugin orchestrator** for data collection modules written in `node.js`.
@@ -88,7 +89,7 @@ For example, for `apps.plugin` the following section is available:
 - `command options` allows giving additional command line options to the plugin.
 
 
-Netdata will provide to the extrenal plugins the environment variable `NETDATA_UPDATE_EVERY`, in seconds (the default is 1). This is the **minimum update frequency** for all charts. A plugin that is updating values more frequently than this, is just wasting resources.
+Netdata will provide to the external plugins the environment variable `NETDATA_UPDATE_EVERY`, in seconds (the default is 1). This is the **minimum update frequency** for all charts. A plugin that is updating values more frequently than this, is just wasting resources.
 
 Netdata will call the plugin with just one command line parameter: the number of seconds the user requested this plugin to update its data (by default is also 1).
 
@@ -390,8 +391,6 @@ or do not output the line at all.
 
    Of course, C is the most efficient way of collecting data. This is why netdata itself is written in C.
    
-## Properly Writing Plugins
-
 ## Writing Plugins Properly
 
 There are a few rules for writing plugins properly:
@@ -403,7 +402,7 @@ There are a few rules for writing plugins properly:
       - Initialize everything once, at the beginning. Initialization is not an expensive operation. Your plugin will most probably be started once and run forever. So, do whatever heavy operation is needed at the beginning, just once.
       - Do the absolutely minimum while iterating to collect values repeatedly.
       - If you need to connect to another server to collect values, avoid re-connects if possible. Connect just once, with keep-alive (for HTTP) enabled and collect values using the same connection.
-      - Avoid any CPU or memory heavy operation while collecting data. If you control memory allocation, avoid any memory allocation white iterating to collect values.
+      - Avoid any CPU or memory heavy operation while collecting data. If you control memory allocation, avoid any memory allocation while iterating to collect values.
       - Avoid running external commands when possible. If you are writing shell scripts avoid especially pipes (each pipe is another fork, a very expensive operation).
 
 2. The best way to iterate at a constant pace is this pseudo code:
@@ -471,3 +470,5 @@ There are a few rules for writing plugins properly:
 
 4. If possible, try to autodetect if your plugin should be enabled, without any configuration.
 
+
+[![analytics](https://www.google-analytics.com/collect?v=1&aip=1&t=pageview&_s=1&ds=github&dr=https%3A%2F%2Fgithub.com%2Fnetdata%2Fnetdata&dl=https%3A%2F%2Fmy-netdata.io%2Fgithub%2Fcollectors%2Fplugins.d%2FREADME&_u=MAC~&cid=5792dfd7-8dc4-476b-af31-da2fdb9f93d2&tid=UA-64295674-3)]()
