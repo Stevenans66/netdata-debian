@@ -75,6 +75,9 @@ override_dh_install-arch:
 	find debian/tmp -name .keep -delete
 
 	# Copy architecture dependent plugins
+	mkdir -p $(TOP)-core/etc/netdata
+	cp debian/netdata.conf $(TOP)-core/etc/netdata
+
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
 	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
 	do \
@@ -85,6 +88,9 @@ override_dh_install-arch:
 ifneq (,,$(findstring no-sse,$(PACKAGES)))
 	find debian/tmp-core-no-sse -name .keep -delete
 	dh_install -p netdata-core-no-sse --sourcedir=debian/tmp-core-no-sse
+
+	mkdir -p $(TOP)-core-no-sse/etc/netdata
+	cp debian/netdata.conf $(TOP)-core-no-sse/etc/netdata
 
 	mkdir -p $(TOP)-core-no-sse/usr/lib/netdata/plugins.d
 	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
