@@ -1,3 +1,33 @@
+netdata (1.12.0-1) unstable; urgency=medium
+
+  * Merging upstream version 1.12.0.
+  * Adding TODO file.
+  * Merging changelog from uploads to experimental.
+  * Updating copyright for new upstream version.
+  * Adding stanza for glyphicons in copyright file.
+  * Merging patches from experimental branch for new netdata upstream
+    version.
+  * Updating build-out-of-tree hacks in rules.
+  * Updating node plugins install file for upstream changes.
+  * Correcting wrong if statements in rules so that netdata-core-no-sse
+    actually gets binaries installed (Closes: #921649).
+  * Harmonizing path in install files to fix FTBFS.
+  * Updating TODO file.
+  * Workarounding different source directories and debhelper install files
+    FTBFS by installing netdata.conf manually.
+  * Correcting makefile conditionals for netdata-core-no-sse handling in
+    rules again to make them actually work.
+  * Enabling building of freeipmi plugin on netdata-core-no-sse too.
+  * Updating manpage for current upstream version.
+  * Updating watch file for non-repackaged upstream tarballs.
+  * Moving files not directly interpreted by debhelper to subdirectories
+    within the debian packaging.
+  * Adding provides for netdata-plugins in control.
+  * Shamelessly adding myself in copyright.
+  * Sorting patches into comonly used subdirectories.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 10 Feb 2019 13:30:34 +0100
+
 netdata (1.11.1+dfsg-7) unstable; urgency=high
 
   * Marking sse2-support depends as i386-only.
