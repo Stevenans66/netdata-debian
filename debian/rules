@@ -52,7 +52,7 @@ override_dh_auto_configure:
 
 ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	mkdir -p build-core-no-sse
-	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
+	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --enable-plugin-freeipmi --with-math
 	cp -a tests build-core-no-sse
 	cp -a web/gui/src build-core-no-sse/web/gui
 endif
