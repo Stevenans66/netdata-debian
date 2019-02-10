@@ -15,6 +15,7 @@ Files: debian/*
 Copyright: 2016 Matthew Newton <mcn4@leicester.ac.uk>
            2017 Lennart Weller <lhw@ring0.de>
            2017 Federico Ceratto <federico@debian.org>
+           2018-2019 Daniel Baumann <daniel.baumann@progress-linux.org>
 License: GPL-3+
 
 Files: libnetdata/avl/*
