@@ -102,6 +102,8 @@ Depends:
  ${misc:Depends},
 Suggests:
  fping,
+Provides:
+ netdata-plugins,
 Enhances:
  netdata-core,
  netdata-core-no-sse,
@@ -120,6 +122,8 @@ Depends:
  netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  nodejs,
  ${misc:Depends},
+Provides:
+ netdata-plugins,
 Enhances:
  netdata-core,
  netdata-core-no-sse,
@@ -141,6 +145,8 @@ Depends:
  python3-urllib3 (>= 1.22),
  python3-yaml,
  ${misc:Depends},
+Provides:
+ netdata-plugins,
 Enhances:
  netdata-core,
  netdata-core-no-sse,
