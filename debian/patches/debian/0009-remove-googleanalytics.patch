@@ -1,0 +1,17 @@
+From: Lennart Weller <lhw@ring0.de>
+Date: Mon, 11 Feb 2019 10:34:11 +0100
+Subject: Remove googleanalytics
+
+---
+ docs/generator/custom/themes/material/partials/footer.html | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/docs/generator/custom/themes/material/partials/footer.html b/docs/generator/custom/themes/material/partials/footer.html
+index fe232b6..1207966 100644
+--- a/docs/generator/custom/themes/material/partials/footer.html
++++ b/docs/generator/custom/themes/material/partials/footer.html
+@@ -51,4 +51,3 @@
+     </div>
+   </div>
+ </footer>
+-<script>!function(e,a,t,n,o,c,i){e.GoogleAnalyticsObject=o,e.ga=e.ga||function(){(e.ga.q=e.ga.q||[]).push(arguments)},e.ga.l=1*new Date,c=a.createElement(t),i=a.getElementsByTagName(t)[0],c.async=1,c.src="https://www.google-analytics.com/analytics.js",i.parentNode.insertBefore(c,i)}(window,document,"script",0,"ga"),ga("create","UA-64295674-3",""),ga("set","anonymizeIp",!0),ga("send","pageview","/doc"+window.location.pathname);var links=document.getElementsByTagName("a");if(Array.prototype.map.call(links,function(a){a.host!=document.location.host&&a.addEventListener("click",function(){var e=a.getAttribute("data-md-action")||"follow";ga("send","event","outbound",e,a.href)})}),document.forms.search){var query=document.forms.search.query;query.addEventListener("blur",function(){if(this.value){var e=document.location.pathname;ga("send","pageview",e+"?q="+this.value)}})}</script>
