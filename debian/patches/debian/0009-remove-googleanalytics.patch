@@ -1,15 +1,9 @@
-From: Lennart Weller <lhw@ring0.de>
-Date: Mon, 11 Feb 2019 10:34:11 +0100
+Author: Lennart Weller <lhw@ring0.de>
 Subject: Remove googleanalytics
 
----
- docs/generator/custom/themes/material/partials/footer.html | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/docs/generator/custom/themes/material/partials/footer.html b/docs/generator/custom/themes/material/partials/footer.html
-index fe232b6..1207966 100644
---- a/docs/generator/custom/themes/material/partials/footer.html
-+++ b/docs/generator/custom/themes/material/partials/footer.html
+diff -Naurp netdata.orig/docs/generator/custom/themes/material/partials/footer.html netdata/docs/generator/custom/themes/material/partials/footer.html
+--- netdata.orig/docs/generator/custom/themes/material/partials/footer.html
++++ netdata/docs/generator/custom/themes/material/partials/footer.html
 @@ -51,4 +51,3 @@
      </div>
    </div>
