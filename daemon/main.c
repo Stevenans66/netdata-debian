@@ -60,7 +60,6 @@ struct netdata_static_thread static_threads[] = {
     NETDATA_PLUGIN_HOOK_MACOS
 
     // linux internal plugins
-    NETDATA_PLUGIN_HOOK_LINUX_NFACCT
     NETDATA_PLUGIN_HOOK_LINUX_PROC
     NETDATA_PLUGIN_HOOK_LINUX_DISKSPACE
     NETDATA_PLUGIN_HOOK_LINUX_CGROUPS
@@ -956,6 +955,7 @@ int main(int argc, char **argv) {
         if(i > 0)
             mallopt(M_ARENA_MAX, 1);
 #endif
+        test_clock_boottime();
 
         // prepare configuration environment variables for the plugins
 

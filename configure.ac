@@ -47,9 +47,9 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_ARG_ENABLE(
     [plugin-nfacct],
-    [AS_HELP_STRING([--enable-plugin-nfacct], [enable nfacct plugin, requires running netdata as root @<:@default disabled@:>@])],
+    [AS_HELP_STRING([--enable-plugin-nfacct], [enable nfacct plugin @<:@default autodetect@:>@])],
     ,
-    [enable_plugin_nfacct="no"]
+    [enable_plugin_nfacct="detect"]
 )
 AC_ARG_ENABLE(
     [plugin-freeipmi],
@@ -409,19 +409,8 @@ AM_CONDITIONAL([ENABLE_PLUGIN_FREEIPMI], [test "${enable_plugin_freeipmi}" = "ye
 # -----------------------------------------------------------------------------
 # cups.plugin - libmnl, libnetfilter_acct
 
- AC_CHECK_LIB([cups], [
-    cupsEncryption,
-    cupsFreeDests,
-    cupsFreeJobs,
-    cupsGetDests2,
-    cupsGetIntegerOption,
-    cupsGetJobs2,
-    cupsGetOption,
-    cupsServer,
-    httpClose,
-    httpConnect2,
-    ippPort
-],
+# Only check most recently added method of cups
+ AC_CHECK_LIB([cups], [httpConnect2],
     [AC_CHECK_HEADER(
         [cups/cups.h],
         [have_cups=yes],
@@ -452,9 +441,9 @@ AC_MSG_CHECKING([if cups.plugin should be enabled])
 if test "${enable_plugin_cups}" != "no" -a "${have_cups}" = "yes"; then
     enable_plugin_cups="yes"
     AC_DEFINE([HAVE_CUPS], [1], [cups usability])
-    
+
     CUPS_CFLAGS="${CUPS_CFLAGS} `$CUPSCONFIG --cflags`"
-    CUPS_LIBS="${CUPS_LIBS} `$CUPSCONFIG --image --libs`"
+    CUPS_LIBS="${CUPS_LIBS} `$CUPSCONFIG --libs`"
 
     OPTIONAL_CUPS_CLFAGS="${CUPS_CFLAGS}"
     OPTIONAL_CUPS_LIBS="${CUPS_LIBS}"
@@ -473,14 +462,24 @@ AC_CHECK_HEADERS_ONCE([linux/netfilter/nfnetlink_conntrack.h])
 PKG_CHECK_MODULES(
     [NFACCT],
     [libnetfilter_acct],
-    [have_libnetfilter_acct=yes],
+    [AC_CHECK_LIB(
+         [netfilter_acct],
+         [nfacct_alloc],
+         [have_libnetfilter_acct=yes],
+         [have_libnetfilter_acct=no]
+     )],
     [have_libnetfilter_acct=no]
 )
 
 PKG_CHECK_MODULES(
     [LIBMNL],
     [libmnl],
-    [have_libmnl=yes],
+    [AC_CHECK_LIB(
+         [mnl],
+         [mnl_socket_open],
+         [have_libmnl=yes],
+         [have_libmnl=no]
+     )],
     [have_libmnl=no]
 )
 
@@ -495,7 +494,6 @@ if test "${enable_plugin_nfacct}" != "no" -a "${have_libnetfilter_acct}" = "yes"
     enable_plugin_nfacct="yes"
     AC_DEFINE([HAVE_LIBMNL], [1], [libmnl usability])
     AC_DEFINE([HAVE_LIBNETFILTER_ACCT], [1], [libnetfilter_acct usability])
-    AC_DEFINE([INTERNAL_PLUGIN_NFACCT], [1], [nfacct plugin usability])
     OPTIONAL_NFACCT_CLFAGS="${NFACCT_CFLAGS} ${LIBMNL_CFLAGS}"
     OPTIONAL_NFACCT_LIBS="${NFACCT_LIBS} ${LIBMNL_LIBS}"
 else

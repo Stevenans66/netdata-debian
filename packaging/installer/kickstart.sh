@@ -115,10 +115,10 @@ fatal() {
 download() {
 	url="${1}"
 	dest="${2}"
-	if command -v wget >/dev/null 2>&1; then
-		run wget -O - "${url}" >"${dest}" || fatal "Cannot download ${url}"
-	elif command -v curl >/dev/null 2>&1; then
-		run curl "${url}" >"${dest}" || fatal "Cannot download ${url}"
+	if command -v curl >/dev/null 2>&1; then
+		run curl -L --connect-timeout 5 --retry 3 "${url}" >"${dest}" || fatal "Cannot download ${url}"
+	elif command -v wget >/dev/null 2>&1; then
+		run wget -T 15 -O - "${url}" >"${dest}" || fatal "Cannot download ${url}"
 	else
 		fatal "I need curl or wget to proceed, but neither is available on this system."
 	fi
@@ -218,7 +218,7 @@ EOF
 
 # Check if tmp is mounted as noexec
 if grep -Eq '^[^ ]+ /tmp [^ ]+ ([^ ]*,)?noexec[, ]' /proc/mounts; then
-	pattern="/opt/netdata-kickstart-XXXXXX"
+	pattern="$(pwd)/netdata-kickstart-XXXXXX"
 else
 	pattern="/tmp/netdata-kickstart-XXXXXX"
 fi
