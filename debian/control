@@ -97,7 +97,6 @@ Section: net
 Architecture: all
 Multi-Arch: foreign
 Depends:
- bash,
  netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  ${misc:Depends},
 Suggests:
