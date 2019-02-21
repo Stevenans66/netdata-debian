@@ -85,12 +85,14 @@ Version:	1.12.0
 Release:	1%{?dist}
 License:	GPLv3+
 Group:		Applications/System
-Source0:	https://github.com/netdata/%{name}/releases/download/v@PACKAGE_VERSION@/%{name}-@PACKAGE_VERSION@.tar.gz
+Source0:	https://github.com/netdata/%{name}/releases/download/@PACKAGE_VERSION@/%{name}-@PACKAGE_VERSION@.tar.gz
 URL:		http://my-netdata.io
 BuildRequires:	pkgconfig
 BuildRequires:	xz
 BuildRequires:	zlib-devel
 BuildRequires:	libuuid-devel
+BuildRequires:	autoconf
+BuildRequires:	automake
 Requires:	zlib
 Requires:	libuuid
 
