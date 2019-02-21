@@ -77,6 +77,7 @@ override_dh_install-arch:
 	# Copy architecture dependent plugins
 	mkdir -p $(TOP)-core/etc/netdata
 	cp debian/local/netdata.conf $(TOP)-core/etc/netdata
+	touch $(TOP)-core/etc/netdata/.opt-out-from-anonymous-statistics
 
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
 	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
@@ -91,6 +92,7 @@ ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 
 	mkdir -p $(TOP)-core-no-sse/etc/netdata
 	cp debian/local/netdata.conf $(TOP)-core-no-sse/etc/netdata
+	touch $(TOP)-core-no-sse/etc/netdata/.opt-out-from-anonymous-statistics
 
 	mkdir -p $(TOP)-core-no-sse/usr/lib/netdata/plugins.d
 	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
