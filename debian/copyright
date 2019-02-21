@@ -224,8 +224,8 @@ License: LGPL-3+
  You should have received a copy of the GNU Lesser General Public
  License along with this library;  If not, see <http://www.gnu.org/licenses/>.
  .
- On Debian systems, the complete text of the GNU Lesser General Public
- License version 3 can be found in /usr/share/common-licenses/LGPL-3.
+ The complete text of the GNU Lesser General Public License version 3
+ can be found in /usr/share/common-licenses/LGPL-3.
 
 License: LGPL-2.1
  This program is free software; you can redistribute it and/or modify
@@ -242,9 +242,8 @@ License: LGPL-2.1
  along with this program; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
  .
- On Debian GNU/Linux systems, the complete text of the GNU Library
- General Public License, version 2, can be found in
- /usr/share/common-licenses/LGPL-2.
+ The complete text of the GNU Library General Public License, version 2,
+ can be found in /usr/share/common-licenses/LGPL-2.
 
 License: GPL-3
  This program is free software: you can redistribute it and/or modify it under
@@ -258,8 +257,8 @@ License: GPL-3
  You should have received a copy of the GNU General Public License along with
  this program. If not, see <http://www.gnu.org/licenses/>.
  .
- On Debian systems, the complete text of the GNU General Public
- License version 3 can be found in /usr/share/common-licenses/GPL-3.
+ The complete text of the GNU General Public License version 3
+ can be found in /usr/share/common-licenses/GPL-3.
 
 License: GPL-3+
  This program is free software: you can redistribute it and/or modify it under
@@ -274,8 +273,8 @@ License: GPL-3+
  You should have received a copy of the GNU General Public License along with
  this program. If not, see <http://www.gnu.org/licenses/>.
  .
- On Debian systems, the complete text of the GNU General Public
- License version 3 can be found in /usr/share/common-licenses/GPL-3.
+ The complete text of the GNU General Public License version 3
+ can be found in /usr/share/common-licenses/GPL-3.
 
 License: Expat
  Permission is hereby granted, free of charge, to any person
@@ -376,8 +375,8 @@ License: Apache-2.0
  .
  Comment:
  .
- On Debian systems, the complete text of the Apache License 2.0 can be found in
- `/usr/share/common-licenses/Apache-2.0'.
+ The complete text of the Apache License 2.0
+ can be found in /usr/share/common-licenses/Apache-2.0.
 
 License: CC0
  Creative Commons Legal Code
