@@ -1,3 +1,22 @@
+netdata (1.12.1-1) unstable; urgency=medium
+
+  [ Lennart Weller ]
+  * Add patch to remove Google Analytics from generated docs
+
+  [ Daniel Baumann ]
+  * Rediffing remove-googleanalytics.patch.
+  * Opting out by default from sending anonymous statistics (Closes: #923114).
+  * Merging upstream version 1.12.1.
+  * Refreshing remove-googleanalytics.patch for new upstream version.
+  * Updating lintian overrides.
+  * Removing currently usless depends on bash as it's still an essential
+    package.
+  * Adding missing GPL-3-only license stanza in copyright file.
+  * Debranding license references in copyright.
+  * Updating TODO file.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 24 Feb 2019 21:32:56 +0100
+
 netdata (1.12.0-1) unstable; urgency=medium
 
   * Merging upstream version 1.12.0.
