@@ -6,6 +6,8 @@
   - split out arch-all stuff from core/core-no-sse to netdata-common or so
     (check if worthwile; micropackaging vs. lazy)
   - add netdata-doc if htmldoc is buildable again
+  - enable "expensive" plugins (--enable-plugin-nfacct --enable-plugin-cups --with-libcap)
+    and move them to plugins-extra.
 
 * migrate from user 'netdata' to '_netdata'.
 
