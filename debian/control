@@ -119,8 +119,9 @@ Architecture: all
 Multi-Arch: foreign
 Depends:
  netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
- nodejs,
  ${misc:Depends},
+Recommends:
+ nodejs,
 Provides:
  netdata-plugins,
 Enhances:
