@@ -1,3 +1,10 @@
+netdata (1.12.1-2) unstable; urgency=medium
+
+  * Downgrading nodejs depends in netdata-plugins-nodejs to recommends as
+    not all architectures have nodejs at the moment.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Wed, 27 Feb 2019 22:09:05 +0100
+
 netdata (1.12.1-1) unstable; urgency=medium
 
   [ Lennart Weller ]
