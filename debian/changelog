@@ -1,3 +1,15 @@
+netdata (1.12.2-2) unstable; urgency=medium
+
+  [ Federico Ceratto ]
+  * Add patch to remove Sign In button
+
+  [ Daniel Baumann ]
+  * When disabling the 'Sign In' button on the right side, only turn it
+    off in the javascript and keep the html unmodified.
+  * Sorting patch series.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 02 Mar 2019 16:46:44 +0100
+
 netdata (1.12.2-1) unstable; urgency=medium
 
   * Merging upstream version 1.12.2.
