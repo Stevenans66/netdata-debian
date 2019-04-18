@@ -72,10 +72,10 @@ diff -Naurp netdata.orig/web/gui/infographic.html netdata/web/gui/infographic.ht
 diff -Naurp netdata.orig/web/gui/main.js netdata/web/gui/main.js
 --- netdata.orig/web/gui/main.js
 +++ netdata/web/gui/main.js
-@@ -4354,25 +4354,6 @@ function finalizePage() {
-                 $('#welcomeModal').modal();
-             }, 1000);
-         }
+@@ -4368,25 +4368,6 @@ function finalizePage() {
+     if (isdemo()) {
+         // do not to give errors on netdata demo servers for 60 seconds
+         NETDATA.options.current.retries_on_data_failures = 60;
 -
 -        // google analytics when this is used for the home page of the demo sites
 -        // this does not run on user's installations
