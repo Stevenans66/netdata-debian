@@ -1,3 +1,11 @@
+netdata (1.14.0~rc0-1) experimental; urgency=medium
+
+  * Merging upstream version 1.14.0~rc0.
+  * Refreshing remove-googleanalytics.patch.
+  * Refreshing remove-login.patch.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Thu, 18 Apr 2019 07:18:07 +0200
+
 netdata (1.13.0-1) experimental; urgency=medium
 
   * Merging upstream version 1.13.0.
