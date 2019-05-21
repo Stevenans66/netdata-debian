@@ -311,6 +311,24 @@ RRD_PLUGIN_FILES = \
     database/rrdvar.h \
     $(NULL)
 
+if ENABLE_DBENGINE
+    RRD_PLUGIN_FILES += \
+        database/engine/rrdengine.c \
+        database/engine/rrdengine.h \
+        database/engine/rrddiskprotocol.h \
+        database/engine/datafile.c \
+        database/engine/datafile.h \
+        database/engine/journalfile.c \
+        database/engine/journalfile.h \
+        database/engine/rrdenginelib.c \
+        database/engine/rrdenginelib.h \
+        database/engine/rrdengineapi.c \
+        database/engine/rrdengineapi.h \
+        database/engine/pagecache.c \
+        database/engine/pagecache.h \
+        $(NULL)
+endif
+
 API_PLUGIN_FILES = \
     web/api/badges/web_buffer_svg.c \
     web/api/badges/web_buffer_svg.h \
@@ -412,6 +430,13 @@ BACKENDS_PLUGIN_FILES = \
     backends/prometheus/backend_prometheus.h \
     $(NULL)
 
+KINESIS_BACKEND_FILES = \
+    backends/aws_kinesis/aws_kinesis.c \
+    backends/aws_kinesis/aws_kinesis.h \
+    backends/aws_kinesis/aws_kinesis_put_record.cc \
+    backends/aws_kinesis/aws_kinesis_put_record.h \
+    $(NULL)
+
 DAEMON_FILES = \
 	daemon/common.c \
 	daemon/common.h \
@@ -470,14 +495,23 @@ NETDATA_COMMON_LIBS = \
 	$(OPTIONAL_MATH_LIBS) \
 	$(OPTIONAL_ZLIB_LIBS) \
 	$(OPTIONAL_UUID_LIBS) \
+	$(OPTIONAL_UV_LIBS) \
+	$(OPTIONAL_LZ4_LIBS) \
+	$(OPTIONAL_JUDY_LIBS) \
+	$(OPTIONAL_SSL_LIBS) \
 	$(NULL)
-
+# TODO: Find more graceful way to add libs for AWS Kinesis
 
 sbin_PROGRAMS += netdata
 netdata_SOURCES = $(NETDATA_FILES)
 netdata_LDADD = \
 	$(NETDATA_COMMON_LIBS) \
 	$(NULL)
+if ENABLE_BACKEND_KINESIS
+    netdata_LINK = $(CXXLD) $(CXXFLAGS) $(LDFLAGS) -o $@
+else
+    netdata_LINK = $(CCLD) $(CFLAGS) $(LDFLAGS) -o $@
+endif
 
 if ENABLE_PLUGIN_APPS
     plugins_PROGRAMS += apps.plugin
@@ -530,4 +564,9 @@ if ENABLE_PLUGIN_XENSTAT
         $(NETDATA_COMMON_LIBS) \
         $(OPTIONAL_XENSTAT_LIBS) \
         $(NULL)
+endif
+
+if ENABLE_BACKEND_KINESIS
+    netdata_SOURCES += $(KINESIS_BACKEND_FILES)
+    netdata_LDADD += $(OPTIONAL_KINESIS_LIBS)
 endif
