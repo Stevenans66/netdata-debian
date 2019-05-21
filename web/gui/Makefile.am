@@ -29,6 +29,7 @@ DASHBOARD_JS_FILES = \
     src/dashboard.js/charting/d3pie.js \
     src/dashboard.js/charting/d3.js \
     src/dashboard.js/charting/peity.js \
+    src/dashboard.js/charting/textonly.js \
     src/dashboard.js/charting.js \
     src/dashboard.js/chart-registry.js \
     src/dashboard.js/common.js \
@@ -66,6 +67,17 @@ dist_web_DATA = \
 	sitemap.xml \
 	tv.html \
 	version.txt \
+	$(NULL)
+
+
+webconsoledir=$(webdir)/console
+dist_webconsole_DATA = \
+	console/index.html \
+	$(NULL)
+
+webstaticdir=$(webdir)/static/img
+dist_webstatic_DATA = \
+    static/img/netdata-logomark.svg \
 	$(NULL)
 
 weblibdir=$(webdir)/lib

@@ -87,7 +87,6 @@ markdown_extensions:
  - admonition
  - codehilite
  - meta
- - nl2br
  - sane_lists
  - smarty
  - toc:
@@ -156,6 +155,7 @@ echo -ne "        - Running behind another web server:
 "
 #navpart 2 system
 navpart 2 database
+navpart 2 database/engine
 navpart 2 registry
 
 echo -ne "    - 'docs/Performance.md'
@@ -224,6 +224,7 @@ echo -ne "        - BASH:
 navpart 3 collectors/apps.plugin
 navpart 3 collectors/cups.plugin
 navpart 3 collectors/fping.plugin
+navpart 3 collectors/ioping.plugin
 navpart 3 collectors/freeipmi.plugin
 navpart 3 collectors/nfacct.plugin
 navpart 3 collectors/xenstat.plugin
