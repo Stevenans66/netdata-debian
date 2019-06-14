@@ -67,6 +67,9 @@ endif
 override_dh_auto_install:
 	dh_auto_install -B build-core -- DESTDIR=$(CURDIR)/debian/tmp
 
+	# Building without aws kinesis backend (needs aws sdk)
+	rm -f debian/tmp/usr/lib/netdata/conf.d/aws_kinesis.conf
+
 ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	dh_auto_install -B build-core-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-core-no-sse
 endif
