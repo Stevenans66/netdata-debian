@@ -1,3 +1,12 @@
+netdata (1.15.0-1) experimental; urgency=medium
+
+  * Merging upstream version 1.15.0.
+  * Refreshing remove-update-button.patch.
+  * Updating netdata-plugins-bash.install for ioping.
+  * Avoid installing aws kinesis config, its backend is not enabled yet.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Fri, 14 Jun 2019 05:49:43 +0200
+
 netdata (1.14.0-1) experimental; urgency=medium
 
   * Merging upstream version 1.14.0~rc0.
