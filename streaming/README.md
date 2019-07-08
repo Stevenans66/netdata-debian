@@ -18,7 +18,7 @@ a netdata performs:
 Local netdata (`slave`), **without any database or alarms**, collects metrics and sends them to
 another netdata (`master`).
 
-The `my-netdata` menu shows a list of all "databases streamed to" the master. Clicking one of those links allows the user to view the full dashboard of the `slave` netdata. The URL has the form http://master-host:master-port/host/slave-host/. 
+The node menu shows a list of all "databases streamed to" the master. Clicking one of those links allows the user to view the full dashboard of the `slave` netdata. The URL has the form http://master-host:master-port/host/slave-host/.
 
 Alarms for the `slave` are served by the `master`.
 
@@ -40,6 +40,8 @@ The `slave` and the `master` may have different data retention policies for the 
 
 Alarms for the `slave` are triggered by **both** the `slave` and the `master` (and actually
 each can have different alarms configurations or have alarms disabled).
+
+Take a note, that custom chart names, configured on the `slave`, should be in the form `type.name` to work correctly. The `master` will truncate the `type` part and substitute the original chart `type` to store the name in the database.
 
 ### netdata proxies
 
@@ -81,14 +83,14 @@ monitoring (there cannot be health monitoring without a database).
 
 ```
 [web]
-    mode = none | static-threaded 
-    accept a streaming request every seconds = 0 
+    mode = none | static-threaded
+    accept a streaming request every seconds = 0
 ```
 
 `[web].mode = none` disables the API (netdata will not listen to any ports).
 This also disables the registry (there cannot be a registry without an API).
 
-`accept a streaming request every seconds` can be used to set a limit on how often a master Netdata server will accept streaming requests from the slaves. 0 sets no limit, 1 means maximum once every second. If this is set, you may see error log entries "... too busy to accept new streaming request. Will be allowed in X secs". 
+`accept a streaming request every seconds` can be used to set a limit on how often a master Netdata server will accept streaming requests from the slaves. 0 sets no limit, 1 means maximum once every second. If this is set, you may see error log entries "... too busy to accept new streaming request. Will be allowed in X secs".
 
 ```
 [backend]
@@ -123,7 +125,7 @@ a `proxy`).
 ```
 [stream]
     enabled = yes | no
-    destination = IP:PORT ...
+    destination = IP:PORT[:SSL] ...
     api key = XXXXXXXXXXX
 ```
 
@@ -135,6 +137,8 @@ headless collector|`none`|`none`|`yes`|only for `data source = as collected`|not
 headless proxy|`none`|not `none`|`yes`|only for `data source = as collected`|not possible|no
 proxy with db|not `none`|not `none`|`yes`|possible|possible|yes
 central netdata|not `none`|not `none`|`no`|possible|possible|yes
+
+For the options to encrypt the data stream between the slave and the master, refer to [securing the communication](#securing-the-communication)
 
 ##### options for the receiving node
 
@@ -209,11 +213,46 @@ The receiving end (`proxy` or `master`) logs entries like these:
 
 For netdata v1.9+, streaming can also be monitored via `access.log`.
 
+### Securing the communication
+
+Netdata does not activate TLS encryption by default. To encrypt the connection, you first need to [enable TLS support](../web/server/#enabling-tls-support) on the master. With encryption enabled on the receiving side, we need to instruct the slave to use SSL as well. On the slave's `stream.conf`, configure the destination as follows:
+
+```
+[stream]
+    destination = host:port:SSL
+```
+
+The word SSL appended to the end of the destination tells the slave that the connection must be encrypted.
+
+#### Certificate verification
+
+When SSL is enabled on the slave, the default behavior will be do not connect with the master unless the server's certificate can be verified via the default chain. In case you want to avoid this check, add to the slave's `stream.conf` the following:
+
+```
+[stream]
+    ssl skip certificate verification = yes
+```
+
+#### Expected behaviors
+
+With the introduction of SSL, the master-slave communication behaves as shown in the table below, depending on the following configurations:
+- Master TLS (Yes/No): Whether the `[web]` section in `netdata.conf` has `ssl key` and `ssl certificate`.
+- Master port SSL (-/force/optional): Depends on whether the `[web]` section `bind to` contains a `^SSL=force` or `^SSL=optional` directive on the port(s) used for streaming.
+- Slave TLS (Yes/No): Whether the destination in the slave's `stream.conf` has `:SSL` at the end.
+- Slave SSL Verification (yes/no): Value of the slave's `stream.conf` `ssl skip certificate verification` parameter (default is no).
+
+ Master TLS enabled | Master port SSL | Slave TLS | Slave SSL Ver. | Behavior
+:------:|:-----:|:-----:|:-----:|:--------
+No | - | No | no | Legacy behavior. The master-slave stream is unencrypted.
+Yes | force | No | no | The master rejects the slave connection.
+Yes | -/optional | No | no | The master-slave stream is unencrypted (expected situation for legacy slaves and newer masters)
+Yes | -/force/optional | Yes | no | The master-slave stream is encrypted, provided that the master has a valid SSL certificate. Otherwise, the slave refuses to connect.
+Yes | -/force/optional | Yes | yes | The master-slave stream is encrypted.
 
 ## Viewing remote host dashboards, using mirrored databases
 
 On any receiving netdata, that maintains remote databases and has its web server enabled,
-`my-netdata` menu will include a list of the mirrored databases.
+The node menu will include a list of the mirrored databases.
 
 ![image](https://cloud.githubusercontent.com/assets/2662304/24080824/24cd2d3c-0caf-11e7-909d-a8dd1dbb95d7.png)
 
@@ -289,13 +328,13 @@ On the master, edit `/etc/netdata/stream.conf` (to edit it on your system run `/
 [11111111-2222-3333-4444-555555555555]
 	# enable/disable this API key
     enabled = yes
-    
+
     # one hour of data for each of the slaves
     default history = 3600
-    
+
     # do not save slave metrics on disk
     default memory = ram
-    
+
     # alarms checks, only while the slave is connected
     health enabled by default = auto
 ```
@@ -305,6 +344,10 @@ If you used many API keys, you can add one such section for each API key.
 
 When done, restart netdata on the `master` node. It is now ready to receive metrics.
 
+Note that `health enabled by default = auto` will still trigger `last_collected` alarms, if a connected slave does not exit gracefully. If the netdata running on the slave is
+stopped, it will close the connection to the master, ensuring that no `last_collected` alarms are triggered. For example, a proper container restart would first terminate
+the netdata process, but a system power issue would leave the connection open on the master side. In the second case, you will still receive alarms.
+
 #### Configuring the `slaves`
 
 On each of the slaves, edit `/etc/netdata/stream.conf` (to edit it on your system run `/etc/netdata/edit-config stream.conf`) and set these:
@@ -313,10 +356,10 @@ On each of the slaves, edit `/etc/netdata/stream.conf` (to edit it on your syste
 [stream]
     # stream metrics to another netdata
     enabled = yes
-    
+
     # the IP and PORT of the master
     destination = 10.11.12.13:19999
-	
+
 	# the API key to use
     api key = 11111111-2222-3333-4444-555555555555
 ```

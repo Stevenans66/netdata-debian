@@ -775,7 +775,7 @@ function renderMyNetdataMenu(machinesArray) {
         html += (
             `<div class="agent-item">
                 <i class="fas fa-tv"></i>
-                <a onClick="openAuthenticatedUrl('console/index.html');" target="_blank">Nodes<sup class="beta"> beta</sup></a>
+                <a onClick="openAuthenticatedUrl('console.html');" target="_blank">Nodes<sup class="beta"> beta</sup></a>
                 <div></div>
             </div>
             <div class="agent-item">
@@ -793,7 +793,7 @@ function renderMyNetdataMenu(machinesArray) {
         html += (
             `<div class="agent-item">
                 <i class="fas fa-tv"></i>
-                <a onclick="openAuthenticatedUrl('console/index.html');" target="_blank">Nodes<sup class="beta"> beta</sup></a>
+                <a onclick="openAuthenticatedUrl('console.html');" target="_blank">Nodes<sup class="beta"> beta</sup></a>
                 <div></div>
             </div>
             <div class="agent-item">
@@ -1993,7 +1993,7 @@ function clipboardCopyBadgeEmbed(url) {
 function alarmsUpdateModal() {
     var active = '<h3>Raised Alarms</h3><table class="table">';
     var all = '<h3>All Running Alarms</h3><div class="panel-group" id="alarms_all_accordion" role="tablist" aria-multiselectable="true">';
-    var footer = '<hr/><a href="https://github.com/netdata/netdata/tree/master/web/api/badges#netdata-badges" target="_blank">netdata badges</a> refresh automatically. Their color indicates the state of the alarm: <span style="color: #e05d44"><b>&nbsp;red&nbsp;</b></span> is critical, <span style="color:#fe7d37"><b>&nbsp;orange&nbsp;</b></span> is warning, <span style="color: #4c1"><b>&nbsp;bright green&nbsp;</b></span> is ok, <span style="color: #9f9f9f"><b>&nbsp;light grey&nbsp;</b></span> is undefined (i.e. no data or no status), <span style="color: #000"><b>&nbsp;black&nbsp;</b></span> is not initialized. You can copy and paste their URLs to embed them in any web page.<br/>netdata can send notifications for these alarms. Check <a href="https://github.com/netdata/netdata/blob/master/health/notifications/health_alarm_notify.conf">this configuration file</a> for more information.';
+    var footer = '<hr/><a href="https://github.com/netdata/netdata/tree/master/web/api/badges#netdata-badges" target="_blank">netdata badges</a> refresh automatically. Their color indicates the state of the alarm: <span style="color: #e05d44"><b>&nbsp;red&nbsp;</b></span> is critical, <span style="color:#fe7d37"><b>&nbsp;orange&nbsp;</b></span> is warning, <span style="color: #4c1"><b>&nbsp;bright green&nbsp;</b></span> is ok, <span style="color: #9f9f9f"><b>&nbsp;light grey&nbsp;</b></span> is undefined (i.e. no data or no status), <span style="color: #000"><b>&nbsp;black&nbsp;</b></span> is not initialized. You can copy and paste their URLs to embed them in any web page.<br/>netdata can send notifications for these alarms. Check <a href="https://github.com/netdata/netdata/blob/master/health/notifications/health_alarm_notify.conf" target="_blank">this configuration file</a> for more information.';
 
     loadClipboard(function () {
     });
@@ -2098,6 +2098,14 @@ function alarmsUpdateModal() {
                     + ((typeof alarm.calc !== 'undefined') ? ('<tr><td width="10%" style="text-align:right">calculation</td><td><span style="font-family: monospace;">' + alarm.calc + '</span></td></tr>') : '')
                     + ((chart.green !== null) ? ('<tr><td width="10%" style="text-align:right">green&nbsp;threshold</td><td><code>' + chart.green + ' ' + units + '</code></td></tr>') : '')
                     + ((chart.red !== null) ? ('<tr><td width="10%" style="text-align:right">red&nbsp;threshold</td><td><code>' + chart.red + ' ' + units + '</code></td></tr>') : '');
+            }
+
+            if (alarm.warn_repeat_every > 0) {
+                html += '<tr><td width="10%" style="text-align:right">repeat&nbsp;warning</td><td>' + NETDATA.seconds4human(alarm.warn_repeat_every) + '</td></tr>';
+            }
+
+            if (alarm.crit_repeat_every > 0) {
+                html += '<tr><td width="10%" style="text-align:right">repeat&nbsp;critical</td><td>' + NETDATA.seconds4human(alarm.crit_repeat_every) + '</td></tr>';
             }
 
             var delay = '';
@@ -4840,12 +4848,11 @@ function renderAccountUI() {
         container.removeAttribute("title");
         container.removeAttribute("data-original-title");
         container.removeAttribute("data-placement");
-        // <a href="/console/index.html#/charts/${NETDATA.registry.machine_guid}" target="_blank" class="btn">
         container.innerHTML = (
             `<a href="#" class="dropdown-toggle" data-toggle="dropdown"><span id="amc-account-name"></span> <strong class="caret"></strong></a>
             <ul id="cloud-menu" class="dropdown-menu scrollable-menu inpagemenu" role="menu">   
                 <li>
-                    <a onclick="openAuthenticatedUrl('console/index.html');" target="_blank" class="btn">
+                    <a onclick="openAuthenticatedUrl('console.html');" target="_blank" class="btn">
                     <i class="fas fa-tv"></i>&nbsp;&nbsp;<span class="hidden-sm hidden-md">Nodes<sup class="beta"> beta</sup></span>
                     </a>
                 </li>
