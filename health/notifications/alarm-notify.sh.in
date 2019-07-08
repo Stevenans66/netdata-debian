@@ -189,6 +189,7 @@ fi
 [ -z "${NETDATA_STOCK_CONFIG_DIR}" ] && NETDATA_STOCK_CONFIG_DIR="@libconfigdir_POST@"
 [ -z "${NETDATA_CACHE_DIR}" ] && NETDATA_CACHE_DIR="@cachedir_POST@"
 [ -z "${NETDATA_REGISTRY_URL}" ] && NETDATA_REGISTRY_URL="https://registry.my-netdata.io"
+[ -z "${NETDATA_REGISTRY_CLOUD_BASE_URL}" ] && NETDATA_REGISTRY_CLOUD_BASE_URL="https://netdata.cloud"
 
 # -----------------------------------------------------------------------------
 # parse command line parameters
@@ -681,7 +682,7 @@ date=$(date --date=@${when} "${date_format}" 2>/dev/null)
 # ----------------------------------------------------------------------------
 # prepare some extra headers if we've been asked to thread e-mails
 if [ "${SEND_EMAIL}" == "YES" ] && [ "${EMAIL_THREADING}" != "NO" ]; then
-	email_thread_headers="In-Reply-To: <${chart}-${name}@${host}>\\nReferences: <${chart}-${name}@${host}>"
+	email_thread_headers="In-Reply-To: <${chart}-${name}@${host}>\\r\\nReferences: <${chart}-${name}@${host}>"
 else
 	email_thread_headers=
 fi
@@ -1790,7 +1791,7 @@ if [ "${NETDATA_REGISTRY_URL}" == "https://registry.my-netdata.io" ]; then
 			NETDATA_REGISTRY_UNIQUE_ID="$(cat "@registrydir_POST@/netdata.public.unique.id")"
 		fi
 	fi
-	if [ ! -z "${NETDATA_REGISTRY_UNIQUE_ID}" ]; then
+	if [ -n "${NETDATA_REGISTRY_UNIQUE_ID}" ]; then
 		GOTOCLOUD=1
 	fi
 fi
@@ -1798,7 +1799,7 @@ fi
 if [ ${GOTOCLOUD} -eq 0 ]; then
 	goto_url="${NETDATA_REGISTRY_URL}/goto-host-from-alarm.html?${redirect_params}"
 else
-	goto_url="https://netdata.cloud/alarms/redirect?agentID=${NETDATA_REGISTRY_UNIQUE_ID}&${redirect_params}"
+	goto_url="${NETDATA_REGISTRY_CLOUD_BASE_URL}/alarms/redirect?agentID=${NETDATA_REGISTRY_UNIQUE_ID}&${redirect_params}"
 fi
 
 # the severity of the alarm
@@ -1953,7 +1954,7 @@ send_pushbullet "${PUSHBULLET_ACCESS_TOKEN}" "${PUSHBULLET_SOURCE_DEVICE}" "${to
 Severity: ${severity}\\n
 Chart: ${chart}\\n
 Family: ${family}\\n
-$(date -d @${when})\\n
+${date}\\n
 The source of this alarm is line ${src}"
 
 SENT_PUSHBULLET=$?

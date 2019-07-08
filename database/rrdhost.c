@@ -147,6 +147,10 @@ RRDHOST *rrdhost_create(const char *hostname,
     host->rrdpush_sender_pipe[0] = -1;
     host->rrdpush_sender_pipe[1] = -1;
     host->rrdpush_sender_socket  = -1;
+#ifdef ENABLE_HTTPS
+    host->ssl.conn = NULL;
+    host->ssl.flags = NETDATA_SSL_START;
+#endif
 
     netdata_mutex_init(&host->rrdpush_sender_buffer_mutex);
     netdata_rwlock_init(&host->rrdhost_rwlock);
@@ -162,7 +166,7 @@ RRDHOST *rrdhost_create(const char *hostname,
     host->program_version = strdupz((program_version && *program_version)?program_version:"unknown");
     host->registry_hostname = strdupz((registry_hostname && *registry_hostname)?registry_hostname:hostname);
 
-    host->system_info = rrdhost_system_info_dup(system_info);
+    host->system_info = system_info;
 
     avl_init_lock(&(host->rrdset_root_index),      rrdset_compare);
     avl_init_lock(&(host->rrdset_root_index_name), rrdset_compare_name);
@@ -175,6 +179,10 @@ RRDHOST *rrdhost_create(const char *hostname,
     if(config_get_boolean(CONFIG_SECTION_GLOBAL, "delete orphan hosts files", 1) && !is_localhost)
         rrdhost_flag_set(host, RRDHOST_FLAG_DELETE_ORPHAN_HOST);
 
+    host->health_default_warn_repeat_every = config_get_duration(CONFIG_SECTION_HEALTH, "default repeat warning", "never");
+    host->health_default_crit_repeat_every = config_get_duration(CONFIG_SECTION_HEALTH, "default repeat critical", "never");
+    avl_init_lock(&(host->alarms_idx_health_log), alarm_compare_id);
+    avl_init_lock(&(host->alarms_idx_name), alarm_compare_name);
 
     // ------------------------------------------------------------------------
     // initialize health variables
@@ -270,12 +278,12 @@ RRDHOST *rrdhost_create(const char *hostname,
     // load health configuration
 
     if(host->health_enabled) {
-        health_alarm_log_load(host);
-        health_alarm_log_open(host);
-
         rrdhost_wrlock(host);
         health_readdir(host, health_user_config_dir(), health_stock_config_dir(), NULL);
         rrdhost_unlock(host);
+
+        health_alarm_log_load(host);
+        health_alarm_log_open(host);
     }
 
 
@@ -812,81 +820,103 @@ restart_after_removal:
 // RRDHOST - set system info from environment variables
 
 int rrdhost_set_system_info_variable(struct rrdhost_system_info *system_info, char *name, char *value) {
+    int res = 0;
+
     if(!strcmp(name, "NETDATA_SYSTEM_OS_NAME")){
+        freez(system_info->os_name);
         system_info->os_name = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_OS_ID")){
+        freez(system_info->os_id);
         system_info->os_id = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_OS_ID_LIKE")){
+        freez(system_info->os_id_like);
         system_info->os_id_like = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_OS_VERSION")){
+        freez(system_info->os_version);
         system_info->os_version = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_OS_VERSION_ID")){
+        freez(system_info->os_version_id);
         system_info->os_version_id = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_OS_DETECTION")){
+        freez(system_info->os_detection);
         system_info->os_detection = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_KERNEL_NAME")){
+        freez(system_info->kernel_name);
         system_info->kernel_name = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_KERNEL_VERSION")){
+        freez(system_info->kernel_version);
         system_info->kernel_version = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_ARCHITECTURE")){
+        freez(system_info->architecture);
         system_info->architecture = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_VIRTUALIZATION")){
+        freez(system_info->virtualization);
         system_info->virtualization = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_VIRT_DETECTION")){
+        freez(system_info->virt_detection);
         system_info->virt_detection = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_CONTAINER")){
+        freez(system_info->container);
         system_info->container = strdupz(value);
     }
     else if(!strcmp(name, "NETDATA_SYSTEM_CONTAINER_DETECTION")){
+        freez(system_info->container_detection);
         system_info->container_detection = strdupz(value);
     }
-    else return 1;
+    else {
+        res = 1;
+    }
+
+    return res;
+}
+
+/**
+ * Alarm Compare ID
+ *
+ * Callback function used with the binary trees to compare the id of RRDCALC
+ *
+ * @param a a pointer to the RRDCAL item to insert,compare or update the binary tree
+ * @param b the pointer to the binary tree.
+ *
+ * @return It returns 0 case the values are equal, 1 case a is bigger than b and -1 case a is smaller than b.
+ */
+int alarm_compare_id(void *a, void *b) {
+    register uint32_t hash1 = ((RRDCALC *)a)->id;
+    register uint32_t hash2 = ((RRDCALC *)b)->id;
+
+    if(hash1 < hash2) return -1;
+    else if(hash1 > hash2) return 1;
 
     return 0;
 }
 
-struct rrdhost_system_info *rrdhost_system_info_dup(struct rrdhost_system_info *system_info) {
-    struct rrdhost_system_info *ret = callocz(1, sizeof(struct rrdhost_system_info));
+/**
+ * Alarm Compare NAME
+ *
+ * Callback function used with the binary trees to compare the name of RRDCALC
+ *
+ * @param a a pointer to the RRDCAL item to insert,compare or update the binary tree
+ * @param b the pointer to the binary tree.
+ *
+ * @return It returns 0 case the values are equal, 1 case a is bigger than b and -1 case a is smaller than b.
+ */
+int alarm_compare_name(void *a, void *b) {
+    RRDCALC *in1 = (RRDCALC *)a;
+    RRDCALC *in2 = (RRDCALC *)b;
 
-    if(likely(system_info)) {
-        if(system_info->os_name)
-            ret->os_name = strdupz(system_info->os_name);
-        if(system_info->os_id)
-            ret->os_id = strdupz(system_info->os_id);
-        if(system_info->os_id_like)
-            ret->os_id_like = strdupz(system_info->os_id_like);
-        if(system_info->os_version)
-            ret->os_version = strdupz(system_info->os_version);
-        if(system_info->os_version_id)
-            ret->os_version_id = strdupz(system_info->os_version_id);
-        if(system_info->os_detection)
-            ret->os_detection = strdupz(system_info->os_detection);
-        if(system_info->kernel_name)
-            ret->kernel_name = strdupz(system_info->kernel_name);
-        if(system_info->kernel_version)
-            ret->kernel_version = strdupz(system_info->kernel_version);
-        if(system_info->architecture)
-            ret->architecture = strdupz(system_info->architecture);
-        if(system_info->virtualization)
-            ret->virtualization = strdupz(system_info->virtualization);
-        if(system_info->virt_detection)
-            ret->virt_detection = strdupz(system_info->virt_detection);
-        if(system_info->container)
-            ret->container = strdupz(system_info->container);
-        if(system_info->container_detection)
-            ret->container_detection = strdupz(system_info->container_detection);
-    }
+    if(in1->hash < in2->hash) return -1;
+    else if(in1->hash > in2->hash) return 1;
 
-    return ret;
+    return strcmp(in1->name,in2->name);
 }

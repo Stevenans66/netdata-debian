@@ -44,15 +44,21 @@ else
 	source "${NETDATA_SOURCE_DIR}/packaging/installer/functions.sh" || exit 1
 fi
 
-download() {
+download_go() {
 	url="${1}"
 	dest="${2}"
+
 	if command -v curl >/dev/null 2>&1; then
-		run curl -sSL --connect-timeout 10 --retry 3 "${url}" >"${dest}" || fatal "Cannot download ${url}"
+		run curl -sSL --connect-timeout 10 --retry 3 "${url}" > "${dest}"
 	elif command -v wget >/dev/null 2>&1; then
-		run wget -T 15 -O - "${url}" >"${dest}" || fatal "Cannot download ${url}"
+		run wget -T 15 -O - "${url}" > "${dest}"
 	else
-		fatal "I need curl or wget to proceed, but neither is available on this system."
+		echo >&2
+		echo >&2 "Downloading go.d plugin from '${url}' failed because of missing mandatory packages."
+		echo >&2 "Either add packages or disable it by issuing '--disable-go' in the installer"
+		echo >&2
+
+		run_failed "I need curl or wget to proceed, but neither is available on this system."
 	fi
 }
 
@@ -159,6 +165,9 @@ USAGE: ${PROGRAM} [options]
   --enable-backend-kinesis   Enable AWS Kinesis backend. Default: enable it when libaws_cpp_sdk_kinesis and libraries
                              it depends on are available.
   --disable-backend-kinesis
+  --enable-backend-prometheus-remote-write Enable Prometheus remote write backend. Default: enable it when libprotobuf and
+                             libsnappy are available.
+  --disable-backend-prometheus-remote-write
   --enable-lto               Enable Link-Time-Optimization. Default: enabled
   --disable-lto
   --disable-x86-sse          Disable SSE instructions. By default SSE optimizations are enabled.
@@ -204,8 +213,10 @@ while [ -n "${1}" ]; do
 		"--disable-plugin-nfacct") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-plugin-nfacct/} --disable-plugin-nfacct";;
 		"--enable-plugin-xenstat") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--enable-plugin-xenstat/} --enable-plugin-xenstat";;
 		"--disable-plugin-xenstat") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-plugin-xenstat/} --disable-plugin-xenstat";;
-        "--enable-backend-kinesis") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--enable-backend-kinesis/} --enable-backend-kinesis";;
-        "--disable-backend-kinesis") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-backend-kinesis/} --disable-backend-kinesis";;
+		"--enable-backend-kinesis") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--enable-backend-kinesis/} --enable-backend-kinesis";;
+		"--disable-backend-kinesis") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-backend-kinesis/} --disable-backend-kinesis";;
+		"--enable-backend-prometheus-remote-write") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--enable-backend-prometheus-remote-write/} --enable-backend-prometheus-remote-write";;
+		"--disable-backend-prometheus-remote-write") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-backend-prometheus-remote-write/} --disable-backend-prometheus-remote-write";;
 		"--enable-lto") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--enable-lto/} --enable-lto";;
 		"--disable-lto") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-lto/} --disable-lto";;
 		"--disable-x86-sse") NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS//--disable-x86-sse/} --disable-x86-sse";;
@@ -383,6 +394,7 @@ run ./configure \
 	--prefix="${NETDATA_PREFIX}/usr" \
 	--sysconfdir="${NETDATA_PREFIX}/etc" \
 	--localstatedir="${NETDATA_PREFIX}/var" \
+	--libexecdir="${NETDATA_PREFIX}/usr/libexec" \
 	--with-zlib \
 	--with-math \
 	--with-user=netdata \
@@ -540,6 +552,7 @@ progress "Install logrotate configuration for netdata"
 
 install_netdata_logrotate
 
+
 # -----------------------------------------------------------------------------
 progress "Read installation options from netdata.conf"
 
@@ -628,7 +641,7 @@ fi
 
 # --- conf dir ----
 
-for x in "python.d" "charts.d" "node.d" "health.d" "statsd.d" "go.d"; do
+for x in "python.d" "charts.d" "node.d" "health.d" "statsd.d" "go.d" "custom-plugins.d" "ssl"; do
 	if [ ! -d "${NETDATA_USER_CONFIG_DIR}/${x}" ]; then
 		echo >&2 "Creating directory '${NETDATA_USER_CONFIG_DIR}/${x}'"
 		run mkdir -p "${NETDATA_USER_CONFIG_DIR}/${x}" || exit 1
@@ -723,15 +736,20 @@ if [ "${UID}" -eq 0 ]; then
 		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/nfacct.plugin"
 	fi
 
-    if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin" ]; then
-        run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
-        run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
-    fi
+	if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin" ]; then
+		run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
+		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
+	fi
 
-    if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping" ]; then
-        run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
-        run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
-    fi
+	if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin" ]; then
+		run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
+		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
+	fi
+
+	if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping" ]; then
+		run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
+		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
+	fi
 
 	if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/cgroup-network" ]; then
 		run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/cgroup-network"
@@ -755,7 +773,7 @@ fi
 
 install_go() {
 	# When updating this value, ensure correct checksums in packaging/go.d.checksums
-	GO_PACKAGE_VERSION="v0.5.0"
+	GO_PACKAGE_VERSION="v0.7.0"
 	ARCH_MAP=(
 		'i386::386'
 		'i686::386'
@@ -775,24 +793,37 @@ install_go() {
 		for index in "${ARCH_MAP[@]}" ; do
 			KEY="${index%%::*}"
 			VALUE="${index##*::}"
-			if [ "$KEY" == "$ARCH" ]; then
+			if [ "$KEY" = "$ARCH" ]; then
 				ARCH="${VALUE}"
 				break
 			fi
 		done
 		tmp=$(mktemp -d /tmp/netdata-go-XXXXXX)
-		GO_PACKAGE_BASENAME="go.d.plugin-$GO_PACKAGE_VERSION.$OS-$ARCH"
+		GO_PACKAGE_BASENAME="go.d.plugin-${GO_PACKAGE_VERSION}.${OS}-${ARCH}"
 
-		download "https://github.com/netdata/go.d.plugin/releases/download/$GO_PACKAGE_VERSION/$GO_PACKAGE_BASENAME" "${tmp}/$GO_PACKAGE_BASENAME"
+		download_go "https://github.com/netdata/go.d.plugin/releases/download/${GO_PACKAGE_VERSION}/${GO_PACKAGE_BASENAME}" "${tmp}/${GO_PACKAGE_BASENAME}"
 
-		download "https://github.com/netdata/go.d.plugin/releases/download/$GO_PACKAGE_VERSION/config.tar.gz" "${tmp}/config.tar.gz"
+		download_go "https://github.com/netdata/go.d.plugin/releases/download/${GO_PACKAGE_VERSION}/config.tar.gz" "${tmp}/config.tar.gz"
+
+		if [ ! -f "${tmp}/${GO_PACKAGE_BASENAME}" ] || [ ! -f "${tmp}/config.tar.gz" ] || [ ! -s "${tmp}/config.tar.gz" ] || [ ! -s "${tmp}/${GO_PACKAGE_BASENAME}" ]; then
+			run_failed "go.d plugin download failed, go.d plugin will not be available"
+			echo >&2 "Either check the error or consider disabling it by issuing '--disable-go' in the installer"
+			echo >&2
+			return 0
+		fi
+
 		grep "${GO_PACKAGE_BASENAME}\$" "${INSTALLER_DIR}/packaging/go.d.checksums" > "${tmp}/sha256sums.txt" 2>/dev/null
 		grep "config.tar.gz" "${INSTALLER_DIR}/packaging/go.d.checksums" >> "${tmp}/sha256sums.txt" 2>/dev/null
 
 		# Checksum validation
 		if ! (cd "${tmp}" && safe_sha256sum -c "sha256sums.txt"); then
+
+			echo >&2 "go.d plugin checksum validation failure."
+			echo >&2 "Either check the error or consider disabling it by issuing '--disable-go' in the installer"
+			echo >&2
+
 			run_failed "go.d.plugin package files checksum validation failed."
-			return 1
+			return 0
 		fi
 
 		# Install new files
@@ -812,12 +843,23 @@ install_go() {
 install_go
 
 # -----------------------------------------------------------------------------
+progress "Telemetry configuration"
+
+# Opt-out from telemetry program
+if [ -n "${NETDATA_DISABLE_TELEMETRY+x}" ]; then
+	run touch "${NETDATA_USER_CONFIG_DIR}/.opt-out-from-anonymous-statistics"
+else
+	printf "You can opt out from anonymous statistics via the --disable-telemetry option, or by creating an empty file ${NETDATA_USER_CONFIG_DIR}/.opt-out-from-anonymous-statistics \n\n"
+fi
+
+# -----------------------------------------------------------------------------
 progress "Install netdata at system init"
 
 NETDATA_START_CMD="${NETDATA_PREFIX}/usr/sbin/netdata"
 
 if grep -q docker /proc/1/cgroup >/dev/null 2>&1; then
 	echo >&2 "We are running within a docker container, will not be installing netdata service"
+	echo >&2
 else
 	install_netdata_service || run_failed "Cannot install netdata init service."
 fi
@@ -839,7 +881,7 @@ else
 	create_netdata_conf "${NETDATA_PREFIX}/etc/netdata/netdata.conf" "http://localhost:${NETDATA_PORT}/netdata.conf"
 fi
 if [ "${UID}" -eq 0 ]; then
-        run chown "${NETDATA_USER}" "${NETDATA_PREFIX}/etc/netdata/netdata.conf"
+	run chown "${NETDATA_USER}" "${NETDATA_PREFIX}/etc/netdata/netdata.conf"
 fi
 run chmod 0664 "${NETDATA_PREFIX}/etc/netdata/netdata.conf"
 
@@ -1035,10 +1077,6 @@ RELEASE_CHANNEL="${RELEASE_CHANNEL}"
 NETDATA_TARBALL_CHECKSUM="new_installation"
 EOF
 
-# Opt-out from telemetry program
-if [ -n "${NETDATA_DISABLE_TELEMETRY+x}" ]; then
-	touch "${NETDATA_USER_CONFIG_DIR}/.opt-out-from-anonymous-statistics"
-fi
 
 # -----------------------------------------------------------------------------
 echo >&2

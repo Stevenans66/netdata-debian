@@ -17,7 +17,7 @@ typedef struct alarm_entry ALARM_ENTRY;
 // forward declarations
 struct rrddim_volatile;
 #ifdef ENABLE_DBENGINE
-struct rrdeng_page_cache_descr;
+struct rrdeng_page_descr;
 struct rrdengine_instance;
 struct pg_cache_page_index;
 #endif
@@ -246,10 +246,12 @@ union rrddim_collect_handle {
     } slotted;                           // state the legacy code uses
 #ifdef ENABLE_DBENGINE
     struct rrdeng_collect_handle {
-        struct rrdeng_page_cache_descr *descr, *prev_descr;
+        struct rrdeng_page_descr *descr, *prev_descr;
         unsigned long page_correlation_id;
         struct rrdengine_instance *ctx;
         struct pg_cache_page_index *page_index;
+        // set to 1 when this dimension is not page aligned with the other dimensions in the chart
+        uint8_t unaligned_page;
     } rrdeng; // state the database engine uses
 #endif
 };
@@ -268,7 +270,7 @@ struct rrddim_query_handle {
         } slotted;                         // state the legacy code uses
 #ifdef ENABLE_DBENGINE
         struct rrdeng_query_handle {
-            struct rrdeng_page_cache_descr *descr;
+            struct rrdeng_page_descr *descr;
             struct rrdengine_instance *ctx;
             struct pg_cache_page_index *page_index;
             time_t now; //TODO: remove now to implement next point iteration
@@ -351,7 +353,7 @@ typedef enum rrdset_flags {
     RRDSET_FLAG_UPSTREAM_EXPOSED    = 1 << 8, // if set, we have sent this chart definition to netdata master (streaming)
     RRDSET_FLAG_STORE_FIRST         = 1 << 9, // if set, do not eliminate the first collection during interpolation
     RRDSET_FLAG_HETEROGENEOUS       = 1 << 10, // if set, the chart is not homogeneous (dimensions in it have multiple algorithms, multipliers or dividers)
-    RRDSET_FLAG_HOMEGENEOUS_CHECK   = 1 << 11, // if set, the chart should be checked to determine if the dimensions as homogeneous
+    RRDSET_FLAG_HOMOGENEOUS_CHECK   = 1 << 11, // if set, the chart should be checked to determine if the dimensions are homogeneous
     RRDSET_FLAG_HIDDEN              = 1 << 12, // if set, do not show this chart on the dashboard, but use it for backends
     RRDSET_FLAG_SYNC_CLOCK          = 1 << 13, // if set, microseconds on next data collection will be ignored (the chart will be synced to now)
     RRDSET_FLAG_OBSOLETE_DIMENSIONS = 1 << 14  // this is marked by the collector/module when a chart has obsolete dimensions
@@ -431,7 +433,9 @@ struct rrdset {
     char *plugin_name;                              // the name of the plugin that generated this
     char *module_name;                              // the name of the plugin module that generated this
 
-    size_t unused[6];
+    size_t unused[5];
+
+    size_t rrddim_page_alignment;                   // keeps metric pages in alignment when using dbengine
 
     uint32_t hash;                                  // a simple hash on the id, to speed up searching
                                                     // we first compare hashes, and only if the hashes are equal we do string comparisons
@@ -568,6 +572,8 @@ struct alarm_entry {
     uint32_t updated_by_id;
     uint32_t updates_id;
 
+    time_t last_repeat;
+
     struct alarm_entry *next;
 };
 
@@ -682,11 +688,16 @@ struct rrdhost {
     char *health_log_filename;                      // the alarms event log filename
     size_t health_log_entries_written;              // the number of alarm events writtern to the alarms event log
     FILE *health_log_fp;                            // the FILE pointer to the open alarms event log file
+    uint32_t health_default_warn_repeat_every;      // the default value for the interval between repeating warning notifications
+    uint32_t health_default_crit_repeat_every;      // the default value for the interval between repeating critical notifications
+
 
     // all RRDCALCs are primarily allocated and linked here
     // RRDCALCs may be linked to charts at any point
     // (charts may or may not exist when these are loaded)
     RRDCALC *alarms;
+    avl_tree_lock alarms_idx_health_log;
+    avl_tree_lock alarms_idx_name;
 
     ALARM_LOG health_log;                           // alarms historical events (event log)
     uint32_t health_last_processed_id;              // the last processed health id from the log
@@ -721,6 +732,10 @@ struct rrdhost {
 
 #ifdef ENABLE_DBENGINE
     struct rrdengine_instance *rrdeng_ctx;          // DB engine instance for this host
+#endif
+
+#ifdef ENABLE_HTTPS
+    struct netdata_ssl ssl;                         //Structure used to encrypt the connection
 #endif
 
     struct rrdhost *next;
@@ -781,7 +796,6 @@ extern RRDHOST *rrdhost_find_or_create(
 );
 
 extern int rrdhost_set_system_info_variable(struct rrdhost_system_info *system_info, char *name, char *value);
-extern struct rrdhost_system_info *rrdhost_system_info_dup(struct rrdhost_system_info *system_info);
 
 #if defined(NETDATA_INTERNAL_CHECKS) && defined(NETDATA_VERIFY_LOCKS)
 extern void __rrdhost_check_wrlock(RRDHOST *host, const char *file, const char *function, const unsigned long line);
@@ -1013,6 +1027,12 @@ extern collected_number rrddim_set_by_pointer(RRDSET *st, RRDDIM *rd, collected_
 extern collected_number rrddim_set(RRDSET *st, const char *id, collected_number value);
 
 extern long align_entries_to_pagesize(RRD_MEMORY_MODE mode, long entries);
+
+// ----------------------------------------------------------------------------
+// Miscellaneous functions
+
+extern int alarm_compare_id(void *a, void *b);
+extern int alarm_compare_name(void *a, void *b);
 
 // ----------------------------------------------------------------------------
 // RRD internal functions

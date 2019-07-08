@@ -20,6 +20,8 @@ The best way to install Netdata is directly from source. Our **automatic install
 
 See also the list of Netdata [package maintainers](../maintainers) for ASUSTOR NAS, OpenWRT, ReadyNAS, etc.
 
+Note: From Netdata v1.12 and above, anonymous usage information is collected by default and sent to Google Analytics. To read more about the information collected and how to opt-out, check the [anonymous statistics page](../../docs/anonymous-statistics.md).
+
 ---
 
 ## One line installation
@@ -42,7 +44,7 @@ bash <(curl -Ss https://my-netdata.io/kickstart.sh)
 Verify the integrity of the script with this:
 
 ```bash
-[ "fe451cd039c8f99b2ba4ca0feab88033" = "$(curl -Ss https://my-netdata.io/kickstart.sh | md5sum | cut -d ' ' -f 1)" ] && echo "OK, VALID" || echo "FAILED, INVALID"
+[ "8a2b054081a108dff915994ce77f2f2d" = "$(curl -Ss https://my-netdata.io/kickstart.sh | md5sum | cut -d ' ' -f 1)" ] && echo "OK, VALID" || echo "FAILED, INVALID"
 ```
 *It should print `OK, VALID` if the script is the one we ship.*
 
@@ -99,7 +101,7 @@ To install Netdata with a binary package on any Linux distro, any kernel version
 Verify the integrity of the script with this:
 
 ```bash
-[ "9ff4f5f37d23dff431f80d5349e0a25c" = "$(curl -Ss https://my-netdata.io/kickstart-static64.sh | md5sum | cut -d ' ' -f 1)" ] && echo "OK, VALID" || echo "FAILED, INVALID"
+[ "8779d8717ccaa8dac18d599502eef591" = "$(curl -Ss https://my-netdata.io/kickstart-static64.sh | md5sum | cut -d ' ' -f 1)" ] && echo "OK, VALID" || echo "FAILED, INVALID"
 ```
 
 *It should print `OK, VALID` if the script is the one we ship.*
@@ -163,13 +165,25 @@ To install the latest git version of Netdata, please follow these 2 steps:
 
 Try our experimental automatic requirements installer (no need to be root). This will try to find the packages that should be installed on your system to build and run Netdata. It supports most major Linux distributions released after 2010:
 
-- **Alpine** Linux and its derivatives (you have to install `bash` yourself, before using the installer)
-- **Arch** Linux and its derivatives
-- **Gentoo** Linux and its derivatives
-- **Debian** Linux and its derivatives (including **Ubuntu**, **Mint**)
-- **Fedora** and its derivatives (including **Red Hat Enterprise Linux**, **CentOS**, **Amazon Machine Image**)
-- **SuSe** Linux and its derivatives (including **openSuSe**)
-- **SLE12** Must have your system registered with Suse Customer Center or have the DVD. See [#1162](https://github.com/netdata/netdata/issues/1162)
+* **Alpine** Linux and its derivatives
+  * You have to install `bash` yourself, before using the installer.
+
+* **Arch** Linux and its derivatives
+  * You need arch/aur for package Judy.
+
+* **Gentoo** Linux and its derivatives
+
+* **Debian** Linux and its derivatives (including **Ubuntu**, **Mint**)
+
+* **Redhat Enterprise Linux** and its derivatives (including **Fedora**, **CentOS**, **Amazon Machine Image**)
+  * Please note that for RHEL/CentOS you need
+    [EPEL](http://www.tecmint.com/how-to-enable-epel-repository-for-rhel-centos-6-5/).
+    In addition, RHEL/CentOS version 6 also need
+    [OKay](https://okay.com.mx/blog-news/rpm-repositories-for-centos-6-and-7.html) for package libuv version 1.
+
+* **SuSe** Linux and its derivatives (including **openSuSe**)
+
+* **SLE12** Must have your system registered with Suse Customer Center or have the DVD. See [#1162](https://github.com/netdata/netdata/issues/1162)
 
 Install the packages for having a **basic Netdata installation** (system monitoring and many applications, without  `mysql` / `mariadb`, `postgres`, `named`, hardware sensors and `SNMP`):
 
@@ -199,9 +213,10 @@ dnf install zlib-devel libuuid-devel libuv-devel lz4-devel Judy-devel openssl-de
 # CentOS / Red Hat Enterprise Linux
 yum install autoconf automake curl gcc git libmnl-devel libuuid-devel openssl-devel libuv-devel lz4-devel Judy-devel lm_sensors make MySQL-python nc pkgconfig python python-psycopg2 PyYAML zlib-devel
 
-```
+# openSUSE
+zypper install zlib-devel libuuid-devel libuv-devel liblz4-devel judy-devel libopenssl-devel libmnl-devel gcc make git autoconf autoconf-archive autogen automake pkgconfig curl findutils
 
-Please note that for RHEL/CentOS you might need [EPEL](http://www.tecmint.com/how-to-enable-epel-repository-for-rhel-centos-6-5/).
+```
 
 Once Netdata is compiled, to run it the following packages are required (already installed using the above commands):
 

@@ -62,7 +62,7 @@ memory deduplication (ksm) | `yes` | When set to `yes`, netdata will offer its i
 TZ environment variable | `:/etc/localtime` | Where to find the timezone
 timezone | auto-detected | The timezone retrieved from the environment variable
 debug flags | `0x0000000000000000` | Bitmap of debug options to enable. For more information check [Tracing Options](../#debugging).
-debug log | `/var/log/netdata/debug.log` | The filename to save debug information. This file will not be created is debugging is not enabled. You can also set it to `syslog` to send the debug messages to syslog, or `none` to disable this log. For more information check [Tracing Options](../#debugging).
+debug log | `/var/log/netdata/debug.log` | The filename to save debug information. This file will not be created if debugging is not enabled. You can also set it to `syslog` to send the debug messages to syslog, or `none` to disable this log. For more information check [Tracing Options](../#debugging).
 error log | `/var/log/netdata/error.log` | The filename to save error messages for netdata daemon and all plugins (`stderr` is sent here for all netdata programs, including the plugins). You can also set it to `syslog` to send the errors to syslog, or `none` to disable this log.
 access log | `/var/log/netdata/access.log` | The filename to save the log of web clients accessing netdata charts. You can also set it to `syslog` to send the access log to syslog, or `none` to disable this log.
 errors flood protection period | `1200` | UNUSED - Length of period (in sec) during which the number of errors should not exceed the `errors to trigger flood protection`.
@@ -105,12 +105,12 @@ setting | default | info
 :------:|:-------:|:----
 enabled | `yes` | Set to `no` to disable all alarms and notifications
 in memory max health log entries | 1000 | Size of the alarm history held in RAM
-script to execute on alarm | `/usr/libexec/netdata/plugins.d/alarm-notify.sh` | The script that sends alarm notifications.
+script to execute on alarm | `/usr/libexec/netdata/plugins.d/alarm-notify.sh` | The script that sends alarm notifications. Note that in versions before 1.16, the plugins.d directory may be installed in a different location in certain OSs (e.g. under `/usr/lib/netdata`).
 stock health configuration directory | `/usr/lib/netdata/conf.d/health.d` | Contains the stock alarm configuration files for each collector
 health configuration directory | `/etc/netdata/health.d` | The directory containing the user alarm configuration files, to override the stock configurations
 run at least every seconds | `10` | Controls how often all alarm conditions should be evaluated.
 postpone alarms during hibernation for seconds | `60` | Prevents false alarms. May need to be increased if you get alarms during hibernation.
-rotate log every lines | 2000 | Controls the number of alarm log entries stored in `<lib directory>/health-log.db`, where <lib directory> is the one configured in the [[global] section](#global-section-options)
+rotate log every lines | 2000 | Controls the number of alarm log entries stored in `<lib directory>/health-log.db`, where `<lib directory>` is the one configured in the [[global] section](#global-section-options)
 
 ### [registry] section options
 
@@ -128,6 +128,8 @@ The configuration options for plugins appear in sections following the pattern `
 
 Most internal plugins will provide additional options. Check [Internal Plugins](../../collectors/) for more information.
 
+Please note, that by default Netdata will enable monitoring metrics for disks, memory, and network only when they are not zero. If they are constantly zero they are ignored. Metrics that will start having values, after netdata is started, will be detected and charts will be automatically added to the dashboard (a refresh of the dashboard is needed for them to appear though). Use `yes` instead of `auto` in plugin configuration sections to enable these charts permanently.
+
 #### External plugins
 
 External plugins will have only 2 options at `netdata.conf`:
@@ -141,6 +143,6 @@ External plugins that need additional configuration may support a dedicated file
 
 ### Per chart configuration
 
-In this section you will a separate subsection for each chart shown on the dashboard. You can control all aspects of a specific chart here. You can understand what each option does by reading [how charts are defined](../../collectors/plugins.d/#chart). If you don't know how to find the name of a chart, you can learn about it [here](../../docs/Charts.md).
+In this section you will find a separate subsection for each chart shown on the dashboard. You can control all aspects of a specific chart here. You can understand what each option does by reading [how charts are defined](../../collectors/plugins.d/#chart). If you don't know how to find the name of a chart, you can learn about it [here](../../docs/Charts.md).
 
 [![analytics](https://www.google-analytics.com/collect?v=1&aip=1&t=pageview&_s=1&ds=github&dr=https%3A%2F%2Fgithub.com%2Fnetdata%2Fnetdata&dl=https%3A%2F%2Fmy-netdata.io%2Fgithub%2Fdaemon%2Fconfig%2FREADME&_u=MAC~&cid=5792dfd7-8dc4-476b-af31-da2fdb9f93d2&tid=UA-64295674-3)]()

@@ -24,7 +24,7 @@ void netdata_cleanup_and_exit(int ret) {
     error_log_limit_unlimited();
     info("EXIT: netdata prepares to exit with code %d...", ret);
 
-	send_statistics("EXIT", ret?"ERROR":"OK","-");
+    send_statistics("EXIT", ret?"ERROR":"OK","-");
 
     // cleanup/save the database and exit
     info("EXIT: cleaning up the database...");
@@ -48,6 +48,10 @@ void netdata_cleanup_and_exit(int ret) {
         if(unlink(pidfile) != 0)
             error("EXIT: cannot unlink pidfile '%s'.", pidfile);
     }
+
+#ifdef ENABLE_HTTPS
+    security_clean_openssl();
+#endif
 
     info("EXIT: all done - netdata is now exiting - bye bye...");
     exit(ret);
@@ -345,7 +349,20 @@ static const char *verify_required_directory(const char *dir) {
     return dir;
 }
 
-void log_init(void) {
+#ifdef ENABLE_HTTPS
+static void security_init(){
+    char filename[FILENAME_MAX + 1];
+    snprintfz(filename, FILENAME_MAX, "%s/ssl/key.pem",netdata_configured_user_config_dir);
+    security_key    = config_get(CONFIG_SECTION_WEB, "ssl key",  filename);
+
+    snprintfz(filename, FILENAME_MAX, "%s/ssl/cert.pem",netdata_configured_user_config_dir);
+    security_cert    = config_get(CONFIG_SECTION_WEB, "ssl certificate",  filename);
+
+    security_openssl_library();
+}
+#endif
+
+static void log_init(void) {
     char filename[FILENAME_MAX + 1];
     snprintfz(filename, FILENAME_MAX, "%s/debug.log", netdata_configured_log_dir);
     stdout_filename    = config_get(CONFIG_SECTION_GLOBAL, "debug log",  filename);
@@ -356,9 +373,9 @@ void log_init(void) {
     snprintfz(filename, FILENAME_MAX, "%s/access.log", netdata_configured_log_dir);
     stdaccess_filename = config_get(CONFIG_SECTION_GLOBAL, "access log", filename);
 
-	char deffacility[8];
-	snprintfz(deffacility,7,"%s","daemon");
-	facility_log = config_get(CONFIG_SECTION_GLOBAL, "facility log",  deffacility);
+    char deffacility[8];
+    snprintfz(deffacility,7,"%s","daemon");
+    facility_log = config_get(CONFIG_SECTION_GLOBAL, "facility log",  deffacility);
 
     error_log_throttle_period = config_get_number(CONFIG_SECTION_GLOBAL, "errors flood protection period", error_log_throttle_period);
     error_log_errors_per_period = (unsigned long)config_get_number(CONFIG_SECTION_GLOBAL, "errors to trigger flood protection", (long long int)error_log_errors_per_period);
@@ -420,8 +437,9 @@ static void get_netdata_configured_variables() {
     // get the hostname
 
     char buf[HOSTNAME_MAX + 1];
-    if(gethostname(buf, HOSTNAME_MAX) == -1)
+    if(gethostname(buf, HOSTNAME_MAX) == -1){
         error("Cannot get machine hostname.");
+    }
 
     netdata_configured_hostname = config_get(CONFIG_SECTION_GLOBAL, "hostname", buf);
     debug(D_OPTIONS, "hostname set to '%s'", netdata_configured_hostname);
@@ -724,20 +742,20 @@ void send_statistics( const char *action, const char *action_result, const char 
         if (likely(access(optout_file, R_OK) != 0)) {
             as_script = mallocz(sizeof(char) * (strlen(netdata_configured_primary_plugins_dir) + strlen("anonymous-statistics.sh") + 2));
             sprintf(as_script, "%s/%s", netdata_configured_primary_plugins_dir, "anonymous-statistics.sh");
-			if (unlikely(access(as_script, R_OK) != 0)) {
-				netdata_anonymous_statistics_enabled=0;
-				info("Anonymous statistics script %s not found.",as_script);
-				freez(as_script);
-			} else {
-				netdata_anonymous_statistics_enabled=1;
-			}
-		} else {
+            if (unlikely(access(as_script, R_OK) != 0)) {
+               netdata_anonymous_statistics_enabled=0;
+               info("Anonymous statistics script %s not found.",as_script);
+               freez(as_script);
+            } else {
+               netdata_anonymous_statistics_enabled=1;
+            }
+        } else {
             netdata_anonymous_statistics_enabled = 0;
             as_script = NULL;
         }
         freez(optout_file);
     }
-	if(!netdata_anonymous_statistics_enabled) return;
+    if(!netdata_anonymous_statistics_enabled) return;
     if (!action) return;
     if (!action_result) action_result="";
     if (!action_data) action_data="";
@@ -754,6 +772,12 @@ void send_statistics( const char *action, const char *action_result, const char 
         mypclose(fp, command_pid);
     }
     freez(command_to_run);
+}
+
+void set_silencers_filename() {
+    char filename[FILENAME_MAX + 1];
+    snprintfz(filename, FILENAME_MAX, "%s/health.silencers.json", netdata_configured_varlib_dir);
+    silencers_filename = config_get(CONFIG_SECTION_HEALTH, "silencers file", filename);
 }
 
 int main(int argc, char **argv) {
@@ -881,12 +905,9 @@ int main(int argc, char **argv) {
                             return 0;
                         }
                         else if(strncmp(optarg, createdataset_string, strlen(createdataset_string)) == 0) {
-                            unsigned history_seconds;
-
                             optarg += strlen(createdataset_string);
-                            history_seconds = (unsigned )strtoull(optarg, NULL, 0);
-
 #ifdef ENABLE_DBENGINE
+                            unsigned history_seconds = (unsigned )strtoull(optarg, NULL, 0);
                             generate_dbengine_dataset(history_seconds);
 #endif
                             return 0;
@@ -1081,6 +1102,17 @@ int main(int argc, char **argv) {
         error_log_limit_unlimited();
 
         // --------------------------------------------------------------------
+        // get the certificate and start security
+#ifdef ENABLE_HTTPS
+        security_init();
+#endif
+
+        // --------------------------------------------------------------------
+        // This is the safest place to start the SILENCERS structure
+        set_silencers_filename();
+        health_initialize_global_silencers();
+
+        // --------------------------------------------------------------------
         // setup process signals
 
         // block signals while initializing threads.
@@ -1134,10 +1166,6 @@ int main(int argc, char **argv) {
     // initialize the log files
     open_all_log_files();
 
-	netdata_anonymous_statistics_enabled=-1;
-    struct rrdhost_system_info *system_info = calloc(1, sizeof(struct rrdhost_system_info));
-    if (get_system_info(system_info) == 0) send_statistics("START","-", "-");
-
 #ifdef NETDATA_INTERNAL_CHECKS
     if(debug_flags != 0) {
         struct rlimit rl = { RLIM_INFINITY, RLIM_INFINITY };
@@ -1171,8 +1199,11 @@ int main(int argc, char **argv) {
     // ------------------------------------------------------------------------
     // initialize rrd, registry, health, rrdpush, etc.
 
+    netdata_anonymous_statistics_enabled=-1;
+    struct rrdhost_system_info *system_info = calloc(1, sizeof(struct rrdhost_system_info));
+    get_system_info(system_info);
+
     rrd_init(netdata_configured_hostname, system_info);
-    rrdhost_system_info_free(system_info);
     // ------------------------------------------------------------------------
     // enable log flood protection
 
@@ -1196,6 +1227,8 @@ int main(int argc, char **argv) {
 
     info("netdata initialization completed. Enjoy real-time performance monitoring!");
     netdata_ready = 1;
+  
+    send_statistics("START", "-",  "-");
 
     // ------------------------------------------------------------------------
     // unblock signals

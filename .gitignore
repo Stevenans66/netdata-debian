@@ -56,8 +56,15 @@ nfacct.plugin
 xenstat.plugin
 !xenstat.plugin/
 
+perf.plugin
+!perf.plugin/
+
 cgroup-network
 !cgroup-network/
+
+# protoc generated files
+*.pb.cc
+*.pb.h
 
 # installation artifacts
 packaging/installer/.environment.sh
@@ -171,3 +178,6 @@ docs/generator/build
 docs/generator/mkdocs.yml
 
 .environment.sh
+
+#CLion files
+netdata.cbp

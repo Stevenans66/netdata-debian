@@ -132,7 +132,6 @@ const char *rrdset_type_name(RRDSET_TYPE chart_type) {
     }
 }
 
-
 // ----------------------------------------------------------------------------
 // RRD - cache directory
 
@@ -146,8 +145,7 @@ char *rrdset_cache_dir(RRDHOST *host, const char *id, const char *config_section
     snprintfz(n, FILENAME_MAX, "%s/%s", host->cache_dir, b);
     ret = config_get(config_section, "cache directory", n);
 
-    if(host->rrd_memory_mode == RRD_MEMORY_MODE_MAP || host->rrd_memory_mode == RRD_MEMORY_MODE_SAVE ||
-       host->rrd_memory_mode == RRD_MEMORY_MODE_DBENGINE) {
+    if(host->rrd_memory_mode == RRD_MEMORY_MODE_MAP || host->rrd_memory_mode == RRD_MEMORY_MODE_SAVE) {
         int r = mkdir(ret, 0775);
         if(r != 0 && errno != EEXIST)
             error("Cannot create directory '%s'", ret);
@@ -155,3 +153,4 @@ char *rrdset_cache_dir(RRDHOST *host, const char *id, const char *config_section
 
     return ret;
 }
+
