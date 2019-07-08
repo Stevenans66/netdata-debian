@@ -4,8 +4,8 @@ Description: Remove update button in web gui.
 diff -Naurp netdata.orig/web/gui/index.html netdata/web/gui/index.html
 --- netdata.orig/web/gui/index.html
 +++ netdata/web/gui/index.html
-@@ -127,7 +127,9 @@
-                     <li title="Nodes view" data-toggle="tooltip" data-placement="bottom"><a onclick="openAuthenticatedUrl('console/index.html');" class="btn" target="_blank"><i class="fas fa-tv"></i>&nbsp;<span class="hidden-sm hidden-md">Nodes<sup class="beta"> beta</sup></span></a></li>
+@@ -126,7 +126,9 @@
+                     <li title="Nodes view" data-toggle="tooltip" data-placement="bottom"><a onclick="openAuthenticatedUrl('console.html');" class="btn" target="_blank"><i class="fas fa-tv"></i>&nbsp;<span class="hidden-sm hidden-md">Nodes<sup class="beta"> beta</sup></span></a></li>
                      <li id="alarmsButton"  title="check the health monitoring alarms and their log" data-toggle="tooltip" data-placement="bottom"><a href="#" class="btn" data-toggle="modal" data-target="#alarmsModal"><i class="fas fa-bell"></i>&nbsp;<span class="hidden-sm hidden-md">Alarms&nbsp;</span><span id="alarms_count_badge" class="badge"></span></a></li>
                      <li title="change dashboard settings" data-toggle="tooltip" data-placement="bottom"><a href="#" class="btn" data-toggle="modal" data-target="#optionsModal"><i class="fas fa-cog"></i>&nbsp;<span class="hidden-sm hidden-md">Settings</span></a></li>
 +                    <!--
