@@ -1,3 +1,12 @@
+netdata (1.16.0-1) unstable; urgency=medium
+
+  * Merging upstream version 1.16.0.
+  * Refreshing remove-infographic.patch.
+  * Refreshing remove-update-button.patch.
+  * Updating to standards-version 4.4.0.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Mon, 08 Jul 2019 22:25:30 +0200
+
 netdata (1.15.0-1) experimental; urgency=medium
 
   * Merging upstream version 1.15.0.
