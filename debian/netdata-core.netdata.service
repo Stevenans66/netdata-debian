@@ -37,8 +37,11 @@ ProtectHome=read-only
 ProtectSystem=full
 
 ReadOnlyDirectories=/
+ReadWriteDirectories=/dev
 ReadWriteDirectories=/proc/self
-ReadWriteDirectories=/var
+ReadWriteDirectories=/var/cache/netdata
+ReadWriteDirectories=/var/lib/netdata
+ReadWriteDirectories=/var/log
 
 # Access to devices and kernel modules and tunables is required
 PrivateDevices=no
