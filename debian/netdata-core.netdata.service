@@ -31,7 +31,7 @@ NoNewPrivileges=false
 PermissionsStartOnly=true
 # CAP_SETGID is required for setgroups()
 # CAP_NET_RAW is needed by fping, see #864370
-CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE CAP_SETGID CAP_SETUID CAP_NET_RAW
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH CAP_SYS_PTRACE CAP_SETGID CAP_SETUID CAP_NET_RAW CAP_AUDIT_WRITE
 PrivateTmp=true
 ProtectHome=read-only
 ProtectSystem=full
