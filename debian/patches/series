@@ -9,3 +9,4 @@ debian/0008-remove-social-media-buttons.patch
 debian/0009-remove-googleanalytics.patch
 debian/0010-remove-login.patch
 upstream/0001-allow-symlinks.patch
+debian/0011-remove-signin.patch
