@@ -1,3 +1,22 @@
+netdata (1.16.1-2) unstable; urgency=medium
+
+  [ Katharina Drexel ]
+  * fixing group permissions for reading logs
+  * correct the file permissions so that the python plugins also work
+
+  [ Daniel Baumann ]
+  * Removing 'Sign In' infobar on the bottom of the screen (Closes:
+    #930504).
+  * Using bash instead of sh for edit-config.
+  * Renumbering patches.
+  * Also adding CAP_AUDIT_WRITE for netdata to allow plugins make use of
+    PAM audit (Closes: #921409).
+  * Adding README.Debian for netdata-web wwith a note about Content-
+    Security-Policy headers, thanks to Katharina Drexel
+    <katharina.drexel@bfh.ch> (Closes: #931843).
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Mon, 12 Aug 2019 20:15:39 +0200
+
 netdata (1.16.1-1) unstable; urgency=medium
 
   * Merging upstream version 1.16.1.
