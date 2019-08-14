@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+	configure)
+		if [ -x "$(which a2enmod)" ]
+		then
+			a2enmod proxy proxy_http rewrite
+		fi
+
+		if [ -x "$(which a2enconf)" ]
+		then
+			a2enconf netdata
+		fi
+
+		if [ -x "/etc/init.d/apache2" ]; then
+                if [ -n "$2" ]; then
+                        _dh_action=restart
+                else
+                        _dh_action=start
+                fi
+                invoke-rc.d apache2 $_dh_action || true
+        fi
+
+		;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+		;;
+
+	*)
+		echo "postinst called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+#DEBHELPER#
+
+exit 0

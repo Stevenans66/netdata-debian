@@ -178,3 +178,25 @@ Description: real-time performance monitoring (web)
  systems it runs using interactive web dashboards.
  .
  This package contains the web frontend.
+
+Package: netdata-apache2
+Section: net
+Architecture: all
+Depends:
+ netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
+ netdata-web (>= ${source:Version}),
+ apache2
+Enhances:
+ netdata-core,
+ netdata-core-no-sse,
+Description: real-time performance monitoring (apache integration)
+ Netdata is distributed, real-time, performance and health monitoring for
+ systems and applications. It provides insights of everything happening on the
+ systems it runs using interactive web dashboards.
+ .
+ Although the package comports a generic web server, it is recommended to run the
+ service through a "real" web server, let alone for security reasons
+ (encryption, authentication, ...).
+ .
+ This package contains some basic configuration for apache and enables the
+ necessary modules.

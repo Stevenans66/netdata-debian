@@ -11,10 +11,6 @@
 
 * migrate from user 'netdata' to '_netdata'.
 
-* add multiselect preseeding for netdata-web (as if it's netdata-apache2,
-  containing apache2 conf snipped to enable netdata via reverse proxy
-  and (optional) basic auth)
-
 * finish ucf handling for netdata.conf
 
 * keep depends minimal and put everything to recommends/suggests

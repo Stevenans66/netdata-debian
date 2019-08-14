@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+	remove)
+		a2disconf netdata > /dev/null 2>&1 || true
+
+		if [ -x /etc/init.d/apache2 ] && [ -e /run/apache2/apache2.pid ]
+		then
+			invoke-rc.d apache2 restart || true
+		fi
+
+		;;
+
+	purge|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+
+		;;
+
+	*)
+		echo "postrm called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+#DEBHELPER#
+
+exit 0
