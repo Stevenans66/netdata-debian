@@ -164,9 +164,11 @@ override_dh_fixperms-arch:
 	# given extra capabilities in the postinst script.
 	chmod 0754 $(TOP)-core/usr/lib/netdata/plugins.d/apps.plugin
 	chmod 4754 $(TOP)-core/usr/lib/netdata/plugins.d/freeipmi.plugin
+	chmod 4754 $(TOP)-core/usr/lib/netdata/plugins.d/perf.plugin
 ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	chmod 0754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/apps.plugin
 	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/freeipmi.plugin
+	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/perf.plugin
 endif
 
 override_dh_fixperms-indep:

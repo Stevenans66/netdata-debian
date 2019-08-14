@@ -5,5 +5,6 @@ netdata-core-no-sse: non-standard-executable-perm usr/lib/netdata/plugins.d/apps
 # user created during install
 netdata-core-no-sse: maintainer-script-should-not-use-recursive-chown-or-chmod
 
-# freeipmi plugin
+# plugins that require root access
 netdata-core-no-sse: setuid-binary usr/lib/netdata/plugins.d/freeipmi.plugin 4754 root/root
+netdata-core-no-sse: setuid-binary usr/lib/netdata/plugins.d/perf.plugin 4754 root/root
