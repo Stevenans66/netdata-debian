@@ -46,6 +46,7 @@ Depends:
  apache2,
  netdata-core (>= ${source:Version}) | netdata-core-no-sse (>= ${source:Version}),
  netdata-web (>= ${source:Version}),
+ ${misc:Depends},
 Enhances:
  netdata-core,
  netdata-core-no-sse,
