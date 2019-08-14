@@ -8,3 +8,5 @@ usr/lib/netdata/conf.d/health_email_recipients.conf
 usr/lib/netdata/conf.d/statsd.d
 usr/lib/netdata/conf.d/stream.conf
 usr/sbin
+
+debian/local/netdata/netdata.conf /etc/netdata
