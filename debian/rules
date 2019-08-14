@@ -147,7 +147,7 @@ override_dh_installinit:
 override_dh_installsystemd:
 	dh_installsystemd -p netdata-core --name=netdata
 	dh_installsystemd -p netdata-core-no-sse --name=netdata
-	dh_installinit --remaining-packages
+	dh_installsystemd --remaining-packages
 
 override_dh_installlogrotate:
 	dh_installlogrotate -p netdata-core --name=netdata
