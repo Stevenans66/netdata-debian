@@ -194,9 +194,8 @@ Description: real-time performance monitoring (apache integration)
  systems and applications. It provides insights of everything happening on the
  systems it runs using interactive web dashboards.
  .
- Although the package comports a generic web server, it is recommended to run the
- service through a "real" web server, let alone for security reasons
- (encryption, authentication, ...).
+ Netdata includes its own embedded webserver, by default listening on localhost
+ only. To make netdata available to other users, a dedicated webserver such as
+ apache should be used (with authentication and encryption).
  .
- This package contains some basic configuration for apache and enables the
- necessary modules.
+ This package contains the integration for the apache HTTP server.
