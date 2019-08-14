@@ -14,18 +14,21 @@ case "${1}" in
 			a2enconf netdata
 		fi
 
-		if [ -x "/etc/init.d/apache2" ]; then
-                if [ -n "$2" ]; then
-                        _dh_action=restart
-                else
-                        _dh_action=start
-                fi
-                invoke-rc.d apache2 $_dh_action || true
-        fi
+		if [ -x "/etc/init.d/apache2" ]
+		then
+			if [ -n "${2}" ]
+			then
+				ACTION="restart"
+			else
+				ACTION="start"
+			fi
 
+			invoke-rc.d apache2 ${ACTION} || true
+		fi
 		;;
 
 	abort-upgrade|abort-remove|abort-deconfigure)
+
 		;;
 
 	*)

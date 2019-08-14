@@ -10,7 +10,6 @@ case "${1}" in
 		then
 			invoke-rc.d apache2 restart || true
 		fi
-
 		;;
 
 	purge|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
