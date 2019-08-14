@@ -83,7 +83,7 @@ override_dh_install-arch:
 	touch $(TOP)-core/etc/netdata/.opt-out-from-anonymous-statistics
 
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
-	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
+	for plugin in cgroup-network apps.plugin freeipmi.plugin perf.plugin; \
 	do \
 		cp debian/tmp/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core/usr/lib/netdata/plugins.d; \
@@ -98,7 +98,7 @@ ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	touch $(TOP)-core-no-sse/etc/netdata/.opt-out-from-anonymous-statistics
 
 	mkdir -p $(TOP)-core-no-sse/usr/lib/netdata/plugins.d
-	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
+	for plugin in cgroup-network apps.plugin freeipmi.plugin perf.plugin; \
 	do \
 		cp debian/tmp-core-no-sse/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core-no-sse/usr/lib/netdata/plugins.d; \
@@ -116,7 +116,7 @@ override_dh_install-indep:
 
 	# Move architecture dependent plugins
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
-	for plugin in cgroup-network apps.plugin freeipmi.plugin; \
+	for plugin in cgroup-network apps.plugin freeipmi.plugin perf.plugin; \
 	do \
 		mv -f $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core/usr/lib/netdata/plugins.d; \
