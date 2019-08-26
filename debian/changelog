@@ -1,3 +1,34 @@
+netdata (1.16.1-3) unstable; urgency=medium
+
+  [ Katharina Drexel ]
+  * typo fix in debian/rules: s/init/systemd/
+  * adding package netdata-apache2
+
+  [ Daniel Baumann ]
+  * Harmonizing whitespace/intenting/style in netdata-apache2 maintainer
+    scripts.
+  * Simplyfing and rewording netdata-apache2 package description.
+  * Running wrap-and-sort.
+  * Adding misc depends to netdata-apache2.
+  * Moving new arch-dep perf.plugin to core packages.
+  * Marking perf.plugin setuid root as it should be.
+  * Adding lintian overrides for netdata-apache2.
+  * Using apache2-maintscript-helper in netdata-apache2 maintainer
+    scripts.
+  * Deduplicating apache2 configuration.
+  * Moving local netdata.conf into subdirectory within source tree for
+    consistency.
+  * Using debhelper install files to install netdata configuration.
+  * Removing Google Fonts in console.html for privacy reasons.
+  * Removing Google Tag Manager in console.html for privacy reasons.
+  * Adding pgpmode to watch file to use the included signingkey when
+    verifying tarballs.
+  * Using dh-apache2 ito do the heavy-lifting for netdata-apache2.
+  * Updating TODO file.
+  * Disabling netdata-apache2 for the next upload to go to unstable.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Mon, 26 Aug 2019 13:55:28 +0200
+
 netdata (1.16.1-2) unstable; urgency=medium
 
   [ Katharina Drexel ]
