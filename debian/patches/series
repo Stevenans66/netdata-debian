@@ -11,4 +11,5 @@ debian/0010-remove-googleanalytics.patch
 debian/0011-remove-login.patch
 debian/0012-remove-signin.patch
 debian/0013-remove-googlefonts.patch
+debian/0014-remove-googletagmanager.patch
 upstream/0001-allow-symlinks.patch
