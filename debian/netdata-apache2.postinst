@@ -12,8 +12,6 @@ case "${1}" in
 			apache2_invoke enmod proxy_http
 			apache2_invoke enmod rewrite
 
-			apache2_invoke enconf netdata.conf
-
 			apache2_reload restart
 		fi
 		;;
