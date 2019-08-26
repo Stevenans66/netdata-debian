@@ -21,6 +21,9 @@
 
 * netdata.conf: preseeding of ip, port, registry, and history.
 
+* netdata-apache2:
+  - conditional (debconf) disabling of apache2 mod on remove.
+
 * upstream:
   - 'netdata -W set' seems broken
   - update to bootstrap 4
