@@ -23,6 +23,7 @@
 
 * netdata-apache2:
   - conditional (debconf) disabling of apache2 mod on remove.
+  - ask to setup basic auth
 
 * upstream:
   - 'netdata -W set' seems broken
