@@ -1,3 +1,9 @@
+netdata (1.16.1-5) unstable; urgency=medium
+
+  * Enabling netdata-apache2 package for easy apache reverse proxy setup.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Mon, 26 Aug 2019 18:16:37 +0200
+
 netdata (1.16.1-4) unstable; urgency=medium
 
   * Using rules to install netdata configuration to fix FTBFS on i386.
