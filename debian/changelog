@@ -1,3 +1,11 @@
+netdata (1.16.1-6) unstable; urgency=medium
+
+  * Udpating TODO file.
+  * Adding versioned breaks to accomodate for shipping perf plugin (arch-
+    dep) in netdata-core instead of netdata-plugins-bash.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Tue, 27 Aug 2019 19:36:25 +0200
+
 netdata (1.16.1-5) unstable; urgency=medium
 
   * Enabling netdata-apache2 package for easy apache reverse proxy setup.
