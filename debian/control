@@ -81,6 +81,7 @@ Recommends:
  curl,
 Breaks:
  netdata (<< 1.11.1+dfsg-5~),
+ netdata-plugins-bash (<< 1.16.1-3~),
 Description: real-time performance monitoring (core)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -107,6 +108,7 @@ Recommends:
  curl,
 Breaks:
  netdata (<< 1.11.1+dfsg-5~),
+ netdata-plugins-bash (<< 1.16.1-3~),
 Description: real-time performance monitoring (core, no-sse build)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
