@@ -1,5 +1,6 @@
 netdata (1.17.0-1) unstable; urgency=medium
 
+  * Merging upstream version 1.17.0.
   * Updating packaging for mongodb plugin.
 
  -- Daniel Baumann <daniel.baumann@progress-linux.org>  Tue, 03 Sep 2019 13:04:07 +0200
