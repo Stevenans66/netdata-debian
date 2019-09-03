@@ -74,13 +74,13 @@ ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	dh_auto_install -B build-core-no-sse -- DESTDIR=$(CURDIR)/debian/tmp-core-no-sse
 endif
 
-override_dh_install-arch:
-	find debian/tmp -name .keep -delete
-
 	# Moving architecture independent plugins
 	mkdir -p $(TOP)-plugins-python/usr/lib/netdata/conf.d/health.d
 	mv debian/tmp/usr/lib/netdata/conf.d/health.d/mongodb.conf $(TOP)-plugins-python/usr/lib/netdata/conf.d/health.d
 	mv debian/tmp/usr/lib/netdata/conf.d/mongodb.conf $(TOP)-plugins-python/usr/lib/netdata/conf.d
+
+override_dh_install-arch:
+	find debian/tmp -name .keep -delete
 
 	# Copy architecture dependent plugins
 	mkdir -p $(TOP)-core/etc/netdata
