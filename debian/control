@@ -82,6 +82,7 @@ Recommends:
 Breaks:
  netdata (<< 1.11.1+dfsg-5~),
  netdata-plugins-bash (<< 1.16.1-3~),
+ netdata-plugins-python (<< 1.17.0-1~),
 Description: real-time performance monitoring (core)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
@@ -109,6 +110,7 @@ Recommends:
 Breaks:
  netdata (<< 1.11.1+dfsg-5~),
  netdata-plugins-bash (<< 1.16.1-3~),
+ netdata-plugins-python (<< 1.17.0-1~),
 Description: real-time performance monitoring (core, no-sse build)
  Netdata is distributed, real-time, performance and health monitoring for
  systems and applications. It provides insights of everything happening on the
