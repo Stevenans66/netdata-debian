@@ -929,7 +929,6 @@ void web_client_split_path_query(struct web_client *w, char *s) {
 
     w->separator = 0x00;
     w->url_path_length = strlen(s);
-    w->url_search_path = NULL;
 }
 
 /**
@@ -1035,20 +1034,22 @@ static inline HTTP_VALIDATION http_request_validate(struct web_client *w) {
                 // a valid complete HTTP request found
 
                 *ue = '\0';
+                //This is to avoid crash in line
+                w->url_search_path = NULL;
                 if(w->mode != WEB_CLIENT_MODE_NORMAL) {
                     if(!url_decode_r(w->decoded_url, encoded_url, NETDATA_WEB_REQUEST_URL_SIZE + 1))
                         return HTTP_VALIDATION_MALFORMED_URL;
                 } else {
                     web_client_split_path_query(w, encoded_url);
 
-                    if (w->separator) {
+                    if (w->url_search_path && w->separator) {
                         *w->url_search_path = 0x00;
                     }
 
                     if(!url_decode_r(w->decoded_url, encoded_url, NETDATA_WEB_REQUEST_URL_SIZE + 1))
                         return HTTP_VALIDATION_MALFORMED_URL;
 
-                    if (w->separator) {
+                    if (w->url_search_path && w->separator) {
                         *w->url_search_path = w->separator;
 
                         char *from = (encoded_url + w->url_path_length);
@@ -1064,9 +1065,6 @@ static inline HTTP_VALIDATION http_request_validate(struct web_client *w) {
                 // copy the URL - we are going to overwrite parts of it
                 // TODO -- ideally we we should avoid copying buffers around
                 strncpyz(w->last_url, w->decoded_url, NETDATA_WEB_REQUEST_URL_SIZE);
-                if (w->separator) {
-                    *w->url_search_path = 0x00;
-                }
 #ifdef ENABLE_HTTPS
                 if ( (!web_client_check_unix(w)) && (netdata_srv_ctx) ) {
                     if ((w->ssl.conn) && ((w->ssl.flags & NETDATA_SSL_NO_HANDSHAKE) && (web_client_is_using_ssl_force(w) || web_client_is_using_ssl_default(w)) && (w->mode != WEB_CLIENT_MODE_STREAM))  ) {
