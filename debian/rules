@@ -46,13 +46,13 @@ override_dh_auto_clean:
 
 override_dh_auto_configure:
 	mkdir -p build-core
-	dh_auto_configure -B build-core -- --libdir=/usr/lib --libexecdir=/usr/lib --enable-x86-sse --enable-plugin-freeipmi --with-math
+	dh_auto_configure -B build-core -- --libdir=/usr/lib --libexecdir=/usr/lib --enable-x86-sse --disable-plugin-freeipmi --with-math
 	cp -a tests build-core
 	cp -a web/gui/src build-core/web/gui
 
 ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	mkdir -p build-core-no-sse
-	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --enable-plugin-freeipmi --with-math
+	dh_auto_configure -B build-core-no-sse -- --libdir=/usr/lib --libexecdir=/usr/lib --disable-x86-sse --disable-plugin-freeipmi --with-math
 	cp -a tests build-core-no-sse
 	cp -a web/gui/src build-core-no-sse/web/gui
 endif
@@ -88,7 +88,7 @@ override_dh_install-arch:
 	touch $(TOP)-core/etc/netdata/.opt-out-from-anonymous-statistics
 
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
-	for plugin in cgroup-network apps.plugin freeipmi.plugin perf.plugin; \
+	for plugin in cgroup-network apps.plugin perf.plugin; \
 	do \
 		cp debian/tmp/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core/usr/lib/netdata/plugins.d; \
@@ -103,7 +103,7 @@ ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	touch $(TOP)-core-no-sse/etc/netdata/.opt-out-from-anonymous-statistics
 
 	mkdir -p $(TOP)-core-no-sse/usr/lib/netdata/plugins.d
-	for plugin in cgroup-network apps.plugin freeipmi.plugin perf.plugin; \
+	for plugin in cgroup-network apps.plugin perf.plugin; \
 	do \
 		cp debian/tmp-core-no-sse/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core-no-sse/usr/lib/netdata/plugins.d; \
@@ -121,7 +121,7 @@ override_dh_install-indep:
 
 	# Move architecture dependent plugins
 	mkdir -p $(TOP)-core/usr/lib/netdata/plugins.d
-	for plugin in cgroup-network apps.plugin freeipmi.plugin perf.plugin; \
+	for plugin in cgroup-network apps.plugin perf.plugin; \
 	do \
 		mv -f $(TOP)-plugins-bash/usr/lib/netdata/plugins.d/$${plugin} \
 		   $(TOP)-core/usr/lib/netdata/plugins.d; \
@@ -168,11 +168,9 @@ override_dh_fixperms-arch:
 	# apps.plugin should only be runnable by the netdata user. It will be
 	# given extra capabilities in the postinst script.
 	chmod 0754 $(TOP)-core/usr/lib/netdata/plugins.d/apps.plugin
-	chmod 4754 $(TOP)-core/usr/lib/netdata/plugins.d/freeipmi.plugin
 	chmod 4754 $(TOP)-core/usr/lib/netdata/plugins.d/perf.plugin
 ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 	chmod 0754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/apps.plugin
-	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/freeipmi.plugin
 	chmod 4754 $(TOP)-core-no-sse/usr/lib/netdata/plugins.d/perf.plugin
 endif
 
