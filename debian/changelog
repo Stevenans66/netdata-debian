@@ -1,3 +1,11 @@
+netdata (1.17.1-1) unstable; urgency=medium
+
+  * Merging upstream version 1.17.1.
+  * Refreshing use-python3.patch.
+  * Dropping freeipmi plugin until #935764 is fixed.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Fri, 13 Sep 2019 07:05:32 +0200
+
 netdata (1.17.0-3) unstable; urgency=medium
 
   * Adding reciproce breaks for the plugin packages on netdata-core and
