@@ -1,3 +1,12 @@
+netdata (1.18.0-1) unstable; urgency=medium
+
+  * Merging upstream version 1.18.0.
+  * Updating to standards version 4.4.1, no changes needed.
+  * Renabling freeipmi plugin as #935764 is fixed.
+  * Refreshing use-python3.patch.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sun, 13 Oct 2019 10:37:56 +0200
+
 netdata (1.17.1-1) unstable; urgency=medium
 
   * Merging upstream version 1.17.1.
