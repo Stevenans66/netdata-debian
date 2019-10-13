@@ -752,6 +752,11 @@ if [ "${UID}" -eq 0 ]; then
 		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
 	fi
 
+	if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin" ]; then
+		run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
+		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
+	fi
+
 	if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping" ]; then
 		run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
 		run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
@@ -807,9 +812,19 @@ install_go() {
 		tmp=$(mktemp -d /tmp/netdata-go-XXXXXX)
 		GO_PACKAGE_BASENAME="go.d.plugin-${GO_PACKAGE_VERSION}.${OS}-${ARCH}.tar.gz"
 
-		download_go "https://github.com/netdata/go.d.plugin/releases/download/${GO_PACKAGE_VERSION}/${GO_PACKAGE_BASENAME}" "${tmp}/${GO_PACKAGE_BASENAME}"
+		if [ -z "${NETDATA_LOCAL_TARBALL_OVERRIDE_GO_PLUGIN}" ]; then
+			download_go "https://github.com/netdata/go.d.plugin/releases/download/${GO_PACKAGE_VERSION}/${GO_PACKAGE_BASENAME}" "${tmp}/${GO_PACKAGE_BASENAME}"
+		else
+			progress "Using provided go.d tarball ${NETDATA_LOCAL_TARBALL_OVERRIDE_GO_PLUGIN}"
+			run cp "${NETDATA_LOCAL_TARBALL_OVERRIDE_GO_PLUGIN}" "${tmp}/${GO_PACKAGE_BASENAME}"
+		fi
 
-		download_go "https://github.com/netdata/go.d.plugin/releases/download/${GO_PACKAGE_VERSION}/config.tar.gz" "${tmp}/config.tar.gz"
+		if [ -z "${NETDATA_LOCAL_TARBALL_OVERRIDE_GO_PLUGIN_CONFIG}" ]; then
+			download_go "https://github.com/netdata/go.d.plugin/releases/download/${GO_PACKAGE_VERSION}/config.tar.gz" "${tmp}/config.tar.gz"
+		else
+			progress "Using provided config file for go.d ${NETDATA_LOCAL_TARBALL_OVERRIDE_GO_PLUGIN_CONFIG}"
+			run cp "${NETDATA_LOCAL_TARBALL_OVERRIDE_GO_PLUGIN_CONFIG}" "${tmp}/config.tar.gz"
+		fi
 
 		if [ ! -f "${tmp}/${GO_PACKAGE_BASENAME}" ] || [ ! -f "${tmp}/config.tar.gz" ] || [ ! -s "${tmp}/config.tar.gz" ] || [ ! -s "${tmp}/${GO_PACKAGE_BASENAME}" ]; then
 			run_failed "go.d plugin download failed, go.d plugin will not be available"
@@ -866,7 +881,20 @@ progress "Install netdata at system init"
 NETDATA_START_CMD="${NETDATA_PREFIX}/usr/sbin/netdata"
 
 if grep -q docker /proc/1/cgroup >/dev/null 2>&1; then
-	echo >&2 "We are running within a docker container, will not be installing netdata service"
+	# If docker runs systemd for some weird reason, let the install proceed
+	is_systemd_running="NO"
+	if command -v pidof >/dev/null 2>&1; then
+		is_systemd_running="$(pidof /usr/sbin/init || pidof systemd || echo "NO")"
+	else
+		is_systemd_running="$( (ps -p 1 | grep -q systemd && echo "1") || echo "NO")"
+	fi
+
+	if [ "${is_systemd_running}" == "1" ]; then
+		echo >&2 "Found systemd within the docker container, running install_netdata_service() method"
+		install_netdata_service || run_failed "Cannot install netdata init service."
+	else
+		echo >&2 "We are running within a docker container, will not be installing netdata service"
+	fi
 	echo >&2
 else
 	install_netdata_service || run_failed "Cannot install netdata init service."
