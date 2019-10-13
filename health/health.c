@@ -45,32 +45,30 @@ inline char *health_stock_config_dir(void) {
  * Function used to initialize the silencer structure.
  */
 void health_silencers_init(void) {
-    struct stat statbuf;
-    if (!stat(silencers_filename,&statbuf)) {
-        off_t length = statbuf.st_size;
-        if (length && length < HEALTH_SILENCERS_MAX_FILE_LEN) {
-            FILE *fd = fopen(silencers_filename, "r");
-            if (fd) {
-                char *str = mallocz((length+1)* sizeof(char));
-                if(str) {
-                    size_t copied;
-                    copied = fread(str, sizeof(char), length, fd);
-                    if (copied == (length* sizeof(char))) {
-                        str[length] = 0x00;
-                        json_parse(str, NULL, health_silencers_json_read_callback);
-                        info("Parsed health silencers file %s", silencers_filename);
-                    } else {
-                        error("Cannot read the data from health silencers file %s", silencers_filename);
-                    }
-                    freez(str);
+    FILE *fd = fopen(silencers_filename, "r");
+    if (fd) {
+        fseek(fd, 0 , SEEK_END);
+        off_t length = (off_t) ftell(fd);
+        fseek(fd, 0 , SEEK_SET);
+
+        if (length > 0 && length < HEALTH_SILENCERS_MAX_FILE_LEN) {
+            char *str = mallocz((length+1)* sizeof(char));
+            if(str) {
+                size_t copied;
+                copied = fread(str, sizeof(char), length, fd);
+                if (copied == (length* sizeof(char))) {
+                    str[length] = 0x00;
+                    json_parse(str, NULL, health_silencers_json_read_callback);
+                    info("Parsed health silencers file %s", silencers_filename);
+                } else {
+                    error("Cannot read the data from health silencers file %s", silencers_filename);
                 }
-                fclose(fd);
-            } else {
-                error("Cannot open the file %s",silencers_filename);
+                freez(str);
             }
         } else {
             error("Health silencers file %s has the size %ld that is out of range[ 1 , %d ]. Aborting read.", silencers_filename, length, HEALTH_SILENCERS_MAX_FILE_LEN);
         }
+        fclose(fd);
     } else {
         error("Cannot open the file %s",silencers_filename);
     }
@@ -115,8 +113,22 @@ void health_reload_host(RRDHOST *host) {
     while(host->templates)
         rrdcalctemplate_unlink_and_free(host, host->templates);
 
+    RRDCALCTEMPLATE *rt,*next;
+    for(rt = host->alarms_template_with_foreach; rt ; rt = next) {
+        next = rt->next;
+        rrdcalctemplate_free(rt);
+    }
+    host->alarms_template_with_foreach = NULL;
+
     while(host->alarms)
         rrdcalc_unlink_and_free(host, host->alarms);
+
+    RRDCALC *rc,*nc;
+    for(rc = host->alarms_with_foreach; rc ; rc = nc) {
+        nc = rc->next;
+        rrdcalc_free(rc);
+    }
+    host->alarms_with_foreach = NULL;
 
     rrdhost_unlock(host);
 
@@ -141,9 +153,17 @@ void health_reload_host(RRDHOST *host) {
     health_readdir(host, user_path, stock_path, NULL);
 
     // link the loaded alarms to their charts
+    RRDDIM *rd;
     rrdset_foreach_write(st, host) {
         rrdsetcalc_link_matching(st);
         rrdcalctemplate_link_matching(st);
+
+        //This loop must be the last, because ` rrdcalctemplate_link_matching` will create alarms related to it.
+        rrdset_rdlock(st);
+        rrddim_foreach_read(rd, st) {
+            rrdcalc_link_to_rrddim(rd, st, host);
+        }
+        rrdset_unlock(st);
     }
 
     rrdhost_unlock(host);
@@ -890,6 +910,7 @@ void *health_main(void *ptr) {
                             }
                         }
                     }
+
                     if(unlikely(repeat_every > 0 && (rc->last_repeat + repeat_every) <= now)) {
                         rc->last_repeat = now;
                         ALARM_ENTRY *ae = health_create_alarm_entry(

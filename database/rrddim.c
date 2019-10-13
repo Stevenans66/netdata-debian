@@ -156,7 +156,37 @@ static time_t rrddim_query_oldest_time(RRDDIM *rd) {
 // ----------------------------------------------------------------------------
 // RRDDIM create a dimension
 
+void rrdcalc_link_to_rrddim(RRDDIM *rd, RRDSET *st, RRDHOST *host) {
+    RRDCALC *rrdc;
+    for (rrdc = host->alarms_with_foreach; rrdc ; rrdc = rrdc->next) {
+        if (simple_pattern_matches(rrdc->spdim, rd->id) || simple_pattern_matches(rrdc->spdim, rd->name)) {
+            if (!strcmp(rrdc->chart, st->name)) {
+                char *usename = alarm_name_with_dim(rrdc->name, strlen(rrdc->name), rd->name, strlen(rd->name));
+                if (usename) {
+                    if(rrdcalc_exists(host, st->name, usename, 0, 0)){
+                        freez(usename);
+                        continue;
+                    }
+
+                    RRDCALC *child = rrdcalc_create_from_rrdcalc(rrdc, host, usename, rd->name);
+                    if (child) {
+                        rrdcalc_add_to_host(host, child);
+                        RRDCALC *rdcmp  = (RRDCALC *) avl_insert_lock(&(host)->alarms_idx_health_log,(avl *)child);
+                        if (rdcmp != child) {
+                            error("Cannot insert the alarm index ID %s",child->name);
+                        }
+                    } else {
+                        error("Cannot allocate a new alarm.");
+                        rrdc->foreachcounter--;
+                    }
+                }
+            }
+        }
+    }
+}
+
 RRDDIM *rrddim_add_custom(RRDSET *st, const char *id, const char *name, collected_number multiplier, collected_number divisor, RRD_ALGORITHM algorithm, RRD_MEMORY_MODE memory_mode) {
+    RRDHOST *host = st->rrdhost;
     rrdset_wrlock(st);
 
     rrdset_flag_set(st, RRDSET_FLAG_SYNC_CLOCK);
@@ -175,7 +205,6 @@ RRDDIM *rrddim_add_custom(RRDSET *st, const char *id, const char *name, collecte
         return rd;
     }
 
-    RRDHOST *host = st->rrdhost;
     char filename[FILENAME_MAX + 1];
     char fullfilename[FILENAME_MAX + 1];
 
@@ -371,7 +400,28 @@ RRDDIM *rrddim_add_custom(RRDSET *st, const char *id, const char *name, collecte
     if(unlikely(rrddim_index_add(st, rd) != rd))
         error("RRDDIM: INTERNAL ERROR: attempt to index duplicate dimension '%s' on chart '%s'", rd->id, st->id);
 
+    if (host->alarms_with_foreach || host->alarms_template_with_foreach) {
+        int count = 0;
+        int hostlocked;
+        for (count = 0 ; count < 5 ; count++) {
+            hostlocked = netdata_rwlock_trywrlock(&host->rrdhost_rwlock);
+            if (!hostlocked) {
+                rrdcalc_link_to_rrddim(rd, st, host);
+                rrdhost_unlock(host);
+                break;
+            } else if (hostlocked != EBUSY) {
+                error("Cannot lock host to create an alarm for the dimension.");
+            }
+            usleep(200000);
+        }
+
+        if (count == 5) {
+            error("Failed to create an alarm for dimension %s of chart %s 5 times. Skipping alarm."
+            , rd->name, st->name);
+        }
+    }
     rrdset_unlock(st);
+
     return(rd);
 }
 
