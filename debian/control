@@ -9,6 +9,8 @@ Build-Depends:
  debhelper-compat (= 12),
  dh-apache2,
  libipmimonitoring-dev,
+ libmnl-dev,
+ libnetfilter-acct-dev,
  libssl-dev,
  pkg-config,
  uuid-dev,

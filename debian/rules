@@ -50,6 +50,7 @@ override_dh_auto_configure:
 		--enable-x86-sse \
 		--enable-https \
 		--enable-plugin-freeipmi \
+		--enable-plugin-nfacct \
 		--with-math
 	cp -a tests build-core
 	cp -a web/gui/src build-core/web/gui
@@ -60,6 +61,7 @@ ifeq (netdata-core-no-sse,$(findstring netdata-core-no-sse,$(PACKAGES)))
 		--disable-x86-sse \
 		--enable-https \
 		--enable-plugin-freeipmi \
+		--enable-plugin-nfacct \
 		--with-math
 	cp -a tests build-core-no-sse
 	cp -a web/gui/src build-core-no-sse/web/gui
