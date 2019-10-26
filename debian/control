@@ -195,6 +195,10 @@ Depends:
  python3-urllib3 (>= 1.22),
  python3-yaml,
  ${misc:Depends},
+Suggests:
+ python3-psycopg2,
+ python3-pymysql,
+ python3-requests,
 Provides:
  netdata-plugins,
 Enhances:
