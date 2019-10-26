@@ -1,3 +1,24 @@
+netdata (1.18.1-1) unstable; urgency=medium
+
+  * Merging upstream version 1.18.1.
+  * Wrapping configure options in rules for better readability.
+  * Building with openssl, thanks to Pavel Nakonechnyi
+    <pavel@gremwell.com> for the bug report (Closes: #942492).
+  * Enabling nfacct plugin.
+  * Enabling dbengine, thanks to Thomas <74cmonty@gmail.com> for the bug
+    report (Closes: #940842).
+  * Updating build-depends to have explicit depends rather than to depend
+    on packages pulled in (libcap-dev and libjson-c-dev).
+  * Adding useful suggests to netdata-core and netdata-core-nosse to
+    monitor APC UPS' (apcupsd), hdd temperature (hddtemp), Linux QoS
+    (iproute2), Linux Wireless AP functionality (iw), and hardware sensors
+    (lm-sensors).
+  * Adding useful suggests to netdata-plugins-python to monitor postgresql
+    (python3-psycopg2), mariadb (python3-pymysql), and elasticsearch
+    (python3-requests).
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Sat, 26 Oct 2019 10:30:02 +0200
+
 netdata (1.18.0-1) unstable; urgency=medium
 
   * Merging upstream version 1.18.0.
