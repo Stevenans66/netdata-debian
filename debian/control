@@ -87,6 +87,12 @@ Replaces:
  netdata-core-no-sse,
 Recommends:
  curl,
+Suggests:
+ apcupsd,
+ hddtemp,
+ iproute2,
+ iw,
+ lm-sensors,
 Breaks:
  netdata (<< 1.11.1+dfsg-5~),
  netdata-plugins-bash (<< 1.16.1-3~),
@@ -115,6 +121,12 @@ Replaces:
  netdata-core,
 Recommends:
  curl,
+Suggests:
+ apcupsd,
+ hddtemp,
+ iproute2,
+ iw,
+ lm-sensors,
 Breaks:
  netdata (<< 1.11.1+dfsg-5~),
  netdata-plugins-bash (<< 1.16.1-3~),
