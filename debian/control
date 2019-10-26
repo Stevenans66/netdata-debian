@@ -8,7 +8,9 @@ Uploaders:
 Build-Depends:
  debhelper-compat (= 12),
  dh-apache2,
+ libcap-dev,
  libipmimonitoring-dev,
+ libjson-c-dev,
  libjudy-dev,
  liblz4-dev,
  libmnl-dev,
