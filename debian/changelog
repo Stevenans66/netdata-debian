@@ -1,3 +1,12 @@
+netdata (1.19.0-1) unstable; urgency=medium
+
+  * Merging upstream version 1.19.0.
+  * Refreshing remove-infographic.patch.
+  * Refreshing remove-contrib-files.patch.
+  * Adding nc to netdata-core suggests for IRC notifications.
+
+ -- Daniel Baumann <daniel.baumann@progress-linux.org>  Thu, 28 Nov 2019 05:56:10 +0100
+
 netdata (1.18.1-1) unstable; urgency=medium
 
   * Merging upstream version 1.18.1.
