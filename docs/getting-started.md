@@ -159,10 +159,11 @@ Find the `SEND_EMAIL="YES"` line and change it to `SEND_EMAIL="NO"`.
 
 ## Change how long Netdata stores metrics
 
-By default, Netdata uses a database engine uses RAM to store recent metrics. For long-term metrics storage, the database
-engine uses a "spill to disk" feature that also takes advantage of available disk space and keeps RAM usage low.
+By default, Netdata uses a custom database which uses both RAM and the disk to store metrics. Recent metrics are stored
+in the system's RAM to keep access fast, while historical metrics are "spilled" to disk to keep RAM usage low.
 
-The database engine allows you to store a much larger dataset than your system's available RAM.
+This custom database, which we call the _database engine_, allows you to store a much larger dataset than your system's
+available RAM.
 
 If you're not sure whether you're using the database engine, or want to tweak the default settings to store even more
 historical metrics, check out our tutorial: [**Changing how long Netdata stores
@@ -229,4 +230,4 @@ Take a look at some more advanced features and configurations:
 Or, learn more about how you can contribute to [Netdata core](../CONTRIBUTING.md) or our
 [documentation](../docs/contributing/contributing-documentation.md)!
 
-[![analytics](https://www.google-analytics.com/collect?v=1&aip=1&t=pageview&_s=1&ds=github&dr=https%3A%2F%2Fgithub.com%2Fnetdata%2Fnetdata&dl=https%3A%2F%2Fmy-netdata.io%2Fgithub%2Fdocs%2FGettingStarted&_u=MAC~&cid=5792dfd7-8dc4-476b-af31-da2fdb9f93d2&tid=UA-64295674-3)](<>)
+[![analytics](https://www.google-analytics.com/collect?v=1&aip=1&t=pageview&_s=1&ds=github&dr=https%3A%2F%2Fgithub.com%2Fnetdata%2Fnetdata&dl=https%3A%2F%2Fmy-netdata.io%2Fgithub%2Fdocs%2Fgetting-started&_u=MAC~&cid=5792dfd7-8dc4-476b-af31-da2fdb9f93d2&tid=UA-64295674-3)](<>)

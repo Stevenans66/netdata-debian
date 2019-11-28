@@ -40,12 +40,12 @@ Depends: adduser,
          libjudydebian1,
          openssl,
          libmnl0,
-         libjson-c3,
+         libjson-c2,
          freeipmi,
          libnetfilter-acct1,
          libprotobuf-c1,
-         libsnappy1v5,
-         libprotoc10,
+         libsnappy1,
+         libprotoc9,
          ${misc:Depends},
          ${shlibs:Depends}
 Pre-Depends: dpkg (>= 1.17.14)
@@ -59,4 +59,4 @@ Package: netdata-plugin-cups
 Architecture: any
 Depends: cups,
          netdata (>= ${source:Version})
-Description: The Common Unix Printing System plugin for metrics collection from cupds
+Description: The Common Unix Printing System plugin for metrics collection from cupsd
