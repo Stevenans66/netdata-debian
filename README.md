@@ -152,6 +152,20 @@ not just visualize metrics.
 
 ## News
 
+`Oct 18th, 2019` - **[Netdata v1.18.1 released!](https://github.com/netdata/netdata/releases)**
+
+Release v1.18.1 contains 17 bug fixes, 5 improvements, and 5 documentation updates.
+
+The patch has several bug fixes, mainly related to FreeBSD and the binary package generation process. 
+
+Netdata can now [send notifications to Google Hangouts Chat](https://docs.netdata.cloud/health/notifications/hangouts/)! 
+
+On certain systems, the `slabinfo` plugin introduced in v1.18.0 added thousands of new metrics. We decided the collector's usefulness to most users didn't justify the increase in resource requirements. This release disables the collector by default.
+
+Finally, we added a chart under **Netdata Monitoring** to present a better view of the RAM used by the [database engine (dbengine)](https://docs.netdata.cloud/database/engine/). The chart doesn't currently take into consideration the RAM used for slave nodes, so we intend to add more related charts in the future.
+
+---
+
 `Oct 10th, 2019` - **[Netdata v1.18.0 released!](https://github.com/netdata/netdata/releases)**
 
 Release v1.18.0 contains 5 new collectors, 16 bug fixes, 27 improvements, and 20 documentation updates.
@@ -380,7 +394,7 @@ This is what you should expect from Netdata:
 
 ### Integrations
 
--   **time-series dbs** - can archive its metrics to **Graphite**, **OpenTSDB**, **Prometheus**, **AWS Kinesis**, **MongoDB**, **JSON document DBs**, in the same or lower resolution (lower: to prevent it from congesting these servers due to the amount of data collected). Netdata also supports **Prometheus remote write API** which allows storing metrics to **Elasticsearch**, **Gnocchi**, **InfluxDB**, **Kafka**, **PostgreSQL/TimescaleDB**, **Splunk**, **VictoriaMetrics** and a lot of other [storage providers](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage).
+-   **time-series dbs** - can archive its metrics to **Graphite**, **OpenTSDB**, **Prometheus**, **AWS Kinesis**, **MongoDB**, **JSON document DBs**, in the same or lower resolution (lower: to prevent it from congesting these servers due to the amount of data collected). Netdata also supports **Prometheus remote write API** which allows storing metrics to **Elasticsearch**, **Gnocchi**, **InfluxDB**, **Kafka**, **PostgreSQL/TimescaleDB**, **Splunk**, **VictoriaMetrics**, and a lot of other [storage providers](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage).
 
 ## Visualization
 
