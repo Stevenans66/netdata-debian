@@ -5,44 +5,44 @@ diff -Naurp netdata.orig/web/gui/Makefile.am netdata/web/gui/Makefile.am
 --- netdata.orig/web/gui/Makefile.am
 +++ netdata/web/gui/Makefile.am
 @@ -46,10 +46,6 @@ dist_noinst_DATA = \
- 	$(NULL)
+     $(NULL)
  
  dist_web_DATA = \
--	demo.html \
--	demo2.html \
--	demosites.html \
--	demosites2.html \
- 	dashboard.html \
- 	dashboard.js \
- 	dashboard_info.js \
-@@ -103,15 +99,6 @@ dist_webcss_DATA = \
- 	css/c3-0.4.18.min.css \
- 	$(NULL)
+-    demo.html \
+-    demo2.html \
+-    demosites.html \
+-    demosites2.html \
+     dashboard.html \
+     dashboard.js \
+     dashboard_info.js \
+@@ -110,15 +106,6 @@ dist_webcss_DATA = \
+     css/c3-0.4.18.min.css \
+     $(NULL)
  
 -webfontsdir=$(webdir)/fonts
 -dist_webfonts_DATA = \
--	fonts/glyphicons-halflings-regular.eot \
--	fonts/glyphicons-halflings-regular.svg \
--	fonts/glyphicons-halflings-regular.ttf \
--	fonts/glyphicons-halflings-regular.woff \
--	fonts/glyphicons-halflings-regular.woff2 \
--	$(NULL)
+-    fonts/glyphicons-halflings-regular.eot \
+-    fonts/glyphicons-halflings-regular.svg \
+-    fonts/glyphicons-halflings-regular.ttf \
+-    fonts/glyphicons-halflings-regular.woff \
+-    fonts/glyphicons-halflings-regular.woff2 \
+-    $(NULL)
 -
  webimagesdir=$(webdir)/images
  dist_webimages_DATA = \
- 	images/netdata-logomark.svg \
-@@ -156,15 +143,6 @@ dashboard.js: $(DASHBOARD_JS_FILES)
+     images/netdata-logomark.svg \
+@@ -163,15 +150,6 @@ dashboard.js: $(DASHBOARD_JS_FILES)
  	if test -f $@; then rm -f $@; fi
  	cat $(DASHBOARD_JS_FILES) > $@.tmp && mv $@.tmp $@
  
 -webwellknowndir=$(webdir)/.well-known
 -dist_webwellknown_DATA = \
--	$(NULL)
+-    $(NULL)
 -
 -webdntdir=$(webdir)/.well-known/dnt
 -dist_webdnt_DATA = \
--	.well-known/dnt/cookies \
--	$(NULL)
+-    .well-known/dnt/cookies \
+-    $(NULL)
 -
  version.txt:
  	if test -d "$(top_srcdir)/.git"; then \
