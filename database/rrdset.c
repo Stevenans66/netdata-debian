@@ -150,7 +150,7 @@ int rrdset_set_name(RRDSET *st, const char *name) {
     rrdset_strncpyz_name(b, n, CONFIG_MAX_VALUE);
 
     if(rrdset_index_find_name(host, b, 0)) {
-        error("RRDSET: chart name '%s' on host '%s' already exists.", b, host->hostname);
+        info("RRDSET: chart name '%s' on host '%s' already exists.", b, host->hostname);
         return 0;
     }
 
@@ -210,7 +210,7 @@ inline void rrdset_update_heterogeneous_flag(RRDSET *st) {
 
     RRDDIM *rd;
 
-    rrdset_flag_clear(st, RRDSET_FLAG_HOMEGENEOUS_CHECK);
+    rrdset_flag_clear(st, RRDSET_FLAG_HOMOGENEOUS_CHECK);
 
     RRD_ALGORITHM algorithm = st->dimensions->algorithm;
     collected_number multiplier = abs(st->dimensions->multiplier);
@@ -251,6 +251,7 @@ void rrdset_reset(RRDSET *st) {
     st->current_entry = 0;
     st->counter = 0;
     st->counter_done = 0;
+    st->rrddim_page_alignment = 0;
 
     RRDDIM *rd;
     rrddim_foreach_read(rd, st) {
@@ -258,6 +259,11 @@ void rrdset_reset(RRDSET *st) {
         rd->last_collected_time.tv_usec = 0;
         rd->collections_counter = 0;
         // memset(rd->values, 0, rd->entries * sizeof(storage_number));
+#ifdef ENABLE_DBENGINE
+        if (RRD_MEMORY_MODE_DBENGINE == st->rrd_memory_mode) {
+            rrdeng_store_metric_flush_current_page(rd);
+        }
+#endif
     }
 }
 
@@ -369,6 +375,7 @@ void rrdset_free(RRDSET *st) {
 
         case RRD_MEMORY_MODE_ALLOC:
         case RRD_MEMORY_MODE_NONE:
+        case RRD_MEMORY_MODE_DBENGINE:
             freez(st);
             break;
     }
@@ -415,6 +422,24 @@ void rrdset_delete(RRDSET *st) {
     }
 
     recursively_delete_dir(st->cache_dir, "left-over chart");
+}
+
+void rrdset_delete_obsolete_dimensions(RRDSET *st) {
+    RRDDIM *rd;
+
+    rrdset_check_rdlock(st);
+
+    info("Deleting dimensions of chart '%s' ('%s') from disk...", st->id, st->name);
+
+    rrddim_foreach_read(rd, st) {
+        if(rrddim_flag_check(rd, RRDDIM_FLAG_OBSOLETE)) {
+            if(likely(rd->rrd_memory_mode == RRD_MEMORY_MODE_SAVE || rd->rrd_memory_mode == RRD_MEMORY_MODE_MAP)) {
+                info("Deleting dimension file '%s'.", rd->cache_filename);
+                if(unlikely(unlink(rd->cache_filename) == -1))
+                    error("Cannot delete dimension file '%s'", rd->cache_filename);
+            }
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -486,6 +511,12 @@ RRDSET *rrdset_create_custom(
     if(st) {
         rrdset_flag_set(st, RRDSET_FLAG_SYNC_CLOCK);
         rrdset_flag_clear(st, RRDSET_FLAG_UPSTREAM_EXPOSED);
+
+        if(unlikely(name))
+            rrdset_set_name(st, name);
+        else
+            rrdset_set_name(st, id);
+
         return st;
     }
 
@@ -523,6 +554,9 @@ RRDSET *rrdset_create_custom(
     int enabled = config_get_boolean(config_section, "enabled", 1);
     if(!enabled) entries = 5;
 
+    if(memory_mode == RRD_MEMORY_MODE_DBENGINE)
+        entries = config_set_number(config_section, "history", 5);
+
     unsigned long size = sizeof(RRDSET);
     char *cache_dir = rrdset_cache_dir(host, fullid, config_section);
 
@@ -534,9 +568,10 @@ RRDSET *rrdset_create_custom(
     debug(D_RRD_CALLS, "Creating RRD_STATS for '%s.%s'.", type, id);
 
     snprintfz(fullfilename, FILENAME_MAX, "%s/main.db", cache_dir);
-    if(memory_mode == RRD_MEMORY_MODE_SAVE || memory_mode == RRD_MEMORY_MODE_MAP || memory_mode == RRD_MEMORY_MODE_RAM) {
+    if(memory_mode == RRD_MEMORY_MODE_SAVE || memory_mode == RRD_MEMORY_MODE_MAP ||
+       memory_mode == RRD_MEMORY_MODE_RAM) {
         st = (RRDSET *) mymmap(
-                  (memory_mode == RRD_MEMORY_MODE_RAM)?NULL:fullfilename
+                  (memory_mode == RRD_MEMORY_MODE_RAM) ? NULL : fullfilename
                 , size
                 , ((memory_mode == RRD_MEMORY_MODE_MAP) ? MAP_SHARED : MAP_PRIVATE)
                 , 0
@@ -590,7 +625,7 @@ RRDSET *rrdset_create_custom(
                     memset(st, 0, size);
                 }
                 else if((now - st->last_updated.tv_sec) > update_every * entries) {
-                    error("File %s is too old. Clearing it.", fullfilename);
+                    info("File %s is too old. Clearing it.", fullfilename);
                     memset(st, 0, size);
                 }
                 else if(st->last_updated.tv_sec > now + update_every) {
@@ -613,7 +648,10 @@ RRDSET *rrdset_create_custom(
 
     if(unlikely(!st)) {
         st = callocz(1, size);
-        st->rrd_memory_mode = (memory_mode == RRD_MEMORY_MODE_NONE) ? RRD_MEMORY_MODE_NONE : RRD_MEMORY_MODE_ALLOC;
+        if (memory_mode == RRD_MEMORY_MODE_DBENGINE)
+            st->rrd_memory_mode = RRD_MEMORY_MODE_DBENGINE;
+        else
+            st->rrd_memory_mode = (memory_mode == RRD_MEMORY_MODE_NONE) ? RRD_MEMORY_MODE_NONE : RRD_MEMORY_MODE_ALLOC;
     }
 
     st->plugin_name = plugin?strdupz(plugin):NULL;
@@ -676,6 +714,7 @@ RRDSET *rrdset_create_custom(
     st->last_collected_time.tv_sec = 0;
     st->last_collected_time.tv_usec = 0;
     st->counter_done = 0;
+    st->rrddim_page_alignment = 0;
 
     st->gap_when_lost_iterations_above = (int) (gap_when_lost_iterations_above + 2);
 
@@ -1034,12 +1073,14 @@ static inline size_t rrdset_done_interpolate(
             }
 
             if(unlikely(!store_this_entry)) {
-                rd->values[current_entry] = SN_EMPTY_SLOT; //pack_storage_number(0, SN_NOT_EXISTS);
+                rd->state->collect_ops.store_metric(rd, next_store_ut, SN_EMPTY_SLOT); //pack_storage_number(0, SN_NOT_EXISTS)
+//                rd->values[current_entry] = SN_EMPTY_SLOT; //pack_storage_number(0, SN_NOT_EXISTS);
                 continue;
             }
 
             if(likely(rd->updated && rd->collections_counter > 1 && iterations < st->gap_when_lost_iterations_above)) {
-                rd->values[current_entry] = pack_storage_number(new_value, storage_flags );
+                rd->state->collect_ops.store_metric(rd, next_store_ut, pack_storage_number(new_value, storage_flags));
+//                rd->values[current_entry] = pack_storage_number(new_value, storage_flags );
                 rd->last_stored_value = new_value;
 
                 #ifdef NETDATA_INTERNAL_CHECKS
@@ -1061,7 +1102,8 @@ static inline size_t rrdset_done_interpolate(
                 );
                 #endif
 
-                rd->values[current_entry] = SN_EMPTY_SLOT; // pack_storage_number(0, SN_NOT_EXISTS);
+//                rd->values[current_entry] = SN_EMPTY_SLOT; // pack_storage_number(0, SN_NOT_EXISTS);
+                rd->state->collect_ops.store_metric(rd, next_store_ut, SN_EMPTY_SLOT); //pack_storage_number(0, SN_NOT_EXISTS)
                 rd->last_stored_value = NAN;
             }
 
@@ -1080,7 +1122,7 @@ static inline size_t rrdset_done_interpolate(
                       , get_storage_number_flags(rd->values[current_entry])
                       , t1
                       , accuracy
-                      , (accuracy > ACCURACY_LOSS) ? " **TOO BIG** " : ""
+                      , (accuracy > ACCURACY_LOSS_ACCEPTED_PERCENT) ? " **TOO BIG** " : ""
                 );
 
                 rd->collected_volume += t1;
@@ -1093,7 +1135,7 @@ static inline size_t rrdset_done_interpolate(
                       , rd->stored_volume
                       , rd->collected_volume
                       , accuracy
-                      , (accuracy > ACCURACY_LOSS) ? " **TOO BIG** " : ""
+                      , (accuracy > ACCURACY_LOSS_ACCEPTED_PERCENT) ? " **TOO BIG** " : ""
                 );
             }
             #endif
@@ -1101,11 +1143,16 @@ static inline size_t rrdset_done_interpolate(
         // reset the storage flags for the next point, if any;
         storage_flags = SN_EXISTS;
 
-        counter++;
-        current_entry = ((current_entry + 1) >= st->entries) ? 0 : current_entry + 1;
+        st->counter = ++counter;
+        st->current_entry = current_entry = ((current_entry + 1) >= st->entries) ? 0 : current_entry + 1;
+
+        st->last_updated.tv_sec = (time_t) (last_ut / USEC_PER_SEC);
+        st->last_updated.tv_usec = 0;
+
         last_stored_ut = next_store_ut;
     }
 
+/*
     st->counter = counter;
     st->current_entry = current_entry;
 
@@ -1113,6 +1160,7 @@ static inline size_t rrdset_done_interpolate(
         st->last_updated.tv_sec = (time_t) (last_ut / USEC_PER_SEC);
         st->last_updated.tv_usec = 0;
     }
+*/
 
     return stored_entries;
 }
@@ -1183,7 +1231,8 @@ void rrdset_done(RRDSET *st) {
     }
 
     // check if the chart has a long time to be updated
-    if(unlikely(st->usec_since_last_update > st->entries * update_every_ut)) {
+    if(unlikely(st->usec_since_last_update > st->entries * update_every_ut &&
+                st->rrd_memory_mode != RRD_MEMORY_MODE_DBENGINE)) {
         info("host '%s', chart %s: took too long to be updated (counter #%zu, update #%zu, %0.3" LONG_DOUBLE_MODIFIER " secs). Resetting it.", st->rrdhost->hostname, st->name, st->counter, st->counter_done, (LONG_DOUBLE)st->usec_since_last_update / USEC_PER_SEC);
         rrdset_reset(st);
         st->usec_since_last_update = update_every_ut;
@@ -1224,7 +1273,8 @@ void rrdset_done(RRDSET *st) {
     }
 
     // check if we will re-write the entire data set
-    if(unlikely(dt_usec(&st->last_collected_time, &st->last_updated) > st->entries * update_every_ut)) {
+    if(unlikely(dt_usec(&st->last_collected_time, &st->last_updated) > st->entries * update_every_ut &&
+                st->rrd_memory_mode != RRD_MEMORY_MODE_DBENGINE)) {
         info("%s: too old data (last updated at %ld.%ld, last collected at %ld.%ld). Resetting it. Will not store the next entry.", st->name, st->last_updated.tv_sec, st->last_updated.tv_usec, st->last_collected_time.tv_sec, st->last_collected_time.tv_usec);
         rrdset_reset(st);
         rrdset_init_last_updated_time(st);
@@ -1235,6 +1285,22 @@ void rrdset_done(RRDSET *st) {
         store_this_entry = 0;
         first_entry = 1;
     }
+
+#ifdef ENABLE_DBENGINE
+    // check if we will re-write the entire page
+    if(unlikely(st->rrd_memory_mode == RRD_MEMORY_MODE_DBENGINE &&
+                dt_usec(&st->last_collected_time, &st->last_updated) > (RRDENG_BLOCK_SIZE / sizeof(storage_number)) * update_every_ut)) {
+        info("%s: too old data (last updated at %ld.%ld, last collected at %ld.%ld). Resetting it. Will not store the next entry.", st->name, st->last_updated.tv_sec, st->last_updated.tv_usec, st->last_collected_time.tv_sec, st->last_collected_time.tv_usec);
+        rrdset_reset(st);
+        rrdset_init_last_updated_time(st);
+
+        st->usec_since_last_update = update_every_ut;
+
+        // the first entry should not be stored
+        store_this_entry = 0;
+        first_entry = 1;
+    }
+#endif
 
     // these are the 3 variables that will help us in interpolation
     // last_stored_ut = the last time we added a value to the storage
@@ -1248,8 +1314,14 @@ void rrdset_done(RRDSET *st) {
         // if we have not collected metrics this session (st->counter_done == 0)
         // and we have collected metrics for this chart in the past (st->counter != 0)
         // fill the gap (the chart has been just loaded from disk)
-        if(unlikely(st->counter)) {
+        if(unlikely(st->counter) && st->rrd_memory_mode != RRD_MEMORY_MODE_DBENGINE) {
             rrdset_done_fill_the_gap(st);
+            last_stored_ut = st->last_updated.tv_sec * USEC_PER_SEC + st->last_updated.tv_usec;
+            next_store_ut  = (st->last_updated.tv_sec + st->update_every) * USEC_PER_SEC;
+        }
+        if (st->rrd_memory_mode == RRD_MEMORY_MODE_DBENGINE) {
+            // set a fake last_updated to jump to current time
+            rrdset_init_last_updated_time(st);
             last_stored_ut = st->last_updated.tv_sec * USEC_PER_SEC + st->last_updated.tv_usec;
             next_store_ut  = (st->last_updated.tv_sec + st->update_every) * USEC_PER_SEC;
         }
@@ -1301,6 +1373,11 @@ void rrdset_done(RRDSET *st) {
         if(unlikely(!rd->updated)) {
             rd->calculated_value = 0;
             continue;
+        }
+
+        if(unlikely(rrddim_flag_check(rd, RRDDIM_FLAG_OBSOLETE))) {
+            error("Dimension %s in chart '%s' has the OBSOLETE flag set, but it is collected.", rd->name, st->id);
+            rrddim_isnot_obsolete(st, rd);
         }
 
         #ifdef NETDATA_INTERNAL_CHECKS
@@ -1370,9 +1447,11 @@ void rrdset_done(RRDSET *st) {
                     continue;
                 }
 
-                // if the new is smaller than the old (an overflow, or reset), set the old equal to the new
-                // to reset the calculation (it will give zero as the calculation for this second)
-                if(unlikely(rd->last_collected_value > rd->collected_value)) {
+                // If the new is smaller than the old (an overflow, or reset), set the old equal to the new
+                // to reset the calculation (it will give zero as the calculation for this second).
+                // It is imperative to set the comparison to uint64_t since type collected_number is signed and
+                // produces wrong results as far as incremental counters are concerned.
+                if(unlikely((uint64_t)rd->last_collected_value > (uint64_t)rd->collected_value)) {
                     debug(D_RRD_STATS, "%s.%s: RESET or OVERFLOW. Last collected value = " COLLECTED_NUMBER_FORMAT ", current = " COLLECTED_NUMBER_FORMAT
                           , st->name, rd->name
                           , rd->last_collected_value
@@ -1381,13 +1460,41 @@ void rrdset_done(RRDSET *st) {
                     if(!(rrddim_flag_check(rd, RRDDIM_FLAG_DONT_DETECT_RESETS_OR_OVERFLOWS)))
                         storage_flags = SN_EXISTS_RESET;
 
-                    rd->last_collected_value = rd->collected_value;
-                }
+                    uint64_t last = (uint64_t)rd->last_collected_value;
+                    uint64_t new = (uint64_t)rd->collected_value;
+                    uint64_t max = (uint64_t)rd->collected_value_max;
+                    uint64_t cap = 0;
 
-                rd->calculated_value +=
-                        (calculated_number)(rd->collected_value - rd->last_collected_value)
-                        * (calculated_number)rd->multiplier
-                        / (calculated_number)rd->divisor;
+                    // Signed values are handled by exploiting two's complement which will produce positive deltas
+                    if (max > 0x00000000FFFFFFFFULL)
+                        cap = 0xFFFFFFFFFFFFFFFFULL; // handles signed and unsigned 64-bit counters
+                    else
+                        cap = 0x00000000FFFFFFFFULL; // handles signed and unsigned 32-bit counters
+
+                    uint64_t delta = cap - last + new;
+                    uint64_t max_acceptable_rate = (cap / 100) * MAX_INCREMENTAL_PERCENT_RATE;
+
+                    // If the delta is less than the maximum acceptable rate and the previous value was near the cap
+                    // then this is an overflow. There can be false positives such that a reset is detected as an
+                    // overflow.
+                    // TODO: remember recent history of rates and compare with current rate to reduce this chance.
+                    if (delta < max_acceptable_rate) {
+                        rd->calculated_value +=
+                                (calculated_number) delta
+                                * (calculated_number) rd->multiplier
+                                / (calculated_number) rd->divisor;
+                    } else {
+                        // This is a reset. Any overflow with a rate greater than MAX_INCREMENTAL_PERCENT_RATE will also
+                        // be detected as a reset instead.
+                        rd->calculated_value += (calculated_number)0;
+                    }
+                }
+                else {
+                    rd->calculated_value +=
+                            (calculated_number) (rd->collected_value - rd->last_collected_value)
+                            * (calculated_number) rd->multiplier
+                            / (calculated_number) rd->divisor;
+                }
 
                 #ifdef NETDATA_INTERNAL_CHECKS
                 rrdset_debug(st, "%s: CALC INC PRE "
@@ -1566,37 +1673,37 @@ void rrdset_done(RRDSET *st) {
     // ALL DONE ABOUT THE DATA UPDATE
     // --------------------------------------------------------------------
 
-/*
-    // find if there are any obsolete dimensions (not updated recently)
-    if(unlikely(rrd_delete_unupdated_dimensions)) {
+    // find if there are any obsolete dimensions
+    time_t now = now_realtime_sec();
 
-        for( rd = st->dimensions; likely(rd) ; rd = rd->next )
-            if((rd->last_collected_time.tv_sec + (rrd_delete_unupdated_dimensions * st->update_every)) < st->last_collected_time.tv_sec)
+    if(unlikely(rrddim_flag_check(st, RRDSET_FLAG_OBSOLETE_DIMENSIONS))) {
+        rrddim_foreach_read(rd, st)
+            if(unlikely(rrddim_flag_check(rd, RRDDIM_FLAG_OBSOLETE)))
                 break;
 
         if(unlikely(rd)) {
             RRDDIM *last;
-            // there is dimension to free
+            // there is a dimension to free
             // upgrade our read lock to a write lock
             rrdset_unlock(st);
             rrdset_wrlock(st);
 
             for( rd = st->dimensions, last = NULL ; likely(rd) ; ) {
-                // remove it only it is not updated in rrd_delete_unupdated_dimensions seconds
-
-                if(unlikely((rd->last_collected_time.tv_sec + (rrd_delete_unupdated_dimensions * st->update_every)) < st->last_collected_time.tv_sec)) {
+                if(unlikely(rrddim_flag_check(rd, RRDDIM_FLAG_OBSOLETE) && (rd->last_collected_time.tv_sec + rrdset_free_obsolete_time < now))) {
                     info("Removing obsolete dimension '%s' (%s) of '%s' (%s).", rd->name, rd->id, st->name, st->id);
 
+                    if(likely(rd->rrd_memory_mode == RRD_MEMORY_MODE_SAVE || rd->rrd_memory_mode == RRD_MEMORY_MODE_MAP)) {
+                        info("Deleting dimension file '%s'.", rd->cache_filename);
+                        if(unlikely(unlink(rd->cache_filename) == -1))
+                            error("Cannot delete dimension file '%s'", rd->cache_filename);
+                    }
+
                     if(unlikely(!last)) {
-                        st->dimensions = rd->next;
-                        rd->next = NULL;
                         rrddim_free(st, rd);
                         rd = st->dimensions;
                         continue;
                     }
                     else {
-                        last->next = rd->next;
-                        rd->next = NULL;
                         rrddim_free(st, rd);
                         rd = last->next;
                         continue;
@@ -1606,14 +1713,11 @@ void rrdset_done(RRDSET *st) {
                 last = rd;
                 rd = rd->next;
             }
-
-            if(unlikely(!st->dimensions)) {
-                info("Disabling chart %s (%s) since it does not have any dimensions", st->name, st->id);
-                st->enabled = 0;
-            }
+        }
+        else {
+            rrdset_flag_clear(st, RRDSET_FLAG_OBSOLETE_DIMENSIONS);
         }
     }
-*/
 
     rrdset_unlock(st);
 

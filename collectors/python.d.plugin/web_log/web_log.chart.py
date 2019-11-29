@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 # Description: web log netdata python.d module
-# Author: l2isbad
+# Author: ilyam8
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import bisect
-import re
 import os
-
+import re
 from collections import namedtuple, defaultdict
 from copy import deepcopy
 
@@ -25,7 +24,9 @@ from bases.collection import read_last_line
 from bases.FrameworkServices.LogService import LogService
 
 
-ORDER_APACHE_CACHE = ['apache_cache']
+ORDER_APACHE_CACHE = [
+    'apache_cache',
+]
 
 ORDER_WEB = [
     'response_statuses',
@@ -182,7 +183,7 @@ CHARTS_WEB = {
 
 CHARTS_APACHE_CACHE = {
     'apache_cache': {
-        'options': [None, 'Apache Cached Responses', 'percent cached', 'cached', 'web_log.apache_cache_cache',
+        'options': [None, 'Apache Cached Responses', 'percentage', 'cached', 'web_log.apache_cache_cache',
                     'stacked'],
         'lines': [
             ['hit', 'cache', 'percentage-of-absolute-row'],
@@ -658,7 +659,7 @@ class Web:
                                        r' (?P<bytes_sent>\d+)'
                                        r' (?P<resp_length>\d+)'
                                        r' (?P<resp_time>\d+\.\d+)'
-                                       r' (?P<resp_time_upstream>[\d.-]+) ')
+                                       r' (?P<resp_time_upstream>[\d.-]+)')
 
         nginx_ext_append = re.compile(r'(?P<address>[\da-f.:]+)'
                                       r' -.*?"(?P<request>[^"]*)"'
@@ -866,7 +867,7 @@ class Web:
         :return:
         """
         code_class = code[0]
-        if code_class == '2' or code == '304' or code_class == '1':
+        if code_class == '2' or code == '304' or code_class == '1' or code == '401':
             self.data['successful_requests'] += 1
         elif code_class == '3':
             self.data['redirects'] += 1

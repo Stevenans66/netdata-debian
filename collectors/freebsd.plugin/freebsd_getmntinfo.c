@@ -216,7 +216,9 @@ int do_getmntinfo(int update_every, usec_t dt) {
 
                 int rendered = 0;
 
-                if (m->do_space == CONFIG_BOOLEAN_YES || (m->do_space == CONFIG_BOOLEAN_AUTO && (mntbuf[i].f_blocks > 2))) {
+                if (m->do_space == CONFIG_BOOLEAN_YES || (m->do_space == CONFIG_BOOLEAN_AUTO &&
+                                                          (mntbuf[i].f_blocks > 2 ||
+                                                           netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!m->st_space)) {
                         snprintfz(title, 4096, "Disk Space Usage for %s [%s]",
                                   mntbuf[i].f_mntonname, mntbuf[i].f_mntfromname);
@@ -226,10 +228,10 @@ int do_getmntinfo(int update_every, usec_t dt) {
                                                               mntbuf[i].f_mntonname,
                                                               "disk.space",
                                                               title,
-                                                              "GB",
-                                "freebsd.plugin",
+                                                              "GiB",
+                                                              "freebsd.plugin",
                                                               "getmntinfo",
-                                NETDATA_CHART_PRIO_DISKSPACE_SPACE,
+                                                              NETDATA_CHART_PRIO_DISKSPACE_SPACE,
                                                               update_every,
                                                               RRDSET_TYPE_STACKED
                         );
@@ -255,7 +257,9 @@ int do_getmntinfo(int update_every, usec_t dt) {
 
                 // --------------------------------------------------------------------------
 
-                if (m->do_inodes == CONFIG_BOOLEAN_YES || (m->do_inodes == CONFIG_BOOLEAN_AUTO && (mntbuf[i].f_files > 1))) {
+                if (m->do_inodes == CONFIG_BOOLEAN_YES || (m->do_inodes == CONFIG_BOOLEAN_AUTO &&
+                                                           (mntbuf[i].f_files > 1 ||
+                                                            netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!m->st_inodes)) {
                         snprintfz(title, 4096, "Disk Files (inodes) Usage for %s [%s]",
                                   mntbuf[i].f_mntonname, mntbuf[i].f_mntfromname);
@@ -265,10 +269,10 @@ int do_getmntinfo(int update_every, usec_t dt) {
                                                                mntbuf[i].f_mntonname,
                                                                "disk.inodes",
                                                                title,
-                                                               "Inodes",
-                                "freebsd.plugin",
+                                                               "inodes",
+                                                               "freebsd.plugin",
                                                                "getmntinfo",
-                                NETDATA_CHART_PRIO_DISKSPACE_INODES,
+                                                               NETDATA_CHART_PRIO_DISKSPACE_INODES,
                                                                update_every,
                                                                RRDSET_TYPE_STACKED
                         );

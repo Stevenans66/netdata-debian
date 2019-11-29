@@ -248,7 +248,7 @@ int create_listen_socket6(int socktype, uint32_t scope_id, const char *ip, int p
     return sock;
 }
 
-static inline int listen_sockets_add(LISTEN_SOCKETS *sockets, int fd, int family, int socktype, const char *protocol, const char *ip, uint16_t port) {
+static inline int listen_sockets_add(LISTEN_SOCKETS *sockets, int fd, int family, int socktype, const char *protocol, const char *ip, uint16_t port, int acl_flags) {
     if(sockets->opened >= MAX_LISTEN_FDS) {
         error("LISTENER: Too many listening sockets. Failed to add listening %s socket at ip '%s' port %d, protocol %s, socktype %d", protocol, ip, port, protocol, socktype);
         close(fd);
@@ -259,6 +259,7 @@ static inline int listen_sockets_add(LISTEN_SOCKETS *sockets, int fd, int family
     sockets->fds_types[sockets->opened] = socktype;
     sockets->fds_families[sockets->opened] = family;
     sockets->fds_names[sockets->opened] = strdup_client_description(family, protocol, ip, port);
+    sockets->fds_acl_flags[sockets->opened] = acl_flags;
 
     sockets->opened++;
     return 0;
@@ -300,8 +301,53 @@ void listen_sockets_close(LISTEN_SOCKETS *sockets) {
     sockets->failed = 0;
 }
 
+/*
+ *  SSL ACL
+ *
+ *  Search the SSL acl and apply it case it is set.
+ *
+ *  @param acl is the acl given by the user.
+ */
+WEB_CLIENT_ACL socket_ssl_acl(char *acl) {
+    char *ssl = strchr(acl,'^');
+    if(ssl) {
+        //Due the format of the SSL command it is always the last command,
+        //we finish it here to avoid problems with the ACLs
+        *ssl = '\0';
+#ifdef ENABLE_HTTPS
+        ssl++;
+        if (!strncmp("SSL=",ssl,4)) {
+            ssl += 4;
+            if (!strcmp(ssl,"optional")) {
+                return WEB_CLIENT_ACL_SSL_OPTIONAL;
+            }
+            else if (!strcmp(ssl,"force")) {
+                return WEB_CLIENT_ACL_SSL_FORCE;
+            }
+        }
+#endif
+    }
+
+    return WEB_CLIENT_ACL_NONE;
+}
+
+WEB_CLIENT_ACL read_acl(char *st) {
+    WEB_CLIENT_ACL ret = socket_ssl_acl(st);
+
+    if (!strcmp(st,"dashboard")) ret |= WEB_CLIENT_ACL_DASHBOARD;
+    if (!strcmp(st,"registry")) ret |= WEB_CLIENT_ACL_REGISTRY;
+    if (!strcmp(st,"badges")) ret |= WEB_CLIENT_ACL_BADGE;
+    if (!strcmp(st,"management")) ret |= WEB_CLIENT_ACL_MGMT;
+    if (!strcmp(st,"streaming")) ret |= WEB_CLIENT_ACL_STREAMING;
+    if (!strcmp(st,"netdata.conf")) ret |= WEB_CLIENT_ACL_NETDATACONF;
+
+    return ret;
+}
+
 static inline int bind_to_this(LISTEN_SOCKETS *sockets, const char *definition, uint16_t default_port, int listen_backlog) {
     int added = 0;
+    WEB_CLIENT_ACL acl_flags = WEB_CLIENT_ACL_NONE;
+
     struct addrinfo hints;
     struct addrinfo *result = NULL, *rp = NULL;
 
@@ -311,7 +357,7 @@ static inline int bind_to_this(LISTEN_SOCKETS *sockets, const char *definition, 
     char buffer2[10 + 1];
     snprintfz(buffer2, 10, "%d", default_port);
 
-    char *ip = buffer, *port = buffer2, *interface = "";;
+    char *ip = buffer, *port = buffer2, *interface = "", *portconfig;;
 
     int protocol = IPPROTO_TCP, socktype = SOCK_STREAM;
     const char *protocol_str = "tcp";
@@ -332,14 +378,13 @@ static inline int bind_to_this(LISTEN_SOCKETS *sockets, const char *definition, 
         char *path = ip + 5;
         socktype = SOCK_STREAM;
         protocol_str = "unix";
-
         int fd = create_listen_socket_unix(path, listen_backlog);
         if (fd == -1) {
             error("LISTENER: Cannot create unix socket '%s'", path);
             sockets->failed++;
-        }
-        else {
-            listen_sockets_add(sockets, fd, AF_UNIX, socktype, protocol_str, path, 0);
+        } else {
+            acl_flags = WEB_CLIENT_ACL_DASHBOARD | WEB_CLIENT_ACL_REGISTRY | WEB_CLIENT_ACL_BADGE | WEB_CLIENT_ACL_MGMT | WEB_CLIENT_ACL_NETDATACONF | WEB_CLIENT_ACL_STREAMING | WEB_CLIENT_ACL_SSL_DEFAULT;
+            listen_sockets_add(sockets, fd, AF_UNIX, socktype, protocol_str, path, 0, acl_flags);
             added++;
         }
         return added;
@@ -355,19 +400,46 @@ static inline int bind_to_this(LISTEN_SOCKETS *sockets, const char *definition, 
         }
     }
     else {
-        while(*e && *e != ':' && *e != '%') e++;
+        while(*e && *e != ':' && *e != '%' && *e != '=') e++;
     }
 
     if(*e == '%') {
         *e = '\0';
         e++;
         interface = e;
-        while(*e && *e != ':') e++;
+        while(*e && *e != ':' && *e != '=') e++;
     }
 
     if(*e == ':') {
         port = e + 1;
         *e = '\0';
+        e++;
+        while(*e && *e != '=') e++;
+    }
+
+    if(*e == '=') {
+        *e='\0';
+        e++;
+        portconfig = e;
+        while (*e != '\0') {
+            if (*e == '|') {
+                *e = '\0';
+                acl_flags |= read_acl(portconfig);
+                e++;
+                portconfig = e;
+                continue;
+            }
+            e++;
+        }
+        acl_flags |= read_acl(portconfig);
+    } else {
+        acl_flags = WEB_CLIENT_ACL_DASHBOARD | WEB_CLIENT_ACL_REGISTRY | WEB_CLIENT_ACL_BADGE | WEB_CLIENT_ACL_MGMT | WEB_CLIENT_ACL_NETDATACONF | WEB_CLIENT_ACL_STREAMING | WEB_CLIENT_ACL_SSL_DEFAULT;
+    }
+
+    //Case the user does not set the option SSL in the "bind to", but he has
+    //the certificates, I must redirect, so I am assuming here the default option
+    if(!(acl_flags & WEB_CLIENT_ACL_SSL_OPTIONAL) && !(acl_flags & WEB_CLIENT_ACL_SSL_FORCE)) {
+        acl_flags |= WEB_CLIENT_ACL_SSL_DEFAULT;
     }
 
     uint32_t scope_id = 0;
@@ -435,7 +507,7 @@ static inline int bind_to_this(LISTEN_SOCKETS *sockets, const char *definition, 
             sockets->failed++;
         }
         else {
-            listen_sockets_add(sockets, fd, family, socktype, protocol_str, rip, rport);
+            listen_sockets_add(sockets, fd, family, socktype, protocol_str, rip, rport, acl_flags);
             added++;
         }
     }
@@ -761,11 +833,15 @@ int connect_to_one_of(const char *destination, int default_port, struct timeval 
     while(*s) {
         const char *e = s;
 
+        // skip path, moving both s(tart) and e(nd)
+        if(*e == '/')
+            while(!isspace(*e) && *e != ',') s = ++e;
+
         // skip separators, moving both s(tart) and e(nd)
         while(isspace(*e) || *e == ',') s = ++e;
 
         // move e(nd) to the first separator
-        while(*e && !isspace(*e) && *e != ',') e++;
+        while(*e && !isspace(*e) && *e != ',' && *e != '/') e++;
 
         // is there anything?
         if(!*s || s == e) break;
@@ -791,7 +867,12 @@ int connect_to_one_of(const char *destination, int default_port, struct timeval 
 // --------------------------------------------------------------------------------------------------------------------
 // helpers to send/receive data in one call, in blocking mode, with a timeout
 
+#ifdef ENABLE_HTTPS
+ssize_t recv_timeout(struct netdata_ssl *ssl,int sockfd, void *buf, size_t len, int flags, int timeout) {
+#else
 ssize_t recv_timeout(int sockfd, void *buf, size_t len, int flags, int timeout) {
+#endif
+
     for(;;) {
         struct pollfd fd = {
                 .fd = sockfd,
@@ -819,10 +900,22 @@ ssize_t recv_timeout(int sockfd, void *buf, size_t len, int flags, int timeout) 
         if(fd.events & POLLIN) break;
     }
 
+#ifdef ENABLE_HTTPS
+    if (ssl->conn) {
+        if (!ssl->flags) {
+            return SSL_read(ssl->conn,buf,len);
+        }
+    }
+#endif
     return recv(sockfd, buf, len, flags);
 }
 
+#ifdef ENABLE_HTTPS
+ssize_t send_timeout(struct netdata_ssl *ssl,int sockfd, void *buf, size_t len, int flags, int timeout) {
+#else
 ssize_t send_timeout(int sockfd, void *buf, size_t len, int flags, int timeout) {
+#endif
+
     for(;;) {
         struct pollfd fd = {
                 .fd = sockfd,
@@ -850,6 +943,13 @@ ssize_t send_timeout(int sockfd, void *buf, size_t len, int flags, int timeout) 
         if(fd.events & POLLOUT) break;
     }
 
+#ifdef ENABLE_HTTPS
+    if(ssl->conn) {
+        if (!ssl->flags) {
+            return SSL_write(ssl->conn, buf, len);
+        }
+    }
+#endif
     return send(sockfd, buf, len, flags);
 }
 
@@ -895,21 +995,110 @@ int accept4(int sock, struct sockaddr *addr, socklen_t *addrlen, int flags) {
 }
 #endif
 
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * connection_allowed() - if there is an access list then check the connection matches a pattern.
+ *                        Numeric patterns are checked against the IP address first, only if they
+ *                        do not match is the hostname resolved (reverse-DNS) and checked. If the
+ *                        hostname matches then we perform forward DNS resolution to check the IP
+ *                        is really associated with the DNS record. This call is repeatable: the
+ *                        web server may check more refined matches against the connection. Will
+ *                        update the client_host if uninitialized - ensure the hostsize is the number
+ *                        of *writable* bytes (i.e. be aware of the strdup used to compact the pollinfo).
+ */
+extern int connection_allowed(int fd, char *client_ip, char *client_host, size_t hostsize, SIMPLE_PATTERN *access_list,
+                              const char *patname, int allow_dns)
+{
+    debug(D_LISTENER,"checking %s... (allow_dns=%d)", patname, allow_dns);
+    if (!access_list)
+        return 1;
+    if (simple_pattern_matches(access_list, client_ip))
+        return 1;
+    // If the hostname is unresolved (and needed) then attempt the DNS lookups.
+    //if (client_host[0]==0 && simple_pattern_is_potential_name(access_list))
+    if (client_host[0]==0 && allow_dns)
+    {
+        struct sockaddr_storage sadr;
+        socklen_t addrlen = sizeof(sadr);
+        int err = getpeername(fd, (struct sockaddr*)&sadr, &addrlen);
+        if (err != 0 ||
+            (err = getnameinfo((struct sockaddr *)&sadr, addrlen, client_host, (socklen_t)hostsize,
+                              NULL, 0, NI_NAMEREQD)) != 0) {
+            error("Incoming %s on '%s' does not match a numeric pattern, and host could not be resolved (err=%s)",
+                  patname, client_ip, gai_strerror(err));
+            if (hostsize >= 8)
+                strcpy(client_host,"UNKNOWN");
+            return 0;
+        }
+        struct addrinfo *addr_infos = NULL;
+        if (getaddrinfo(client_host, NULL, NULL, &addr_infos) !=0 ) {
+            error("LISTENER: cannot validate hostname '%s' from '%s' by resolving it",
+                  client_host, client_ip);
+            if (hostsize >= 8)
+                strcpy(client_host,"UNKNOWN");
+            return 0;
+        }
+        struct addrinfo *scan = addr_infos;
+        int    validated = 0;
+        while (scan) {
+            char address[INET6_ADDRSTRLEN];
+            address[0] = 0;
+            switch (scan->ai_addr->sa_family) {
+                case AF_INET:
+                    inet_ntop(AF_INET, &((struct sockaddr_in*)(scan->ai_addr))->sin_addr, address, INET6_ADDRSTRLEN);
+                    break;
+                case AF_INET6:
+                    inet_ntop(AF_INET6, &((struct sockaddr_in6*)(scan->ai_addr))->sin6_addr, address, INET6_ADDRSTRLEN);
+                    break;
+            }
+            debug(D_LISTENER, "Incoming ip %s rev-resolved onto %s, validating against forward-resolution %s",
+                  client_ip, client_host, address);
+            if (!strcmp(client_ip, address)) {
+                validated = 1;
+                break;
+            }
+            scan = scan->ai_next;
+        }
+        if (!validated) {
+            error("LISTENER: Cannot validate '%s' as ip of '%s', not listed in DNS", client_ip, client_host);
+            if (hostsize >= 8)
+                strcpy(client_host,"UNKNOWN");
+        }
+        if (addr_infos!=NULL)
+            freeaddrinfo(addr_infos);
+    }
+    if (!simple_pattern_matches(access_list, client_host)) {
+        debug(D_LISTENER, "Incoming connection on '%s' (%s) does not match allowed pattern for %s",
+              client_ip, client_host, patname);
+        return 0;
+    }
+    return 1;
+}
 
 // --------------------------------------------------------------------------------------------------------------------
 // accept_socket() - accept a socket and store client IP and port
-
-int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *client_port, size_t portsize, SIMPLE_PATTERN *access_list) {
+int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *client_port, size_t portsize,
+                  char *client_host, size_t hostsize, SIMPLE_PATTERN *access_list, int allow_dns) {
     struct sockaddr_storage sadr;
     socklen_t addrlen = sizeof(sadr);
 
     int nfd = accept4(fd, (struct sockaddr *)&sadr, &addrlen, flags);
     if (likely(nfd >= 0)) {
-        if (getnameinfo((struct sockaddr *)&sadr, addrlen, client_ip, (socklen_t)ipsize, client_port, (socklen_t)portsize, NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
+        if (getnameinfo((struct sockaddr *)&sadr, addrlen, client_ip, (socklen_t)ipsize,
+                        client_port, (socklen_t)portsize, NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
             error("LISTENER: cannot getnameinfo() on received client connection.");
             strncpyz(client_ip, "UNKNOWN", ipsize - 1);
             strncpyz(client_port, "UNKNOWN", portsize - 1);
         }
+        if (!strcmp(client_ip, "127.0.0.1") || !strcmp(client_ip, "::1")) {
+            strncpy(client_ip, "localhost", ipsize);
+            client_ip[ipsize - 1] = '\0';
+        }
+
+#ifdef __FreeBSD__
+        if(((struct sockaddr *)&sadr)->sa_family == AF_LOCAL)
+            strncpyz(client_ip, "localhost", ipsize);
+#endif
 
         client_ip[ipsize - 1] = '\0';
         client_port[portsize - 1] = '\0';
@@ -939,25 +1128,16 @@ int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *clien
                 debug(D_LISTENER, "New UNKNOWN web client from %s port %s on socket %d.", client_ip, client_port, fd);
                 break;
         }
-
-        if(access_list) {
-            if(!strcmp(client_ip, "127.0.0.1") || !strcmp(client_ip, "::1")) {
-                strncpy(client_ip, "localhost", ipsize);
-                client_ip[ipsize - 1] = '\0';
-            }
-
-            if(unlikely(!simple_pattern_matches(access_list, client_ip))) {
-                errno = 0;
-                debug(D_LISTENER, "Permission denied for client '%s', port '%s'", client_ip, client_port);
-                error("DENIED ACCESS to client '%s'", client_ip);
-                close(nfd);
-                nfd = -1;
-                errno = EPERM;
-            }
+        if (!connection_allowed(nfd, client_ip, client_host, hostsize, access_list, "connection", allow_dns)) {
+            errno = 0;
+            error("Permission denied for client '%s', port '%s'", client_ip, client_port);
+            close(nfd);
+            nfd = -1;
+            errno = EPERM;
         }
     }
 #ifdef HAVE_ACCEPT4
-    else if(errno == ENOSYS)
+    else if (errno == ENOSYS)
         error("netdata has been compiled with the assumption that the system has the accept4() call, but it is not here. Recompile netdata like this: ./configure --disable-accept4 ...");
 #endif
 
@@ -975,9 +1155,11 @@ int accept_socket(int fd, int flags, char *client_ip, size_t ipsize, char *clien
 inline POLLINFO *poll_add_fd(POLLJOB *p
                              , int fd
                              , int socktype
+                             , WEB_CLIENT_ACL port_acl
                              , uint32_t flags
                              , const char *client_ip
                              , const char *client_port
+                             , const char *client_host
                              , void *(*add_callback)(POLLINFO * /*pi*/, short int * /*events*/, void * /*data*/)
                              , void  (*del_callback)(POLLINFO * /*pi*/)
                              , int   (*rcv_callback)(POLLINFO * /*pi*/, short int * /*events*/)
@@ -1013,8 +1195,11 @@ inline POLLINFO *poll_add_fd(POLLJOB *p
             p->inf[i].slot = (size_t)i;
             p->inf[i].flags = 0;
             p->inf[i].socktype = -1;
+            p->inf[i].port_acl = -1;
+
             p->inf[i].client_ip = NULL;
             p->inf[i].client_port = NULL;
+            p->inf[i].client_host = NULL;
             p->inf[i].del_callback = p->del_callback;
             p->inf[i].rcv_callback = p->rcv_callback;
             p->inf[i].snd_callback = p->snd_callback;
@@ -1042,10 +1227,12 @@ inline POLLINFO *poll_add_fd(POLLJOB *p
     pi->fd = fd;
     pi->p = p;
     pi->socktype = socktype;
+    pi->port_acl = port_acl;
     pi->flags = flags;
     pi->next = NULL;
-    pi->client_ip = strdupz(client_ip);
+    pi->client_ip   = strdupz(client_ip);
     pi->client_port = strdupz(client_port);
+    pi->client_host = strdupz(client_host);
 
     pi->del_callback = del_callback;
     pi->rcv_callback = rcv_callback;
@@ -1114,6 +1301,9 @@ inline void poll_close_fd(POLLINFO *pi) {
 
     freez(pi->client_port);
     pi->client_port = NULL;
+
+    freez(pi->client_host);
+    pi->client_host = NULL;
 
     pi->next = p->first_free;
     p->first_free = pi;
@@ -1230,7 +1420,7 @@ static void poll_events_process(POLLJOB *p, POLLINFO *pi, struct pollfd *pf, sho
 #ifdef NETDATA_INTERNAL_CHECKS
             // this is common - it is used for web server file copies
             if(unlikely(!(pf->events & (POLLIN|POLLOUT)))) {
-                error("POLLFD: LISTENER: after reading, client slot %zu (fd %d) from '%s:%s' was left without expecting input or output. ", i, fd, pi->client_ip?pi->client_ip:"<undefined-ip>", pi->client_port?pi->client_port:"<undefined-port>");
+                error("POLLFD: LISTENER: after reading, client slot %zu (fd %d) from %s port %s was left without expecting input or output. ", i, fd, pi->client_ip?pi->client_ip:"<undefined-ip>", pi->client_port?pi->client_port:"<undefined-port>");
                 //poll_close_fd(pi);
                 //return;
             }
@@ -1247,11 +1437,16 @@ static void poll_events_process(POLLJOB *p, POLLINFO *pi, struct pollfd *pf, sho
 
                     int nfd;
                     do {
-                        char client_ip[NI_MAXHOST + 1];
-                        char client_port[NI_MAXSERV + 1];
+                        char client_ip[INET6_ADDRSTRLEN];
+                        char client_port[NI_MAXSERV];
+                        char client_host[NI_MAXHOST];
+                        client_host[0] = 0;
+                        client_ip[0]   = 0;
+                        client_port[0] = 0;
 
                         debug(D_POLLFD, "POLLFD: LISTENER: calling accept4() slot %zu (fd %d)", i, fd);
-                        nfd = accept_socket(fd, SOCK_NONBLOCK, client_ip, NI_MAXHOST + 1, client_port, NI_MAXSERV + 1, p->access_list);
+                        nfd = accept_socket(fd, SOCK_NONBLOCK, client_ip, INET6_ADDRSTRLEN, client_port, NI_MAXSERV,
+                                            client_host, NI_MAXHOST, p->access_list, p->allow_dns);
                         if (unlikely(nfd < 0)) {
                             // accept failed
 
@@ -1272,9 +1467,11 @@ static void poll_events_process(POLLJOB *p, POLLINFO *pi, struct pollfd *pf, sho
                             poll_add_fd(p
                                         , nfd
                                         , SOCK_STREAM
+                                        , pi->port_acl
                                         , POLLINFO_FLAG_CLIENT_SOCKET
                                         , client_ip
                                         , client_port
+                                        , client_host
                                         , p->add_callback
                                         , p->del_callback
                                         , p->rcv_callback
@@ -1331,7 +1528,7 @@ static void poll_events_process(POLLJOB *p, POLLINFO *pi, struct pollfd *pf, sho
 #ifdef NETDATA_INTERNAL_CHECKS
         // this is common - it is used for streaming
         if(unlikely(pi->flags & POLLINFO_FLAG_CLIENT_SOCKET && !(pf->events & (POLLIN|POLLOUT)))) {
-            error("POLLFD: LISTENER: after sending, client slot %zu (fd %d) from '%s:%s' was left without expecting input or output. ", i, fd, pi->client_ip?pi->client_ip:"<undefined-ip>", pi->client_port?pi->client_port:"<undefined-port>");
+            error("POLLFD: LISTENER: after sending, client slot %zu (fd %d) from %s port %s was left without expecting input or output. ", i, fd, pi->client_ip?pi->client_ip:"<undefined-ip>", pi->client_port?pi->client_port:"<undefined-port>");
             //poll_close_fd(pi);
             //return;
         }
@@ -1367,6 +1564,7 @@ void poll_events(LISTEN_SOCKETS *sockets
         , int   (*snd_callback)(POLLINFO * /*pi*/, short int * /*events*/)
         , void  (*tmr_callback)(void * /*timer_data*/)
         , SIMPLE_PATTERN *access_list
+        , int allow_dns
         , void *data
         , time_t tcp_request_timeout_seconds
         , time_t tcp_idle_timeout_seconds
@@ -1397,6 +1595,7 @@ void poll_events(LISTEN_SOCKETS *sockets
             .checks_every = (tcp_idle_timeout_seconds / 3) + 1,
 
             .access_list = access_list,
+            .allow_dns   = allow_dns,
 
             .timer_milliseconds = timer_milliseconds,
             .timer_data = timer_data,
@@ -1414,8 +1613,10 @@ void poll_events(LISTEN_SOCKETS *sockets
         POLLINFO *pi = poll_add_fd(&p
                                    , sockets->fds[i]
                                    , sockets->fds_types[i]
+                                   , sockets->fds_acl_flags[i]
                                    , POLLINFO_FLAG_SERVER_SOCKET
                                    , (sockets->fds_names[i])?sockets->fds_names[i]:"UNKNOWN"
+                                   , ""
                                    , ""
                                    , p.add_callback
                                    , p.del_callback
@@ -1457,7 +1658,7 @@ void poll_events(LISTEN_SOCKETS *sockets
             }
 
             usec_t dt_usec = next_timer_usec - now_usec;
-            if(dt_usec > 1000 * USEC_PER_MS)
+            if(dt_usec < 1000 * USEC_PER_MS)
                 timeout_ms = 1000;
             else
                 timeout_ms = (int)(dt_usec / USEC_PER_MS);
@@ -1503,7 +1704,7 @@ void poll_events(LISTEN_SOCKETS *sockets
 
                 if(likely(pi->flags & POLLINFO_FLAG_CLIENT_SOCKET)) {
                     if (unlikely(pi->send_count == 0 && p.complete_request_timeout > 0 && (now - pi->connected_t) >= p.complete_request_timeout)) {
-                        info("POLLFD: LISTENER: client slot %zu (fd %d) from '%s:%s' has not sent a complete request in %zu seconds - closing it. "
+                        info("POLLFD: LISTENER: client slot %zu (fd %d) from %s port %s has not sent a complete request in %zu seconds - closing it. "
                               , i
                               , pi->fd
                               , pi->client_ip ? pi->client_ip : "<undefined-ip>"
@@ -1513,7 +1714,7 @@ void poll_events(LISTEN_SOCKETS *sockets
                         poll_close_fd(pi);
                     }
                     else if(unlikely(pi->recv_count && p.idle_timeout > 0 && now - ((pi->last_received_t > pi->last_sent_t) ? pi->last_received_t : pi->last_sent_t) >= p.idle_timeout )) {
-                        info("POLLFD: LISTENER: client slot %zu (fd %d) from '%s:%s' is idle for more than %zu seconds - closing it. "
+                        info("POLLFD: LISTENER: client slot %zu (fd %d) from %s port %s is idle for more than %zu seconds - closing it. "
                               , i
                               , pi->fd
                               , pi->client_ip ? pi->client_ip : "<undefined-ip>"

@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
 # Description:  varnish netdata python.d module
-# Author: l2isbad
+# Author: ilyam8
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import re
 
-from bases.collection import find_binary
 from bases.FrameworkServices.ExecutableService import ExecutableService
-
-# default module values (can be overridden per job in `config`)
-# update_every = 2
-priority = 60000
-retries = 60
+from bases.collection import find_binary
 
 ORDER = [
     'session_connections',
@@ -47,7 +42,7 @@ CHARTS = {
         ]
     },
     'all_time_hit_rate': {
-        'options': [None, 'All History Hit Rate Ratio', 'percent', 'cache performance',
+        'options': [None, 'All History Hit Rate Ratio', 'percentage', 'cache performance',
                     'varnish.all_time_hit_rate', 'stacked'],
         'lines': [
             ['cache_hit', 'hit', 'percentage-of-absolute-row'],
@@ -55,7 +50,7 @@ CHARTS = {
             ['cache_hitpass', 'hitpass', 'percentage-of-absolute-row']]
     },
     'current_poll_hit_rate': {
-        'options': [None, 'Current Poll Hit Rate Ratio', 'percent', 'cache performance',
+        'options': [None, 'Current Poll Hit Rate Ratio', 'percentage', 'cache performance',
                     'varnish.current_poll_hit_rate', 'stacked'],
         'lines': [
             ['cache_hit', 'hit', 'percentage-of-incremental-row'],
@@ -127,7 +122,7 @@ CHARTS = {
         ]
     },
     'memory_usage': {
-        'options': [None, 'Memory Usage', 'MB', 'memory usage', 'varnish.memory_usage', 'stacked'],
+        'options': [None, 'Memory Usage', 'MiB', 'memory usage', 'varnish.memory_usage', 'stacked'],
         'lines': [
             ['memory_free', 'free', 'absolute', 1, 1 << 20],
             ['memory_allocated', 'allocated', 'absolute', 1, 1 << 20]]
@@ -139,6 +134,20 @@ CHARTS = {
         'options': [None, 'Uptime', 'seconds', 'uptime', 'varnish.uptime', 'line']
     }
 }
+
+VARNISHSTAT = 'varnishstat'
+
+re_version = re.compile(r'varnish-(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)')
+
+
+class VarnishVersion:
+    def __init__(self, major, minor, patch):
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+
+    def __str__(self):
+        return '{0}.{1}.{2}'.format(self.major, self.minor, self.patch)
 
 
 class Parser:
@@ -176,26 +185,60 @@ class Service(ExecutableService):
         ExecutableService.__init__(self, configuration=configuration, name=name)
         self.order = ORDER
         self.definitions = CHARTS
-        varnishstat = find_binary('varnishstat')
-        self.command = [varnishstat, '-1'] if varnishstat else None
+        self.instance_name = configuration.get('instance_name')
         self.parser = Parser()
+        self.command = None
+
+    def create_command(self):
+        varnishstat = find_binary(VARNISHSTAT)
+
+        if not varnishstat:
+            self.error("can't locate '{0}' binary or binary is not executable by user netdata".format(VARNISHSTAT))
+            return False
+
+        command = [varnishstat, '-V']
+        reply = self._get_raw_data(stderr=True, command=command)
+        if not reply:
+            self.error(
+                "no output from '{0}'. Is varnish running? Not enough privileges?".format(' '.join(self.command)))
+            return False
+
+        ver = parse_varnish_version(reply)
+        if not ver:
+            self.error("failed to parse reply from '{0}', used regex :'{1}', reply : {2}".format(
+                ' '.join(command),
+                re_version.pattern,
+                reply,
+            ))
+            return False
+
+        if self.instance_name:
+            self.command = [varnishstat, '-1', '-n', self.instance_name]
+        else:
+            self.command = [varnishstat, '-1']
+
+        if ver.major > 4:
+            self.command.extend(['-t', '1'])
+
+        self.info("varnish version: {0}, will use command: '{1}'".format(ver, ' '.join(self.command)))
+
+        return True
 
     def check(self):
-        if not self.command:
-            self.error("Can't locate 'varnishstat' binary or binary is not executable by user netdata")
+        if not self.create_command():
             return False
 
         # STDOUT is not empty
         reply = self._get_raw_data()
         if not reply:
-            self.error("No output from 'varnishstat'. Not enough privileges?")
+            self.error("no output from '{0}'. Is it running? Not enough privileges?".format(' '.join(self.command)))
             return False
 
         self.parser.init(reply)
 
         # Output is parsable
         if not self.parser.re_default:
-            self.error('Cant parse the output...')
+            self.error('cant parse the output...')
             return False
 
         if self.parser.re_backend:
@@ -250,3 +293,16 @@ class Service(ExecutableService):
 
             self.order.insert(0, chart_name)
             self.definitions.update(chart)
+
+
+def parse_varnish_version(lines):
+    m = re_version.search(lines[0])
+    if not m:
+        return None
+
+    m = m.groupdict()
+    return VarnishVersion(
+        int(m['major']),
+        int(m['minor']),
+        int(m['patch']),
+    )

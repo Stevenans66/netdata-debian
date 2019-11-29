@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
-
 CLEANFILES = \
     charts.d.plugin \
     $(NULL)
@@ -32,12 +31,15 @@ dist_charts_DATA = \
 
 userchartsconfigdir=$(configdir)/charts.d
 dist_userchartsconfig_DATA = \
-    $(top_srcdir)/installer/.keep \
+    .keep \
     $(NULL)
+
+# Explicitly install directories to avoid permission issues due to umask
+install-exec-local:
+	$(INSTALL) -d $(DESTDIR)$(userchartsconfigdir)
 
 chartsconfigdir=$(libconfigdir)/charts.d
 dist_chartsconfig_DATA = \
-    $(top_srcdir)/installer/.keep \
     $(NULL)
 
 include ap/Makefile.inc

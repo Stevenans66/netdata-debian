@@ -1,25 +1,15 @@
 # -*- coding: utf-8 -*-
 # Description: rabbitmq netdata python.d module
-# Author: l2isbad
+# Author: ilyam8
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from collections import namedtuple
 from json import loads
-from socket import gethostbyname, gaierror
-from threading import Thread
-try:
-        from queue import Queue
-except ImportError:
-        from Queue import Queue
 
 from bases.FrameworkServices.UrlService import UrlService
 
-# default module values (can be overridden per job in `config`)
-update_every = 1
-priority = 60000
-retries = 60
-
-METHODS = namedtuple('METHODS', ['get_data', 'url', 'stats'])
+API_NODE = 'api/nodes'
+API_OVERVIEW = 'api/overview'
+API_VHOSTS = 'api/vhosts'
 
 NODE_STATS = [
     'fd_used',
@@ -44,6 +34,17 @@ OVERVIEW_STATS = [
     'message_stats.publish'
 ]
 
+VHOST_MESSAGE_STATS = [
+    'message_stats.ack',
+    'message_stats.confirm',
+    'message_stats.deliver',
+    'message_stats.get',
+    'message_stats.get_no_ack',
+    'message_stats.publish',
+    'message_stats.redeliver',
+    'message_stats.return_unroutable',
+]
+
 ORDER = [
     'queued_messages',
     'message_rates',
@@ -64,15 +65,15 @@ CHARTS = {
         ]
     },
     'memory': {
-        'options': [None, 'Memory', 'MB', 'overview', 'rabbitmq.memory', 'line'],
+        'options': [None, 'Memory', 'MiB', 'overview', 'rabbitmq.memory', 'area'],
         'lines': [
-            ['mem_used', 'used', 'absolute', 1, 1024 << 10]
+            ['mem_used', 'used', 'absolute', 1, 1 << 20]
         ]
     },
     'disk_space': {
-        'options': [None, 'Disk Space', 'GB', 'overview', 'rabbitmq.disk_space', 'line'],
+        'options': [None, 'Disk Space', 'GiB', 'overview', 'rabbitmq.disk_space', 'area'],
         'lines': [
-            ['disk_free', 'free', 'absolute', 1, 1024 ** 3]
+            ['disk_free', 'free', 'absolute', 1, 1 << 30]
         ]
     },
     'socket_descriptors': {
@@ -111,7 +112,7 @@ CHARTS = {
         ]
     },
     'message_rates': {
-        'options': [None, 'Message Rates', 'messages/s', 'overview', 'rabbitmq.message_rates', 'stacked'],
+        'options': [None, 'Message Rates', 'messages/s', 'overview', 'rabbitmq.message_rates', 'line'],
         'lines': [
             ['message_stats_ack', 'ack', 'incremental'],
             ['message_stats_redeliver', 'redeliver', 'incremental'],
@@ -122,75 +123,153 @@ CHARTS = {
 }
 
 
+def vhost_chart_template(name):
+    order = [
+        'vhost_{0}_message_stats'.format(name),
+    ]
+    family = 'vhost {0}'.format(name)
+
+    charts = {
+        order[0]: {
+            'options': [
+                None, 'Vhost "{0}" Messages'.format(name), 'messages/s', family, 'rabbitmq.vhost_messages', 'stacked'],
+            'lines': [
+                ['vhost_{0}_message_stats_ack'.format(name), 'ack', 'incremental'],
+                ['vhost_{0}_message_stats_confirm'.format(name), 'confirm', 'incremental'],
+                ['vhost_{0}_message_stats_deliver'.format(name), 'deliver', 'incremental'],
+                ['vhost_{0}_message_stats_get'.format(name), 'get', 'incremental'],
+                ['vhost_{0}_message_stats_get_no_ack'.format(name), 'get_no_ack', 'incremental'],
+                ['vhost_{0}_message_stats_publish'.format(name), 'publish', 'incremental'],
+                ['vhost_{0}_message_stats_redeliver'.format(name), 'redeliver', 'incremental'],
+                ['vhost_{0}_message_stats_return_unroutable'.format(name), 'return_unroutable', 'incremental'],
+            ]
+        },
+    }
+
+    return order, charts
+
+
+class VhostStatsBuilder:
+    def __init__(self):
+        self.stats = None
+
+    def set(self, raw_stats):
+        self.stats = raw_stats
+
+    def name(self):
+        return self.stats['name']
+
+    def has_msg_stats(self):
+        return bool(self.stats.get('message_stats'))
+
+    def msg_stats(self):
+        name = self.name()
+        stats = fetch_data(raw_data=self.stats, metrics=VHOST_MESSAGE_STATS)
+        return dict(('vhost_{0}_{1}'.format(name, k), v) for k, v in stats.items())
+
+
 class Service(UrlService):
     def __init__(self, configuration=None, name=None):
         UrlService.__init__(self, configuration=configuration, name=name)
         self.order = ORDER
         self.definitions = CHARTS
-        self.host = self.configuration.get('host', '127.0.0.1')
-        self.port = self.configuration.get('port', 15672)
-        self.scheme = self.configuration.get('scheme', 'http')
-
-    def check(self):
-        # We can't start if <host> AND <port> not specified
-        if not (self.host and self.port):
-            self.error('Host is not defined in the module configuration file')
-            return False
-
-        # Hostname -> ip address
-        try:
-            self.host = gethostbyname(self.host)
-        except gaierror as error:
-            self.error(str(error))
-            return False
-
-        # Add handlers (auth, self signed cert accept)
-        self.url = '{scheme}://{host}:{port}/api'.format(scheme=self.scheme,
-                                                         host=self.host,
-                                                         port=self.port)
-        # Add methods
-        api_node = self.url + '/nodes'
-        api_overview = self.url + '/overview'
-        self.methods = [METHODS(get_data=self._get_overview_stats,
-                                url=api_node,
-                                stats=NODE_STATS),
-                        METHODS(get_data=self._get_overview_stats,
-                                url=api_overview,
-                                stats=OVERVIEW_STATS)]
-        return UrlService.check(self)
+        self.url = '{0}://{1}:{2}'.format(
+            configuration.get('scheme', 'http'),
+            configuration.get('host', '127.0.0.1'),
+            configuration.get('port', 15672),
+        )
+        self.node_name = str()
+        self.vhost = VhostStatsBuilder()
+        self.collected_vhosts = set()
 
     def _get_data(self):
-        threads = list()
-        queue = Queue()
-        result = dict()
+        data = dict()
 
-        for method in self.methods:
-            th = Thread(target=method.get_data,
-                        args=(queue, method.url, method.stats))
-            th.start()
-            threads.append(th)
+        stats = self.get_overview_stats()
+        if not stats:
+            return None
 
-        for thread in threads:
-            thread.join()
-            result.update(queue.get())
+        data.update(stats)
 
-        return result or None
+        stats = self.get_nodes_stats()
+        if not stats:
+            return None
 
-    def _get_overview_stats(self, queue, url, stats):
-        """
-        Format data received from http request
-        :return: dict
-        """
+        data.update(stats)
 
-        raw_data = self._get_raw_data(url)
+        stats = self.get_vhosts_stats()
+        if stats:
+            data.update(stats)
 
-        if not raw_data:
-            return queue.put(dict())
-        data = loads(raw_data)
-        data = data[0] if isinstance(data, list) else data
+        return data or None
 
-        to_netdata = fetch_data(raw_data=data, metrics=stats)
-        return queue.put(to_netdata)
+    def get_overview_stats(self):
+        url = '{0}/{1}'.format(self.url, API_OVERVIEW)
+        self.debug("doing http request to '{0}'".format(url))
+        raw = self._get_raw_data(url)
+        if not raw:
+            return None
+
+        data = loads(raw)
+        self.node_name = data['node']
+        self.debug("found node name: '{0}'".format(self.node_name))
+
+        stats = fetch_data(raw_data=data, metrics=OVERVIEW_STATS)
+        self.debug("number of metrics: {0}".format(len(stats)))
+        return stats
+
+    def get_nodes_stats(self):
+        if self.node_name == "":
+            self.error("trying to get node stats, but node name is not set")
+            return None
+
+        url = '{0}/{1}/{2}'.format(self.url, API_NODE, self.node_name)
+        self.debug("doing http request to '{0}'".format(url))
+        raw = self._get_raw_data(url)
+        if not raw:
+            return None
+
+        data = loads(raw)
+        stats = fetch_data(raw_data=data, metrics=NODE_STATS)
+        handle_disabled_disk_monitoring(stats)
+        self.debug("number of metrics: {0}".format(len(stats)))
+        return stats
+
+    def get_vhosts_stats(self):
+        url = '{0}/{1}'.format(self.url, API_VHOSTS)
+        self.debug("doing http request to '{0}'".format(url))
+        raw = self._get_raw_data(url)
+        if not raw:
+            return None
+
+        data = dict()
+        vhosts = loads(raw)
+        charts_initialized = len(self.charts) > 0
+
+        for vhost in vhosts:
+            self.vhost.set(vhost)
+            if not self.vhost.has_msg_stats():
+                continue
+
+            if charts_initialized and self.vhost.name() not in self.collected_vhosts:
+                self.collected_vhosts.add(self.vhost.name())
+                self.add_vhost_charts(self.vhost.name())
+
+            data.update(self.vhost.msg_stats())
+
+        self.debug("number of vhosts: {0}, metrics: {1}".format(len(vhosts), len(data)))
+        return data
+
+    def add_vhost_charts(self, vhost_name):
+        order, charts = vhost_chart_template(vhost_name)
+
+        for chart_name in order:
+            params = [chart_name] + charts[chart_name]['options']
+            dimensions = charts[chart_name]['lines']
+
+            new_chart = self.charts.add_chart(params)
+            for dimension in dimensions:
+                new_chart.add_dimension(dimension)
 
 
 def fetch_data(raw_data, metrics):
@@ -201,7 +280,16 @@ def fetch_data(raw_data, metrics):
         try:
             for m in metrics_list:
                 value = value[m]
-        except KeyError:
+        except (KeyError, TypeError):
             continue
         data['_'.join(metrics_list)] = value
+
     return data
+
+
+def handle_disabled_disk_monitoring(node_stats):
+    # https://github.com/netdata/netdata/issues/7218
+    # can be "disk_free": "disk_free_monitoring_disabled"
+    v = node_stats.get('disk_free')
+    if v and isinstance(v, str):
+        del node_stats['disk_free']

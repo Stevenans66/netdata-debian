@@ -43,7 +43,9 @@ int do_proc_vmstat(int update_every, usec_t dt) {
         arl_expect(arl_base, "pswpin", &pswpin);
         arl_expect(arl_base, "pswpout", &pswpout);
 
-        if(do_numa == CONFIG_BOOLEAN_YES || (do_numa == CONFIG_BOOLEAN_AUTO && get_numa_node_count() >= 2)) {
+        if(do_numa == CONFIG_BOOLEAN_YES || (do_numa == CONFIG_BOOLEAN_AUTO &&
+                                             (get_numa_node_count() >= 2 ||
+                                              netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
             arl_expect(arl_base, "numa_foreign", &numa_foreign);
             arl_expect(arl_base, "numa_hint_faults_local", &numa_hint_faults_local);
             arl_expect(arl_base, "numa_hint_faults", &numa_hint_faults);
@@ -91,7 +93,9 @@ int do_proc_vmstat(int update_every, usec_t dt) {
 
     // --------------------------------------------------------------------
 
-    if(pswpin || pswpout || do_swapio == CONFIG_BOOLEAN_YES) {
+    if(do_swapio == CONFIG_BOOLEAN_YES || (do_swapio == CONFIG_BOOLEAN_AUTO &&
+                                           (pswpin || pswpout ||
+                                            netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
         do_swapio = CONFIG_BOOLEAN_YES;
 
         static RRDSET *st_swapio = NULL;
@@ -105,7 +109,7 @@ int do_proc_vmstat(int update_every, usec_t dt) {
                     , "swap"
                     , NULL
                     , "Swap I/O"
-                    , "kilobytes/s"
+                    , "KiB/s"
                     , PLUGIN_PROC_NAME
                     , PLUGIN_PROC_MODULE_VMSTAT_NAME
                     , NETDATA_CHART_PRIO_SYSTEM_SWAPIO
@@ -137,7 +141,7 @@ int do_proc_vmstat(int update_every, usec_t dt) {
                     , "disk"
                     , NULL
                     , "Memory Paged from/to disk"
-                    , "kilobytes/s"
+                    , "KiB/s"
                     , PLUGIN_PROC_NAME
                     , PLUGIN_PROC_MODULE_VMSTAT_NAME
                     , NETDATA_CHART_PRIO_SYSTEM_PGPGIO
@@ -169,7 +173,7 @@ int do_proc_vmstat(int update_every, usec_t dt) {
                     , "system"
                     , NULL
                     , "Memory Page Faults"
-                    , "page faults/s"
+                    , "faults/s"
                     , PLUGIN_PROC_NAME
                     , PLUGIN_PROC_MODULE_VMSTAT_NAME
                     , NETDATA_CHART_PRIO_MEM_SYSTEM_PGFAULTS

@@ -1,3 +1,6 @@
-netdata (1.11.0~rolling) UNRELEASED; urgency=medium
-  * Latest release
- -- Netdata Team <>  Fri, 02 Nov 2018 14:25:18 +0000
+netdata (PREVIOUS_PACKAGE_VERSION) unstable; urgency=medium
+
+  * Initial Release
+
+-- Netdata Builder <bot@netdata.cloud>  PREVIOUS_PACKAGE_DATE
+

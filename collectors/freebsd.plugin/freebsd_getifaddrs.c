@@ -144,7 +144,7 @@ int do_getifaddrs(int update_every, usec_t dt) {
     (void)dt;
 
 #define DEFAULT_EXLUDED_INTERFACES "lo*"
-#define DEFAULT_PHYSICAL_INTERFACES "igb* ix* cxl* em* ixl* ixlv* bge* ixgbe*"
+#define DEFAULT_PHYSICAL_INTERFACES "igb* ix* cxl* em* ixl* ixlv* bge* ixgbe* vtnet* vmx*"
 #define CONFIG_SECTION_GETIFADDRS "plugin:freebsd:getifaddrs"
 
     static int enable_new_interfaces = -1;
@@ -156,7 +156,7 @@ int do_getifaddrs(int update_every, usec_t dt) {
         enable_new_interfaces = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS,
                                                               "enable new interfaces detected at runtime",
                                                               CONFIG_BOOLEAN_AUTO);
-        
+
         do_bandwidth_net  = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "total bandwidth for physical interfaces",
                                                        CONFIG_BOOLEAN_AUTO);
         do_packets_net    = config_get_boolean_ondemand(CONFIG_SECTION_GETIFADDRS, "total packets for physical interfaces",
@@ -229,7 +229,7 @@ int do_getifaddrs(int update_every, usec_t dt) {
             // --------------------------------------------------------------------
 
             if (likely(do_bandwidth_net)) {
-                
+
                 iftot.ift_ibytes = iftot.ift_obytes = 0;
                 for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
                     if (ifa->ifa_addr->sa_family != AF_LINK)
@@ -239,10 +239,10 @@ int do_getifaddrs(int update_every, usec_t dt) {
                     iftot.ift_ibytes += IFA_DATA(ibytes);
                     iftot.ift_obytes += IFA_DATA(obytes);
                 }
-                
+
                 static RRDSET *st = NULL;
                 static RRDDIM *rd_in = NULL, *rd_out = NULL;
-                
+
                 if (unlikely(!st)) {
                     st = rrdset_create_localhost("system",
                                                  "net",
@@ -251,23 +251,23 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                  NULL,
                                                  "Network Traffic",
                                                  "kilobits/s",
-                            "freebsd.plugin",
+                                                 "freebsd.plugin",
                                                  "getifaddrs",
-                            NETDATA_CHART_PRIO_SYSTEM_NET,
+                                                 NETDATA_CHART_PRIO_SYSTEM_NET,
                                                  update_every,
                                                  RRDSET_TYPE_AREA
                                                  );
-                    
+
                     rd_in  = rrddim_add(st, "InOctets",  "received", 8, BITS_IN_A_KILOBIT, RRD_ALGORITHM_INCREMENTAL);
                     rd_out = rrddim_add(st, "OutOctets", "sent",    -8, BITS_IN_A_KILOBIT, RRD_ALGORITHM_INCREMENTAL);
                 } else
                     rrdset_next(st);
-                
+
                 rrddim_set_by_pointer(st, rd_in,  iftot.ift_ibytes);
                 rrddim_set_by_pointer(st, rd_out, iftot.ift_obytes);
                 rrdset_done(st);
             }
-            
+
             // --------------------------------------------------------------------
 
             if (likely(do_packets_net)) {
@@ -295,9 +295,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                  NULL,
                                                  "Network Packets",
                                                  "packets/s",
-                            "freebsd.plugin",
+                                                 "freebsd.plugin",
                                                  "getifaddrs",
-                            NETDATA_CHART_PRIO_SYSTEM_PACKETS,
+                                                 NETDATA_CHART_PRIO_SYSTEM_PACKETS,
                                                  update_every,
                                                  RRDSET_TYPE_LINE
                                                  );
@@ -340,9 +340,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                  NULL,
                                                  "IPv4 Bandwidth",
                                                  "kilobits/s",
-                            "freebsd.plugin",
+                                                 "freebsd.plugin",
                                                  "getifaddrs",
-                            NETDATA_CHART_PRIO_SYSTEM_IPV4,
+                                                 NETDATA_CHART_PRIO_SYSTEM_IPV4,
                                                  update_every,
                                                  RRDSET_TYPE_AREA
                     );
@@ -379,9 +379,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                  NULL,
                                                  "IPv6 Bandwidth",
                                                  "kilobits/s",
-                            "freebsd.plugin",
+                                                 "freebsd.plugin",
                                                  "getifaddrs",
-                            NETDATA_CHART_PRIO_SYSTEM_IPV6,
+                                                 NETDATA_CHART_PRIO_SYSTEM_IPV6,
                                                  update_every,
                                                  RRDSET_TYPE_AREA
                     );
@@ -440,7 +440,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                 // --------------------------------------------------------------------
 
                 if (ifm->do_bandwidth == CONFIG_BOOLEAN_YES || (ifm->do_bandwidth == CONFIG_BOOLEAN_AUTO &&
-                                                                (IFA_DATA(ibytes) || IFA_DATA(obytes)))) {
+                                                                (IFA_DATA(ibytes) ||
+                                                                 IFA_DATA(obytes) ||
+                                                                 netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!ifm->st_bandwidth)) {
                         ifm->st_bandwidth = rrdset_create_localhost("net",
                                                                     ifa->ifa_name,
@@ -449,9 +451,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                                     "net.net",
                                                                     "Bandwidth",
                                                                     "kilobits/s",
-                                "freebsd.plugin",
+                                                                    "freebsd.plugin",
                                                                     "getifaddrs",
-                                NETDATA_CHART_PRIO_FIRST_NET_IFACE,
+                                                                    NETDATA_CHART_PRIO_FIRST_NET_IFACE,
                                                                     update_every,
                                                                     RRDSET_TYPE_AREA
                         );
@@ -469,7 +471,11 @@ int do_getifaddrs(int update_every, usec_t dt) {
                 // --------------------------------------------------------------------
 
                 if (ifm->do_packets == CONFIG_BOOLEAN_YES || (ifm->do_packets == CONFIG_BOOLEAN_AUTO &&
-                                                              (IFA_DATA(ipackets) || IFA_DATA(opackets) || IFA_DATA(imcasts) || IFA_DATA(omcasts)))) {
+                                                              (IFA_DATA(ipackets) ||
+                                                               IFA_DATA(opackets) ||
+                                                               IFA_DATA(imcasts) ||
+                                                               IFA_DATA(omcasts) ||
+                                                               netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!ifm->st_packets)) {
                         ifm->st_packets = rrdset_create_localhost("net_packets",
                                                                   ifa->ifa_name,
@@ -478,9 +484,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                                   "net.packets",
                                                                   "Packets",
                                                                   "packets/s",
-                                "freebsd.plugin",
+                                                                  "freebsd.plugin",
                                                                   "getifaddrs",
-                                NETDATA_CHART_PRIO_FIRST_NET_PACKETS,
+                                                                  NETDATA_CHART_PRIO_FIRST_NET_PACKETS,
                                                                   update_every,
                                                                   RRDSET_TYPE_LINE
                         );
@@ -508,7 +514,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                 // --------------------------------------------------------------------
 
                 if (ifm->do_errors == CONFIG_BOOLEAN_YES || (ifm->do_errors == CONFIG_BOOLEAN_AUTO &&
-                                                             (IFA_DATA(ierrors) || IFA_DATA(oerrors)))) {
+                                                             (IFA_DATA(ierrors) ||
+                                                              IFA_DATA(oerrors) ||
+                                                              netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!ifm->st_errors)) {
                         ifm->st_errors = rrdset_create_localhost("net_errors",
                                                                  ifa->ifa_name,
@@ -517,9 +525,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                                  "net.errors",
                                                                  "Interface Errors",
                                                                  "errors/s",
-                                "freebsd.plugin",
+                                                                 "freebsd.plugin",
                                                                  "getifaddrs",
-                                NETDATA_CHART_PRIO_FIRST_NET_ERRORS,
+                                                                 NETDATA_CHART_PRIO_FIRST_NET_ERRORS,
                                                                  update_every,
                                                                  RRDSET_TYPE_LINE
                         );
@@ -538,11 +546,11 @@ int do_getifaddrs(int update_every, usec_t dt) {
                 // --------------------------------------------------------------------
 
                 if (ifm->do_drops == CONFIG_BOOLEAN_YES || (ifm->do_drops == CONFIG_BOOLEAN_AUTO &&
-                                                            (IFA_DATA(iqdrops)
+                                                            (IFA_DATA(iqdrops) ||
                                                              #if __FreeBSD__ >= 11
-                                                             || IFA_DATA(oqdrops)
-#endif
-                ))) {
+                                                             IFA_DATA(oqdrops) ||
+                                                             #endif
+                                                             netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!ifm->st_drops)) {
                         ifm->st_drops = rrdset_create_localhost("net_drops",
                                                                 ifa->ifa_name,
@@ -551,9 +559,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                                 "net.drops",
                                                                 "Interface Drops",
                                                                 "drops/s",
-                                "freebsd.plugin",
+                                                                "freebsd.plugin",
                                                                 "getifaddrs",
-                                NETDATA_CHART_PRIO_FIRST_NET_DROPS,
+                                                                NETDATA_CHART_PRIO_FIRST_NET_DROPS,
                                                                 update_every,
                                                                 RRDSET_TYPE_LINE
                         );
@@ -577,7 +585,8 @@ int do_getifaddrs(int update_every, usec_t dt) {
                 // --------------------------------------------------------------------
 
                 if (ifm->do_events == CONFIG_BOOLEAN_YES || (ifm->do_events == CONFIG_BOOLEAN_AUTO &&
-                                                             IFA_DATA(collisions))) {
+                                                             (IFA_DATA(collisions) ||
+                                                              netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
                     if (unlikely(!ifm->st_events)) {
                         ifm->st_events = rrdset_create_localhost("net_events",
                                                                  ifa->ifa_name,
@@ -586,9 +595,9 @@ int do_getifaddrs(int update_every, usec_t dt) {
                                                                  "net.events",
                                                                  "Network Interface Events",
                                                                  "events/s",
-                                "freebsd.plugin",
+                                                                 "freebsd.plugin",
                                                                  "getifaddrs",
-                                NETDATA_CHART_PRIO_FIRST_NET_EVENTS,
+                                                                 NETDATA_CHART_PRIO_FIRST_NET_EVENTS,
                                                                  update_every,
                                                                  RRDSET_TYPE_LINE
                         );
