@@ -308,7 +308,11 @@ static inline int find_all_btrfs_pools(const char *path) {
             char label[FILENAME_MAX + 1] = "";
 
             snprintfz(filename, FILENAME_MAX, "%s/%s/label", path, de->d_name);
-            read_file(filename, label, FILENAME_MAX);
+            if(read_file(filename, label, FILENAME_MAX) != 0) {
+                error("BTRFS: failed to read '%s'", filename);
+                btrfs_free_node(node);
+                continue;
+            }
 
             char *s = label;
             if (s[0])
@@ -538,7 +542,9 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
         // --------------------------------------------------------------------
         // allocation/disks
 
-        if(do_allocation_disks == CONFIG_BOOLEAN_YES || (do_allocation_disks == CONFIG_BOOLEAN_AUTO && node->all_disks_total && node->allocation_data_disk_total)) {
+        if(do_allocation_disks == CONFIG_BOOLEAN_YES || (do_allocation_disks == CONFIG_BOOLEAN_AUTO &&
+                                                         ((node->all_disks_total && node->allocation_data_disk_total) ||
+                                                          netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
             do_allocation_disks = CONFIG_BOOLEAN_YES;
 
             if(unlikely(!node->st_allocation_disks)) {
@@ -558,7 +564,7 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
                         , node->label
                         , "btrfs.disk"
                         , title
-                        , "MB"
+                        , "MiB"
                         , PLUGIN_PROC_NAME
                         , PLUGIN_PROC_MODULE_BTRFS_NAME
                         , NETDATA_CHART_PRIO_BTRFS_DISK
@@ -594,7 +600,9 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
         // --------------------------------------------------------------------
         // allocation/data
 
-        if(do_allocation_data == CONFIG_BOOLEAN_YES || (do_allocation_data == CONFIG_BOOLEAN_AUTO && node->allocation_data_total_bytes)) {
+        if(do_allocation_data == CONFIG_BOOLEAN_YES || (do_allocation_data == CONFIG_BOOLEAN_AUTO &&
+                                                        (node->allocation_data_total_bytes ||
+                                                         netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
             do_allocation_data = CONFIG_BOOLEAN_YES;
 
             if(unlikely(!node->st_allocation_data)) {
@@ -614,7 +622,7 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
                         , node->label
                         , "btrfs.data"
                         , title
-                        , "MB"
+                        , "MiB"
                         , PLUGIN_PROC_NAME
                         , PLUGIN_PROC_MODULE_BTRFS_NAME
                         , NETDATA_CHART_PRIO_BTRFS_DATA
@@ -635,7 +643,9 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
         // --------------------------------------------------------------------
         // allocation/metadata
 
-        if(do_allocation_metadata == CONFIG_BOOLEAN_YES || (do_allocation_metadata == CONFIG_BOOLEAN_AUTO && node->allocation_metadata_total_bytes)) {
+        if(do_allocation_metadata == CONFIG_BOOLEAN_YES || (do_allocation_metadata == CONFIG_BOOLEAN_AUTO &&
+                                                            (node->allocation_metadata_total_bytes ||
+                                                             netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
             do_allocation_metadata = CONFIG_BOOLEAN_YES;
 
             if(unlikely(!node->st_allocation_metadata)) {
@@ -655,7 +665,7 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
                         , node->label
                         , "btrfs.metadata"
                         , title
-                        , "MB"
+                        , "MiB"
                         , PLUGIN_PROC_NAME
                         , PLUGIN_PROC_MODULE_BTRFS_NAME
                         , NETDATA_CHART_PRIO_BTRFS_METADATA
@@ -678,7 +688,9 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
         // --------------------------------------------------------------------
         // allocation/system
 
-        if(do_allocation_system == CONFIG_BOOLEAN_YES || (do_allocation_system == CONFIG_BOOLEAN_AUTO && node->allocation_system_total_bytes)) {
+        if(do_allocation_system == CONFIG_BOOLEAN_YES || (do_allocation_system == CONFIG_BOOLEAN_AUTO &&
+                                                          (node->allocation_system_total_bytes ||
+                                                           netdata_zero_metrics_enabled == CONFIG_BOOLEAN_YES))) {
             do_allocation_system = CONFIG_BOOLEAN_YES;
 
             if(unlikely(!node->st_allocation_system)) {
@@ -698,7 +710,7 @@ int do_sys_fs_btrfs(int update_every, usec_t dt) {
                         , node->label
                         , "btrfs.system"
                         , title
-                        , "MB"
+                        , "MiB"
                         , PLUGIN_PROC_NAME
                         , PLUGIN_PROC_MODULE_BTRFS_NAME
                         , NETDATA_CHART_PRIO_BTRFS_SYSTEM

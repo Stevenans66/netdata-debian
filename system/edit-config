@@ -4,9 +4,14 @@
 
 file="${1}"
 
-EDITOR="${EDITOR-vi}"
-[ -z "${NETDATA_USER_CONFIG_DIR}"  ] && NETDATA_USER_CONFIG_DIR="/usr/local/etc/netdata"
-[ -z "${NETDATA_STOCK_CONFIG_DIR}" ] && NETDATA_STOCK_CONFIG_DIR="/usr/local/lib/netdata/conf.d"
+if [ "$(command -v editor)" ] ; then
+    EDITOR="${EDITOR-editor}"
+else
+    EDITOR="${EDITOR-vi}"
+fi
+
+[ -z "${NETDATA_USER_CONFIG_DIR}"  ] && NETDATA_USER_CONFIG_DIR="/etc/netdata"
+[ -z "${NETDATA_STOCK_CONFIG_DIR}" ] && NETDATA_STOCK_CONFIG_DIR="/usr/lib/netdata/conf.d"
 
 if [ -z "${file}" ]
 then

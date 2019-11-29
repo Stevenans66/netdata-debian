@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Description: rethinkdb netdata python.d module
-# Author: Ilya Mashchenko (l2isbad)
+# Author: Ilya Mashchenko (ilyam8)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 try:
@@ -131,18 +131,26 @@ class Server:
         return dict(('{0}_{1}'.format(self.name, k), d[k]) for k in d)
 
 
+# https://pypi.org/project/rethinkdb/2.4.0/
+# rdb.RethinkDB() can be used as rdb drop in replacement.
+# https://github.com/rethinkdb/rethinkdb-python#quickstart
+def get_rethinkdb():
+    if hasattr(rdb, 'RethinkDB'):
+        return rdb.RethinkDB()
+    return rdb
+
+
 class Service(SimpleService):
     def __init__(self, configuration=None, name=None):
         SimpleService.__init__(self, configuration=configuration, name=name)
         self.order = list(ORDER)
         self.definitions = cluster_charts()
-
         self.host = self.configuration.get('host', '127.0.0.1')
         self.port = self.configuration.get('port', 28015)
         self.user = self.configuration.get('user', 'admin')
         self.password = self.configuration.get('password')
         self.timeout = self.configuration.get('timeout', 2)
-
+        self.rdb = None
         self.conn = None
         self.alive = True
 
@@ -150,6 +158,9 @@ class Service(SimpleService):
         if not HAS_RETHINKDB:
             self.error('"rethinkdb" module is needed to use rethinkdbs.py')
             return False
+
+        self.debug("rethinkdb driver version {0}".format(rdb.__version__))
+        self.rdb = get_rethinkdb()
 
         if not self.connect():
             return None
@@ -198,14 +209,14 @@ class Service(SimpleService):
 
     def get_stats(self):
         try:
-            return list(rdb.db('rethinkdb').table('stats').run(self.conn).items)
+            return list(self.rdb.db('rethinkdb').table('stats').run(self.conn).items)
         except rdb.errors.ReqlError:
             self.alive = False
             return None
 
     def connect(self):
         try:
-            self.conn = rdb.connect(
+            self.conn = self.rdb.connect(
                 host=self.host,
                 port=self.port,
                 user=self.user,

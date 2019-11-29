@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// Codacy declarations
+/* global NETDATA */
+
 var netdataDashboard = window.netdataDashboard || {};
 
-// ----------------------------------------------------------------------------
-// menus
+// Informational content for the various sections of the GUI (menus, sections, charts, etc.)
 
-// information about the main menus
+// ----------------------------------------------------------------------------
+// Menus
 
 netdataDashboard.menu = {
     'system': {
@@ -31,7 +34,7 @@ netdataDashboard.menu = {
         title: 'Quality of Service',
         icon: '<i class="fas fa-globe"></i>',
         info: 'Netdata collects and visualizes <code>tc</code> class utilization using its ' +
-            '<a href="https://github.com/netdata/netdata/blob/master/plugins.d/tc-qos-helper.sh" target="_blank">tc-helper plugin</a>. ' +
+            '<a href="https://github.com/netdata/netdata/blob/master/collectors/tc.plugin/tc-qos-helper.sh.in" target="_blank">tc-helper plugin</a>. ' +
             'If you also use <a href="http://firehol.org/#fireqos" target="_blank">FireQOS</a> for setting up QoS, ' +
             'netdata automatically collects interface and class names. If your QoS configuration includes overheads ' +
             'calculation, the values shown here will include these overheads (the total bandwidth for the same ' +
@@ -151,7 +154,7 @@ netdataDashboard.menu = {
     'zfs': {
         title: 'ZFS filesystem',
         icon: '<i class="fas fa-folder-open"></i>',
-        info: 'Performance metrics of the ZFS filesystem. The following charts visualize all metrics reported by <a href="https://github.com/zfsonlinux/zfs/blob/master/cmd/arcstat/arcstat.py" target="_blank">arcstat.py</a> and <a href="https://github.com/zfsonlinux/zfs/blob/master/cmd/arc_summary/arc_summary.py" target="_blank">arc_summary.py</a>.'
+        info: 'Performance metrics of the ZFS filesystem. The following charts visualize all metrics reported by <a href="https://github.com/zfsonlinux/zfs/blob/master/cmd/arcstat/arcstat" target="_blank">arcstat.py</a> and <a href="https://github.com/zfsonlinux/zfs/blob/master/cmd/arc_summary/arc_summary3" target="_blank">arc_summary.py</a>.'
     },
 
     'btrfs': {
@@ -163,7 +166,7 @@ netdataDashboard.menu = {
     'apps': {
         title: 'Applications',
         icon: '<i class="fas fa-heartbeat"></i>',
-        info: 'Per application statistics are collected using netdata\'s <code>apps.plugin</code>. This plugin walks through all processes and aggregates statistics for applications of interest, defined in <code>/etc/netdata/apps_groups.conf</code> (the default is <a href="https://github.com/netdata/netdata/blob/master/conf.d/apps_groups.conf" target="_blank">here</a>). The plugin internally builds a process tree (much like <code>ps fax</code> does), and groups processes together (evaluating both child and parent processes) so that the result is always a chart with a predefined set of dimensions (of course, only application groups found running are reported). The reported values are compatible with <code>top</code>, although the netdata plugin counts also the resources of exited children (unlike <code>top</code> which shows only the resources of the currently running processes). So for processes like shell scripts, the reported values include the resources used by the commands these scripts run within each timeframe.',
+        info: 'Per application statistics are collected using netdata\'s <code>apps.plugin</code>. This plugin walks through all processes and aggregates statistics for applications of interest, defined in <code>/etc/netdata/apps_groups.conf</code>, which can be edited by running <code>$ /etc/netdata/edit-config apps_groups.conf</code> (the default is <a href="https://github.com/netdata/netdata/blob/master/collectors/apps.plugin/apps_groups.conf" target="_blank">here</a>). The plugin internally builds a process tree (much like <code>ps fax</code> does), and groups processes together (evaluating both child and parent processes) so that the result is always a chart with a predefined set of dimensions (of course, only application groups found running are reported). The reported values are compatible with <code>top</code>, although the netdata plugin counts also the resources of exited children (unlike <code>top</code> which shows only the resources of the currently running processes). So for processes like shell scripts, the reported values include the resources used by the commands these scripts run within each timeframe.',
         height: 1.5
     },
 
@@ -208,6 +211,18 @@ netdataDashboard.menu = {
         title: 'fping',
         icon: '<i class="fas fa-exchange-alt"></i>',
         info: 'Network latency statistics, via <b>fping</b>. <b>fping</b> is a program to send ICMP echo probes to network hosts, similar to <code>ping</code>, but much better performing when pinging multiple hosts. fping versions after 3.15 can be directly used as netdata plugins.'
+    },
+
+    'gearman': {
+        title: 'Gearman',
+        icon: '<i class="fas fa-tasks"></i>',
+        info: 'Gearman is a job server that allows you to do work in parallel, to load balance processing, and to call functions between languages.'
+    },
+
+    'ioping': {
+        title: 'ioping',
+        icon: '<i class="fas fa-exchange-alt"></i>',
+        info: 'Disk latency statistics, via <b>ioping</b>. <b>ioping</b> is a program to read/write data probes from/to a disk.'
     },
 
     'httpcheck': {
@@ -258,6 +273,12 @@ netdataDashboard.menu = {
         info: 'Performance metrics for <b>RetroShare</b>. RetroShare is open source software for encrypted filesharing, serverless email, instant messaging, online chat, and BBS, based on a friend-to-friend network built on GNU Privacy Guard (GPG).'
     },
 
+    'riakkv': {
+        title: 'Riak KV',
+        icon: '<i class="fas fa-database"></i>',
+        info: 'Metrics for <b>Riak KV</b>, the distributed key-value store.'
+    },
+
     'ipfs': {
         title: 'IPFS',
         icon: '<i class="fas fa-folder-open"></i>',
@@ -268,6 +289,13 @@ netdataDashboard.menu = {
         title: 'PHP-FPM',
         icon: '<i class="fas fa-eye"></i>',
         info: 'Performance metrics for <b>PHP-FPM</b>, an alternative FastCGI implementation for PHP.'
+    },
+
+    'pihole': {
+        title: 'Pi-hole',
+        icon: '<i class="fas fa-ban"></i>',
+        info: 'Metrics for <a href="https://pi-hole.net/" target="_blank">Pi-hole</a>, a black hole for Internet advertisements.' +
+            ' The metrics returned by Pi-Hole API is all from the last 24 hours.'
     },
 
     'portcheck': {
@@ -315,7 +343,7 @@ netdataDashboard.menu = {
     'web_log': {
         title: undefined,
         icon: '<i class="fas fa-file-alt"></i>',
-        info: 'Information extracted from a server log file. <code>web_log</code> plugin incrementally parses the server log file to provide, in real-time, a break down of key server performance metrics. For web servers, an extended log file format may optionally be used (for <code>nginx</code> and <code>apache</code>) offering timing information and bandwidth for both requests and responses. <code>web_log</code> plugin may also be configured to provide a break down of requests per URL pattern (check <a href="https://github.com/netdata/netdata/blob/master/conf.d/python.d/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>).'
+        info: 'Information extracted from a server log file. <code>web_log</code> plugin incrementally parses the server log file to provide, in real-time, a break down of key server performance metrics. For web servers, an extended log file format may optionally be used (for <code>nginx</code> and <code>apache</code>) offering timing information and bandwidth for both requests and responses. <code>web_log</code> plugin may also be configured to provide a break down of requests per URL pattern (check <a href="https://github.com/netdata/netdata/blob/master/collectors/python.d.plugin/web_log/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>).'
     },
 
     'named': {
@@ -436,11 +464,66 @@ netdataDashboard.menu = {
         info: undefined
     },
 
-    'linux_power_supply': {
+    'powersupply': {
         title: 'Power Supply',
         icon: '<i class="fas fa-battery-half"></i>',
-        info: 'Statistics for the various system power supplies.'
+        info: 'Statistics for the various system power supplies. Data collected from <a href="https://www.kernel.org/doc/Documentation/power/power_supply_class.txt">Linux power supply class</a>.'
+    },
+
+    'xenstat': {
+        title: 'Xen Node',
+        icon: '<i class="fas fa-server"></i>',
+        info: 'General statistics for the Xen node. Data collected using <b>xenstat</b> library</a>.'
+    },
+
+    'xendomain': {
+        title: '',
+        icon: '<i class="fas fa-th-large"></i>',
+        info: 'Xen domain resource utilization metrics. Netdata reads this information using <b>xenstat</b> library which gives access to the resource usage information (CPU, memory, disk I/O, network) for a virtual machine.'
+    },
+
+    'wmi': {
+        title: 'wmi',
+        icon: '<i class="fas fa-server"></i>',
+        info: undefined
+    },
+
+    'perf': {
+        title: 'Perf Counters',
+        icon: '<i class="fas fa-tachometer-alt"></i>',
+        info: 'Performance Monitoring Counters (PMC). Data collected using <b>perf_event_open()</b> system call which utilises Hardware Performance Monitoring Units (PMU).'
+    },
+
+    'vsphere': {
+        title: 'vSphere',
+        icon: '<i class="fas fa-server"></i>',
+        info: 'Performance statistics for ESXI hosts and virtual machines. Data collected from <a href="https://www.vmware.com/products/vcenter-server.html">VMware vCenter Server</a> using <code><a href="https://github.com/vmware/govmomi"> govmomi</a></code>  library.'
+    },
+
+    'vcsa': {
+        title: 'VCSA',
+        icon: '<i class="fas fa-server"></i>',
+        info: 'vCenter Server Appliance health statistics. Data collected from <a href="https://vmware.github.io/vsphere-automation-sdk-rest/vsphere/index.html#SVC_com.vmware.appliance.health">Health API</a>.'
+    },
+
+    'zookeeper': {
+        title: 'Zookeeper',
+        icon: '<i class="fas fa-database"></i>',
+        info: 'Provides health statistics for <b><a href="https://zookeeper.apache.org/">Zookeeper</a></b> server. Data collected through the command port using <code><a href="https://zookeeper.apache.org/doc/r3.5.5/zookeeperAdmin.html#sc_zkCommands">mntr</a></code> command.'
+    },
+
+    'hdfs': {
+        title: 'HDFS',
+        icon: '<i class="fas fa-folder-open"></i>',
+        info: 'Provides <b><a href="https://hadoop.apache.org/docs/r3.2.0/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html">Hadoop Distributed File System</a></b> performance statistics. Module collects metrics over <code>Java Management Extensions</code> through the web interface of an <code>HDFS</code> daemon.'
+    },
+    
+    'am2320': {
+        title: 'AM2320 Sensor',
+        icon: '<i class="fas fa-thermometer-half"></i>',
+        info: 'Readings from the external AM2320 Sensor.'
     }
+
 };
 
 
@@ -494,7 +577,7 @@ netdataDashboard.submenu = {
     },
 
     'web_log.urls': {
-        info: 'Number of requests for each <code>URL pattern</code> defined in <a href="https://github.com/netdata/netdata/blob/master/conf.d/python.d/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>. This chart counts all requests matching the URL patterns defined, independently of the web server response codes (i.e. both successful and unsuccessful).'
+        info: 'Number of requests for each <code>URL pattern</code> defined in <a href="https://github.com/netdata/netdata/blob/master/collectors/python.d.plugin/web_log/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>. This chart counts all requests matching the URL patterns defined, independently of the web server response codes (i.e. both successful and unsuccessful).'
     },
 
     'web_log.clients': {
@@ -615,6 +698,10 @@ netdataDashboard.submenu = {
 // colors: the dimension colors of the chart (the default colors are appended)
 // height: the ratio of the chart height relative to the default
 //
+
+var cgroupCPULimitIsSet = 0;
+var cgroupMemLimitIsSet = 0;
+
 netdataDashboard.context = {
     'system.cpu': {
         info: function (os) {
@@ -647,7 +734,7 @@ netdataDashboard.context = {
     },
 
     'system.swapio': {
-        info: 'Total Swap I/O. (netdata measures both <code>in</code> and <code>out</code>. If either of them is not shown in the chart, it is because it is zero - you can change the page settings to always render all the available dimensions on all charts).'
+        info: 'Total Swap I/O. (netdata measures both <code>in</code> and <code>out</code>. If either of the metrics <code>in</code> or <code>out</code> is not shown in the chart, the reason is that the metric is zero. - you can change the page settings to always render all the available dimensions on all charts).'
     },
 
     'system.pgfaults': {
@@ -776,6 +863,32 @@ netdataDashboard.context = {
         ]
     },
 
+    'mem.zram_usage': {
+        info: 'ZRAM total RAM usage metrics. ZRAM uses some memory to store metadata about stored memory pages, thus introducing an overhead which is proportional to disk size. It excludes same-element-filled-pages since no memory is allocated for them.'
+    },
+
+    'mem.zram_savings': {
+        info: 'Displays original and compressed memory data sizes.'
+    },
+
+    'mem.zram_ratio': {
+        heads: [
+            netdataDashboard.gaugeChart('Compression Ratio', '12%', 'ratio', '#0099CC')
+        ],
+        info: 'Compression ratio, calculated as <code>100 * original_size / compressed_size</code>. More means better compression and more RAM savings.'
+    },
+
+    'mem.zram_efficiency': {
+        heads: [
+            netdataDashboard.gaugeChart('Efficiency', '12%', 'percent', NETDATA.colors[0])
+        ],
+        commonMin: true,
+        commonMax: true,
+        valueRange: "[0, 100]",
+        info: 'Memory usage efficiency, calculated as <code>100 * compressed_size / total_mem_used</code>.'
+    },
+
+
     'mem.pgfaults': {
         info: 'A <a href="https://en.wikipedia.org/wiki/Page_fault" target="_blank">page fault</a> is a type of interrupt, called trap, raised by computer hardware when a running program accesses a memory page that is mapped into the virtual address space, but not actually loaded into main memory. If the page is loaded in memory at the time the fault is generated, but is not marked in the memory management unit as being loaded in memory, then it is called a <b>minor</b> or soft page fault. A <b>major</b> page fault is generated when the system needs to load the memory page from disk or swap memory.'
     },
@@ -892,7 +1005,7 @@ netdataDashboard.context = {
     },
 
     'apps.vmem': {
-        info: 'Virtual memory allocated by applications. Please check <a href="https://github.com/netdata/netdata/wiki/netdata-virtual-memory-size" target="_blank">this article</a> for more information.'
+        info: 'Virtual memory allocated by applications. Please check <a href="https://github.com/netdata/netdata/tree/master/daemon#virtual-memory" target="_blank">this article</a> for more information.'
     },
 
     'apps.preads': {
@@ -901,6 +1014,10 @@ netdataDashboard.context = {
 
     'apps.pwrites': {
         height: 2.0
+    },
+
+    'apps.uptime': {
+        info: 'Carried over process group uptime since the Netdata restart. The period of time within which at least one process in the group was running.'
     },
 
     // ------------------------------------------------------------------------
@@ -915,7 +1032,7 @@ netdataDashboard.context = {
     },
 
     'users.vmem': {
-        info: 'Virtual memory allocated per user. Please check <a href="https://github.com/netdata/netdata/wiki/netdata-virtual-memory-size" target="_blank">this article</a> for more information.'
+        info: 'Virtual memory allocated per user. Please check <a href="https://github.com/netdata/netdata/tree/master/daemon#virtual-memory" target="_blank">this article</a> for more information.'
     },
 
     'users.preads': {
@@ -924,6 +1041,10 @@ netdataDashboard.context = {
 
     'users.pwrites': {
         height: 2.0
+    },
+
+    'users.uptime': {
+        info: 'Carried over process group uptime since the Netdata restart. The period of time within which at least one process in the group was running.'
     },
 
     // ------------------------------------------------------------------------
@@ -938,7 +1059,7 @@ netdataDashboard.context = {
     },
 
     'groups.vmem': {
-        info: 'Virtual memory allocated per user group. Please check <a href="https://github.com/netdata/netdata/wiki/netdata-virtual-memory-size" target="_blank">this article</a> for more information.'
+        info: 'Virtual memory allocated per user group since the Netdata restart. Please check <a href="https://github.com/netdata/netdata/tree/master/daemon#virtual-memory" target="_blank">this article</a> for more information.'
     },
 
     'groups.preads': {
@@ -947,6 +1068,10 @@ netdataDashboard.context = {
 
     'groups.pwrites': {
         height: 2.0
+    },
+
+    'groups.uptime': {
+        info: 'Carried over process group uptime. The period of time within which at least one process in the group was running.'
     },
 
     // ------------------------------------------------------------------------
@@ -1137,6 +1262,43 @@ netdataDashboard.context = {
             '<li><strong>waited</strong>, the number of times that a request for a table lock could not be granted immediately and a wait was needed. If this is high and you have performance problems, you should first optimize your queries, and then either split your table or tables or use replication.</li>' +
             '</ul>'
     },
+
+    'mysql.innodb_deadlocks': {
+        info: 'A deadlock happens when two or more transactions mutually hold and request for locks, creating a cycle of dependencies. For more information about <a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-deadlocks-handling.html" target="_blank">how to minimize and handle deadlocks</a>.'
+    },
+
+    'mysql.galera_cluster_status': {
+        info:
+            '<code>-1</code>: unknown, ' +
+            '<code>0</code>: primary (primary group configuration, quorum present), ' +
+            '<code>1</code>: non-primary (non-primary group configuration, quorum lost), ' +
+            '<code>2</code>: disconnected(not connected to group, retrying).'
+    },
+
+    'mysql.galera_cluster_state': {
+        info:
+            '<code>0</code>: undefined, ' +
+            '<code>1</code>: joining, ' +
+            '<code>2</code>: donor/desynced, ' +
+            '<code>3</code>: joined, ' +
+            '<code>4</code>: synced.'
+    },
+
+    'mysql.galera_cluster_weight': {
+        info: 'The value is counted as a sum of <code>pc.weight</code> of the nodes in the current Primary Component.'
+    },
+
+    'mysql.galera_connected': {
+        info: '<code>0</code> means that the node has not yet connected to any of the cluster components. ' +
+            'This may be due to misconfiguration.'
+    },
+
+    'mysql.open_transactions': {
+        info: 'The number of locally running transactions which have been registered inside the wsrep provider. ' +
+            'This means transactions which have made operations which have caused write set population to happen. ' +
+            'Transactions which are read only are not counted.'
+    },
+
 
     // ------------------------------------------------------------------------
     // POSTGRESQL
@@ -1413,11 +1575,15 @@ netdataDashboard.context = {
     // ------------------------------------------------------------------------
     // containers
 
-    'cgroup.cpu': {
+    'cgroup.cpu_limit': {
+        valueRange: "[0, null]",
         mainheads: [
             function (os, id) {
                 void(os);
+                cgroupCPULimitIsSet = 1;
                 return '<div data-netdata="' + id + '"'
+                    + ' data-dimensions="used"'
+                    + ' data-gauge-max-value="100"'
                     + ' data-chart-library="gauge"'
                     + ' data-title="CPU"'
                     + ' data-units="%"'
@@ -1432,14 +1598,41 @@ netdataDashboard.context = {
         ]
     },
 
-    'cgroup.mem_usage': {
+    'cgroup.cpu': {
         mainheads: [
             function (os, id) {
                 void(os);
+                if (cgroupCPULimitIsSet === 0) {
+                    return '<div data-netdata="' + id + '"'
+                        + ' data-chart-library="gauge"'
+                        + ' data-title="CPU"'
+                        + ' data-units="%"'
+                        + ' data-gauge-adjust="width"'
+                        + ' data-width="12%"'
+                        + ' data-before="0"'
+                        + ' data-after="-CHART_DURATION"'
+                        + ' data-points="CHART_DURATION"'
+                        + ' data-colors="' + NETDATA.colors[4] + '"'
+                        + ' role="application"></div>';
+                }
+                else
+                    return '';
+            }
+        ]
+    },
+
+    'cgroup.mem_usage_limit': {
+        mainheads: [
+            function (os, id) {
+                void(os);
+                cgroupMemLimitIsSet = 1;
                 return '<div data-netdata="' + id + '"'
+                    + ' data-dimensions="used"'
+                    + ' data-append-options="percentage"'
+                    + ' data-gauge-max-value="100"'
                     + ' data-chart-library="gauge"'
                     + ' data-title="Memory"'
-                    + ' data-units="MB"'
+                    + ' data-units="%"'
                     + ' data-gauge-adjust="width"'
                     + ' data-width="12%"'
                     + ' data-before="0"'
@@ -1447,6 +1640,29 @@ netdataDashboard.context = {
                     + ' data-points="CHART_DURATION"'
                     + ' data-colors="' + NETDATA.colors[1] + '"'
                     + ' role="application"></div>';
+            }
+        ]
+    },
+
+    'cgroup.mem_usage': {
+        mainheads: [
+            function (os, id) {
+                void(os);
+                if (cgroupMemLimitIsSet === 0) {
+                    return '<div data-netdata="' + id + '"'
+                        + ' data-chart-library="gauge"'
+                        + ' data-title="Memory"'
+                        + ' data-units="MB"'
+                        + ' data-gauge-adjust="width"'
+                        + ' data-width="12%"'
+                        + ' data-before="0"'
+                        + ' data-after="-CHART_DURATION"'
+                        + ' data-points="CHART_DURATION"'
+                        + ' data-colors="' + NETDATA.colors[1] + '"'
+                        + ' role="application"></div>';
+                }
+                else
+                    return '';
             }
         ]
     },
@@ -1606,7 +1822,7 @@ netdataDashboard.context = {
     // web_log
 
     'web_log.response_statuses': {
-        info: 'Web server responses by type. <code>success</code> includes <b>1xx</b>, <b>2xx</b> and <b>304</b>, <code>error</code> includes <b>5xx</b>, <code>redirect</code> includes <b>3xx</b> except <b>304</b>, <code>bad</code> includes <b>4xx</b>, <code>other</code> are all the other responses.',
+        info: 'Web server responses by type. <code>success</code> includes <b>1xx</b>, <b>2xx</b>, <b>304</b> and <b>401</b>, <code>error</code> includes <b>5xx</b>, <code>redirect</code> includes <b>3xx</b> except <b>304</b>, <code>bad</code> includes <b>4xx</b> except <b>401</b>, <code>other</code> are all the other responses.',
         mainheads: [
             function (os, id) {
                 void(os);
@@ -1727,7 +1943,7 @@ netdataDashboard.context = {
     },
 
     'web_log.clients_all': {
-        info: 'Unique client IPs accessing the web server since the last restart of netdata. This plugin keeps in memory all the unique IPs that have accessed the web server. On very busy web servers (several millions of unique IPs) you may want to disable this chart (check <a href="https://github.com/netdata/netdata/blob/master/conf.d/python.d/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>).'
+        info: 'Unique client IPs accessing the web server since the last restart of netdata. This plugin keeps in memory all the unique IPs that have accessed the web server. On very busy web servers (several millions of unique IPs) you may want to disable this chart (check <a href="https://github.com/netdata/netdata/blob/master/collectors/python.d.plugin/web_log/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>).'
     },
 
     // ------------------------------------------------------------------------
@@ -1858,7 +2074,7 @@ netdataDashboard.context = {
     },
 
     'web_log.squid_clients_all': {
-        info: 'Unique client IPs accessing squid since the last restart of netdata. This plugin keeps in memory all the unique IPs that have accessed the server. On very busy squid servers (several millions of unique IPs) you may want to disable this chart (check <a href="https://github.com/netdata/netdata/blob/master/conf.d/python.d/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>).'
+        info: 'Unique client IPs accessing squid since the last restart of netdata. This plugin keeps in memory all the unique IPs that have accessed the server. On very busy squid servers (several millions of unique IPs) you may want to disable this chart (check <a href="https://github.com/netdata/netdata/blob/master/collectors/python.d.plugin/web_log/web_log.conf" target="_blank"><code>/etc/netdata/python.d/web_log.conf</code></a>).'
     },
 
     'web_log.squid_transport_methods': {
@@ -2021,7 +2237,7 @@ netdataDashboard.context = {
     },
 
     'btrfs.disk': {
-        info: 'Physical disk usage of BTRFS. The disk space reported here is the raw physical disk space assigned to the BTRFS volume (i.e. <b>before any RAID levels</b>). BTRFS uses a two-stage allocator, first allocating large regions of disk space for one type of block (data, metadata, or system), and then using a regular block allocator inside those regions. <code>unallocated</code> is the physical disk space that is not allocated yet and is available to become data, metdata or system on demand. When <code>unallocated</code> is zero, all available disk space has been allocated to a specific function. Healthy volumes should ideally have at least five percent of their total space <code>unallocated</code>. You can keep your volume healthy by running the <code>btrfs balance</code> command on it regularly (check <code>man btrfs-balance</code> for more info).  Note that some of the spac elisted as <code>unallocated</code> may not actually be usable if the volume uses devices of different sizes.',
+        info: 'Physical disk usage of BTRFS. The disk space reported here is the raw physical disk space assigned to the BTRFS volume (i.e. <b>before any RAID levels</b>). BTRFS uses a two-stage allocator, first allocating large regions of disk space for one type of block (data, metadata, or system), and then using a regular block allocator inside those regions. <code>unallocated</code> is the physical disk space that is not allocated yet and is available to become data, metdata or system on demand. When <code>unallocated</code> is zero, all available disk space has been allocated to a specific function. Healthy volumes should ideally have at least five percent of their total space <code>unallocated</code>. You can keep your volume healthy by running the <code>btrfs balance</code> command on it regularly (check <code>man btrfs-balance</code> for more info).  Note that some of the space listed as <code>unallocated</code> may not actually be usable if the volume uses devices of different sizes.',
         colors: [NETDATA.colors[12]]
     },
 
@@ -2188,35 +2404,7 @@ netdataDashboard.context = {
     },
 
     'spigotmc.users': {
-        info: 'THe number of currently connect users on the monitored Spigot server.'
-    },
-
-    'unbound.queries': {
-        info: 'Shows the number of queries being processed of each type. Note that <code>Recursive</code> queries are also accounted as cache misses.'
-    },
-
-    'unbound.reqlist': {
-        info: 'Shows various stats about Unbound\'s internal request list.'
-    },
-
-    'unbound.recursion': {
-        info: 'Average and median time to complete recursive name resolution.'
-    },
-
-    'unbound.cache': {
-        info: 'The number of items in each of the various caches.'
-    },
-
-    'unbound.threads.queries': {
-        height: 0.2
-    },
-
-    'unbound.threads.reqlist': {
-        height: 0.2
-    },
-
-    'unbound.threads.recursion': {
-        height: 0.2
+        info: 'The number of currently connect users on the monitored Spigot server.'
     },
 
     'boinc.tasks': {
@@ -2315,7 +2503,163 @@ netdataDashboard.context = {
 
     'proxysql.commands_duration': {
         info: 'The total time spent executing commands of that type, in ms'
-    }
+    },
 
     // ------------------------------------------------------------------------
+    // Power Supplies
+
+    'powersupply.capacity': {
+        info: undefined
+    },
+
+    'powersupply.charge': {
+        info: undefined
+    },
+
+    'powersupply.energy': {
+        info: undefined
+    },
+
+    'powersupply.voltage': {
+        info: undefined
+    },
+
+    // ------------------------------------------------------------------------
+    // VMware vSphere
+
+    // Host specific
+    'vsphere.host_mem_usage_percentage': {
+        info: 'Percentage of used machine memory: <code>consumed</code> / <code>machine-memory-size</code>.'
+    },
+
+    'vsphere.host_mem_usage': {
+        info:
+            '<code>granted</code> is amount of machine memory that is mapped for a host, '+
+            'it equals sum of all granted metrics for all powered-on virtual machines, plus machine memory for vSphere services on the host. ' +
+            '<code>consumed</code> is amount of machine memory used on the host, it includes memory used by the Service Console, the VMkernel, vSphere services, plus the total consumed metrics for all running virtual machines. ' +
+            '<code>consumed</code> = <code>total host memory</code> - <code>free host memory</code>.' +
+            '<code>active</code> is sum of all active metrics for all powered-on virtual machines plus vSphere services (such as COS, vpxa) on the host.' +
+            '<code>shared</code> is sum of all shared metrics for all powered-on virtual machines, plus amount for vSphere services on the host. ' +
+            '<code>sharedcommon</code> is amount of machine memory that is shared by all powered-on virtual machines and vSphere services on the host. ' +
+            '<code>shared</code> - <code>sharedcommon</code> = machine memory (host memory) savings (KB). ' +
+            'For details see <a href="https://docs.vmware.com/en/VMware-vSphere/6.5/com.vmware.vsphere.resmgmt.doc/GUID-BFDC988B-F53D-4E97-9793-A002445AFAE1.html">Measuring and Differentiating Types of Memory Usage</a> and ' +
+            '<a href="https://www.vmware.com/support/developer/converter-sdk/conv51_apireference/memory_counters.html">Memory Counters</a> articles.'
+    },
+
+    'vsphere.host_mem_swap_rate': {
+        info:
+            'This statistic refers to VMkernel swapping and not to guest OS swapping. ' +
+            '<code>in</code> is sum of <code>swapinRate</code> values for all powered-on virtual machines on the host.' +
+            '<code>swapinRate</code> is rate at which VMKernel reads data into machine memory from the swap file. ' +
+            '<code>out</code> is sum of <code>swapoutRate</code> values for all powered-on virtual machines on the host.' +
+            '<code>swapoutRate</code> is rate at which VMkernel writes to the virtual machine’s swap file from machine memory.'
+    },
+
+    // VM specific
+    'vsphere.vm_mem_usage_percentage': {
+        info: 'Percentage of used virtual machine “physical” memory: <code>actvive</code> / <code>virtual machine configured size</code>.'
+    },
+
+    'vsphere.vm_mem_usage': {
+        info:
+            '<code>granted</code> is amount of guest “physical” memory that is mapped to machine memory, it includes <code>shared</code> memory amount. ' +
+            '<code>consumed</code> is amount of guest “physical” memory consumed by the virtual machine for guest memory, ' +
+            '<code>consumed</code> = <code>granted</code> - <code>memory saved due to memory sharing</code>. ' +
+            '<code>active</code> is amount of memory that is actively used, as estimated by VMkernel based on recently touched memory pages. ' +
+            '<code>shared</code> is amount of guest “physical” memory shared with other virtual machines (through the VMkernel’s transparent page-sharing mechanism, a RAM de-duplication technique). ' +
+            'For details see <a href="https://docs.vmware.com/en/VMware-vSphere/6.5/com.vmware.vsphere.resmgmt.doc/GUID-BFDC988B-F53D-4E97-9793-A002445AFAE1.html">Measuring and Differentiating Types of Memory Usage</a> and ' +
+            '<a href="https://www.vmware.com/support/developer/converter-sdk/conv51_apireference/memory_counters.html">Memory Counters</a> articles.'
+
+    },
+
+    'vsphere.vm_mem_swap_rate': {
+        info:
+            'This statistic refers to VMkernel swapping and not to guest OS swapping. ' +
+            '<code>in</code> is rate at which VMKernel reads data into machine memory from the swap file. ' +
+            '<code>out</code> is rate at which VMkernel writes to the virtual machine’s swap file from machine memory.'
+    },
+
+    'vsphere.vm_mem_swap': {
+        info:
+            'This statistic refers to VMkernel swapping and not to guest OS swapping. ' +
+            '<code>swapped</code> is amount of guest physical memory swapped out to the virtual machine\'s swap file by the VMkernel. ' +
+            'Swapped memory stays on disk until the virtual machine needs it.'
+    },
+
+    // Common
+    'vsphere.cpu_usage_total': {
+        info: 'Summary CPU usage statistics across all CPUs/cores.'
+    },
+
+    'vsphere.net_bandwidth_total': {
+        info: 'Summary receive/transmit statistics across all network interfaces.'
+    },
+
+    'vsphere.net_packets_total': {
+        info: 'Summary receive/transmit statistics across all network interfaces.'
+    },
+
+    'vsphere.net_errors_total': {
+        info: 'Summary receive/transmit statistics across all network interfaces.'
+    },
+
+    'vsphere.net_drops_total': {
+        info: 'Summary receive/transmit statistics across all network interfaces.'
+    },
+
+    'vsphere.disk_usage_total': {
+        info: 'Summary read/write statistics across all disks.'
+    },
+
+    'vsphere.disk_max_latency': {
+        info: '<code>latency</code> is highest latency value across all disks.'
+    },
+
+    'vsphere.overall_status': {
+        info: '<code>0</code> is unknown, <code>1</code> is OK, <code>2</code> is might have a problem, <code>3</code> is definitely has a problem.'
+    },
+
+    // ------------------------------------------------------------------------
+    // VCSA
+    'vcsa.system_health': {
+        info:
+            '<code>-1</code>: unknown; ' +
+            '<code>0</code>: all components are healthy; ' +
+            '<code>1</code>: one or more components might become overloaded soon; ' +
+            '<code>2</code>: one or more components in the appliance might be degraded; ' +
+            '<code>3</code>: one or more components might be in an unusable status and the appliance might become unresponsive soon; ' +
+            '<code>4</code>: no health data is available.'
+            },
+
+    'vcsa.components_health': {
+        info:
+            '<code>-1</code>: unknown; ' +
+            '<code>0</code>: healthy; ' +
+            '<code>1</code>: healthy, but may have some problems; ' +
+            '<code>2</code>: degraded, and may have serious problems; ' +
+            '<code>3</code>: unavailable, or will stop functioning soon; ' +
+            '<code>4</code>: no health data is available.'
+            },
+
+    'vcsa.software_updates_health': {
+        info:
+            '<code>softwarepackages</code> represents information on available software updates available in the remote vSphere Update Manager repository.<br>' +
+            '<code>-1</code>: unknown; ' +
+            '<code>0</code>: no updates available; ' +
+            '<code>2</code>: non-security updates are available; ' +
+            '<code>3</code>: security updates are available; ' +
+            '<code>4</code>: an error retrieving information on software updates.'
+            },
+
+    // ------------------------------------------------------------------------
+    // Zookeeper
+
+    'zookeeper.server_state': {
+        info:
+            '<code>0</code>: unknown, ' +
+            '<code>1</code>: leader, ' +
+            '<code>2</code>: follower, ' +
+            '<code>3</code>: observer, ' +
+            '<code>4</code>: standalone.'
+            }
 };

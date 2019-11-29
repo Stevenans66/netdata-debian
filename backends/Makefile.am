@@ -8,12 +8,15 @@ SUBDIRS = \
     json \
     opentsdb \
     prometheus \
-	$(NULL)
+    aws_kinesis \
+    mongodb \
+    $(NULL)
 
 dist_noinst_DATA = \
-	README.md \
-	$(NULL)
+    README.md \
+    WALKTHROUGH.md \
+    $(NULL)
 
 dist_noinst_SCRIPTS = \
-	nc-backend.sh \
-	$(NULL)
+    nc-backend.sh \
+    $(NULL)

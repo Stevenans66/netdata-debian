@@ -5,16 +5,27 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import xml.etree.ElementTree as ET
+import re
 
 from bases.FrameworkServices.UrlService import UrlService
 
-# default module values (can be overridden per job in `config`)
-# update_every = 2
-priority = 60000
-retries = 60
+MiB = 1 << 20
 
-# charts order (can be overridden if you want less charts, or different order)
-ORDER = ['accesses', 'bandwidth', 'processing_time', 'threads', 'jvm', 'jvm_eden', 'jvm_survivor', 'jvm_tenured']
+# Regex fix for Tomcat single quote XML attributes
+# affecting Tomcat < 8.5.24 & 9.0.2 running with Java > 9
+# cf. https://bz.apache.org/bugzilla/show_bug.cgi?id=61603
+single_quote_regex = re.compile(r"='([^']+)'([^']+)''")
+
+ORDER = [
+    'accesses',
+    'bandwidth',
+    'processing_time',
+    'threads',
+    'jvm',
+    'jvm_eden',
+    'jvm_survivor',
+    'jvm_tenured',
+]
 
 CHARTS = {
     'accesses': {
@@ -25,7 +36,7 @@ CHARTS = {
         ]
     },
     'bandwidth': {
-        'options': [None, 'Bandwidth', 'KB/s', 'statistics', 'tomcat.bandwidth', 'area'],
+        'options': [None, 'Bandwidth', 'KiB/s', 'statistics', 'tomcat.bandwidth', 'area'],
         'lines': [
             ['bytesSent', 'sent', 'incremental', 1, 1024],
             ['bytesReceived', 'received', 'incremental', 1, 1024],
@@ -45,39 +56,39 @@ CHARTS = {
         ]
     },
     'jvm': {
-        'options': [None, 'JVM Memory Pool Usage', 'MB', 'memory', 'tomcat.jvm', 'stacked'],
+        'options': [None, 'JVM Memory Pool Usage', 'MiB', 'memory', 'tomcat.jvm', 'stacked'],
         'lines': [
-            ['free', 'free', 'absolute', 1, 1048576],
-            ['eden_used', 'eden', 'absolute', 1, 1048576],
-            ['survivor_used', 'survivor', 'absolute', 1, 1048576],
-            ['tenured_used', 'tenured', 'absolute', 1, 1048576],
-            ['code_cache_used', 'code cache', 'absolute', 1, 1048576],
-            ['compressed_used', 'compressed', 'absolute', 1, 1048576],
-            ['metaspace_used', 'metaspace', 'absolute', 1, 1048576],
+            ['free', 'free', 'absolute', 1, MiB],
+            ['eden_used', 'eden', 'absolute', 1, MiB],
+            ['survivor_used', 'survivor', 'absolute', 1, MiB],
+            ['tenured_used', 'tenured', 'absolute', 1, MiB],
+            ['code_cache_used', 'code cache', 'absolute', 1, MiB],
+            ['compressed_used', 'compressed', 'absolute', 1, MiB],
+            ['metaspace_used', 'metaspace', 'absolute', 1, MiB],
         ]
     },
     'jvm_eden': {
-        'options': [None, 'Eden Memory Usage', 'MB', 'memory', 'tomcat.jvm_eden', 'area'],
+        'options': [None, 'Eden Memory Usage', 'MiB', 'memory', 'tomcat.jvm_eden', 'area'],
         'lines': [
-            ['eden_used', 'used', 'absolute', 1, 1048576],
-            ['eden_committed', 'committed', 'absolute', 1, 1048576],
-            ['eden_max', 'max', 'absolute', 1, 1048576]
+            ['eden_used', 'used', 'absolute', 1, MiB],
+            ['eden_committed', 'committed', 'absolute', 1, MiB],
+            ['eden_max', 'max', 'absolute', 1, MiB]
         ]
     },
     'jvm_survivor': {
-        'options': [None, 'Survivor Memory Usage', 'MB', 'memory', 'tomcat.jvm_survivor', 'area'],
+        'options': [None, 'Survivor Memory Usage', 'MiB', 'memory', 'tomcat.jvm_survivor', 'area'],
         'lines': [
-            ['survivor_used', 'used', 'absolute', 1, 1048576],
-            ['survivor_committed', 'committed', 'absolute', 1, 1048576],
-            ['survivor_max', 'max', 'absolute', 1, 1048576]
+            ['survivor_used', 'used', 'absolute', 1, MiB],
+            ['survivor_committed', 'committed', 'absolute', 1, MiB],
+            ['survivor_max', 'max', 'absolute', 1, MiB],
         ]
     },
     'jvm_tenured': {
-        'options': [None, 'Tenured Memory Usage', 'MB', 'memory', 'tomcat.jvm_tenured', 'area'],
+        'options': [None, 'Tenured Memory Usage', 'MiB', 'memory', 'tomcat.jvm_tenured', 'area'],
         'lines': [
-            ['tenured_used', 'used', 'absolute', 1, 1048576],
-            ['tenured_committed', 'committed', 'absolute', 1, 1048576],
-            ['tenured_max', 'max', 'absolute', 1, 1048576]
+            ['tenured_used', 'used', 'absolute', 1, MiB],
+            ['tenured_committed', 'committed', 'absolute', 1, MiB],
+            ['tenured_max', 'max', 'absolute', 1, MiB]
         ]
     }
 }
@@ -86,10 +97,36 @@ CHARTS = {
 class Service(UrlService):
     def __init__(self, configuration=None, name=None):
         UrlService.__init__(self, configuration=configuration, name=name)
-        self.url = self.configuration.get('url', 'http://127.0.0.1:8080/manager/status?XML=true')
-        self.connector_name = self.configuration.get('connector_name', None)
         self.order = ORDER
         self.definitions = CHARTS
+        self.url = self.configuration.get('url', 'http://127.0.0.1:8080/manager/status?XML=true')
+        self.connector_name = self.configuration.get('connector_name', None)
+        self.parse = self.xml_parse
+
+    def xml_parse(self, data):
+        try:
+            return ET.fromstring(data)
+        except ET.ParseError:
+            self.debug('%s is not a valid XML page. Please add "?XML=true" to tomcat status page.' % self.url)
+            return None
+
+    def xml_single_quote_fix_parse(self, data):
+        data = single_quote_regex.sub(r"='\g<1>\g<2>'", data)
+        return self.xml_parse(data)
+
+    def check(self):
+        self._manager = self._build_manager()
+
+        raw_data = self._get_raw_data()
+        if not raw_data:
+            return False
+
+        if single_quote_regex.search(raw_data):
+            self.warning('Tomcat status page is returning invalid single quote XML, please consider upgrading '
+                         'your Tomcat installation. See https://bz.apache.org/bugzilla/show_bug.cgi?id=61603')
+            self.parse = self.xml_single_quote_fix_parse
+
+        return self.parse(raw_data) is not None
 
     def _get_data(self):
         """
@@ -99,11 +136,10 @@ class Service(UrlService):
         data = None
         raw_data = self._get_raw_data()
         if raw_data:
-            try:
-                xml = ET.fromstring(raw_data)
-            except ET.ParseError:
-                self.debug('%s is not a vaild XML page. Please add "?XML=true" to tomcat status page.' % self.url)
+            xml = self.parse(raw_data)
+            if xml is None:
                 return None
+
             data = {}
 
             jvm = xml.find('jvm')
@@ -148,7 +184,7 @@ class Service(UrlService):
                     data['metaspace_committed'] = pool.get('usageCommitted')
                     data['metaspace_max'] = pool.get('usageMax')
 
-            if connector:
+            if connector is not None:
                 thread_info = connector.find('threadInfo')
                 data['currentThreadsBusy'] = thread_info.get('currentThreadsBusy')
                 data['currentThreadCount'] = thread_info.get('currentThreadCount')

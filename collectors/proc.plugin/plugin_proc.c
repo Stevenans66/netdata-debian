@@ -29,8 +29,10 @@ static struct proc_module {
         { .name = "/proc/vmstat", .dim = "vmstat", .func = do_proc_vmstat },
         { .name = "/proc/meminfo", .dim = "meminfo", .func = do_proc_meminfo },
         { .name = "/sys/kernel/mm/ksm", .dim = "ksm", .func = do_sys_kernel_mm_ksm },
+        { .name = "/sys/block/zram", .dim = "zram", .func = do_sys_block_zram },
         { .name = "/sys/devices/system/edac/mc", .dim = "ecc", .func = do_proc_sys_devices_system_edac_mc },
         { .name = "/sys/devices/system/node", .dim = "numa", .func = do_proc_sys_devices_system_node },
+        { .name = "/proc/pagetypeinfo", .dim = "pagetypeinfo", .func = do_proc_pagetypeinfo },
 
         // network metrics
         { .name = "/proc/net/dev", .dim = "netdev", .func = do_proc_net_dev },
@@ -49,6 +51,7 @@ static struct proc_module {
 
         // disk metrics
         { .name = "/proc/diskstats", .dim = "diskstats", .func = do_proc_diskstats },
+        { .name = "/proc/mdstat", .dim = "mdstat", .func = do_proc_mdstat },
 
         // NFS metrics
         { .name = "/proc/net/rpc/nfsd", .dim = "nfsd", .func = do_proc_net_rpc_nfsd },
@@ -62,6 +65,9 @@ static struct proc_module {
 
         // IPC metrics
         { .name = "ipc", .dim = "ipc", .func = do_ipc },
+
+        // linux power supply metrics
+        { .name = "/sys/class/power_supply", .dim = "power_supply", .func = do_sys_class_power_supply },
 
         // the terminator of this array
         { .name = NULL, .dim = NULL, .func = NULL }
@@ -79,14 +85,16 @@ static void proc_main_cleanup(void *ptr) {
 void *proc_main(void *ptr) {
     netdata_thread_cleanup_push(proc_main_cleanup, ptr);
 
-    int vdo_cpu_netdata = config_get_boolean("plugin:proc", "netdata server resources", 1);
+    int vdo_cpu_netdata = config_get_boolean("plugin:proc", "netdata server resources", CONFIG_BOOLEAN_YES);
+
+    config_get_boolean("plugin:proc", "/proc/pagetypeinfo", CONFIG_BOOLEAN_NO);
 
     // check the enabled status for each module
     int i;
     for(i = 0 ; proc_modules[i].name ;i++) {
         struct proc_module *pm = &proc_modules[i];
 
-        pm->enabled = config_get_boolean("plugin:proc", pm->name, 1);
+        pm->enabled = config_get_boolean("plugin:proc", pm->name, CONFIG_BOOLEAN_YES);
         pm->duration = 0ULL;
         pm->rd = NULL;
     }

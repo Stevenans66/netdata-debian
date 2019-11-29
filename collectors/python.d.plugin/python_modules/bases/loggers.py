@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Description:
-# Author: Ilya Mashchenko (l2isbad)
+# Author: Ilya Mashchenko (ilyam8)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
@@ -26,7 +26,7 @@ LOGGING_LEVELS = {'CRITICAL': 50,
 DEFAULT_LOG_LINE_FORMAT = '%(asctime)s: %(name)s %(levelname)s : %(message)s'
 DEFAULT_LOG_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-PYTHON_D_LOG_LINE_FORMAT = '%(asctime)s: %(name)s %(levelname)s: %(module_name)s: %(job_name)s: %(message)s'
+PYTHON_D_LOG_LINE_FORMAT = '%(asctime)s: %(name)s %(levelname)s: %(module_name)s[%(job_name)s] : %(message)s'
 PYTHON_D_LOG_NAME = 'python.d'
 
 
@@ -34,7 +34,7 @@ def limiter(log_max_count=30, allowed_in_seconds=60):
     def on_decorator(func):
 
         def on_call(*args):
-            current_time = args[0]._runtime_counters.START_RUN
+            current_time = args[0]._runtime_counters.start_mono
             lc = args[0]._logger_counters
 
             if lc.logged and lc.logged % log_max_count == 0:

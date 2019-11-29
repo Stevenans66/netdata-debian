@@ -11,6 +11,24 @@ extern int web_enable_gzip,
         web_gzip_strategy;
 #endif /* NETDATA_WITH_ZLIB */
 
+// HTTP_CODES 2XX Success
+#define HTTP_RESP_OK            200
+
+// HTTP_CODES 3XX Redirections
+#define HTTP_RESP_MOVED_PERM    301
+#define HTTP_RESP_REDIR_TEMP    307
+#define HTTP_RESP_REDIR_PERM    308
+
+// HTTP_CODES 4XX Client Errors
+#define HTTP_RESP_BAD_REQUEST   400
+#define HTTP_RESP_FORBIDDEN     403
+#define HTTP_RESP_NOT_FOUND     404
+#define HTTP_RESP_PRECOND_FAIL  412
+
+// HTTP_CODES 5XX Server Errors
+#define HTTP_RESP_INTERNAL_SERVER_ERROR 500
+#define HTTP_RESP_BACKEND_FETCH_FAILED 503
+
 extern int respect_web_browser_do_not_track_policy;
 extern char *web_x_frame_options;
 
@@ -20,6 +38,18 @@ typedef enum web_client_mode {
     WEB_CLIENT_MODE_OPTIONS     = 2,
     WEB_CLIENT_MODE_STREAM      = 3
 } WEB_CLIENT_MODE;
+
+typedef enum {
+    HTTP_VALIDATION_OK,
+    HTTP_VALIDATION_NOT_SUPPORTED,
+    HTTP_VALIDATION_MALFORMED_URL,
+#ifdef ENABLE_HTTPS
+    HTTP_VALIDATION_INCOMPLETE,
+    HTTP_VALIDATION_REDIRECT
+#else
+    HTTP_VALIDATION_INCOMPLETE
+#endif
+} HTTP_VALIDATION;
 
 typedef enum web_client_flags {
     WEB_CLIENT_FLAG_DEAD              = 1 << 1, // if set, this client is dead
@@ -108,31 +138,14 @@ struct response {
 
 };
 
-typedef enum web_client_acl {
-    WEB_CLIENT_ACL_NONE      = 0,
-    WEB_CLIENT_ACL_NOCHECK   = 0,
-    WEB_CLIENT_ACL_DASHBOARD = 1 << 0,
-    WEB_CLIENT_ACL_REGISTRY  = 1 << 1,
-    WEB_CLIENT_ACL_BADGE     = 1 << 2
-} WEB_CLIENT_ACL;
-
-#define web_client_can_access_dashboard(w) ((w)->acl & WEB_CLIENT_ACL_DASHBOARD)
-#define web_client_can_access_registry(w) ((w)->acl & WEB_CLIENT_ACL_REGISTRY)
-#define web_client_can_access_badges(w) ((w)->acl & WEB_CLIENT_ACL_BADGE)
-
-#define web_client_can_access_stream(w) \
-    (!web_allow_streaming_from || simple_pattern_matches(web_allow_streaming_from, (w)->client_ip))
-
-#define web_client_can_access_netdataconf(w) \
-    (!web_allow_netdataconf_from || simple_pattern_matches(web_allow_netdataconf_from, (w)->client_ip))
-
 struct web_client {
     unsigned long long id;
 
     WEB_CLIENT_FLAGS flags;         // status flags for the client
     WEB_CLIENT_MODE mode;           // the operational mode of the client
     WEB_CLIENT_ACL acl;             // the access list of the client
-
+    int port_acl;                   // the operations permitted on the port the client connected to
+    char *auth_bearer_token;        // the Bearer auth token (if sent)
     size_t header_parse_tries;
     size_t header_parse_last_size;
 
@@ -141,11 +154,17 @@ struct web_client {
     int ifd;
     int ofd;
 
-    char client_ip[NI_MAXHOST+1];
-    char client_port[NI_MAXSERV+1];
+    char client_ip[INET6_ADDRSTRLEN];   // Defined buffer sizes include null-terminators
+    char client_port[NI_MAXSERV];
+    char server_host[NI_MAXHOST];
+    char client_host[NI_MAXHOST];
 
     char decoded_url[NETDATA_WEB_REQUEST_URL_SIZE + 1];  // we decode the URL in this buffer
+    char decoded_query_string[NETDATA_WEB_REQUEST_URL_SIZE + 1];  // we decode the Query String in this buffer
     char last_url[NETDATA_WEB_REQUEST_URL_SIZE+1];       // we keep a copy of the decoded URL here
+    size_t url_path_length;
+    char separator; // This value can be either '?' or 'f'
+    char *url_search_path; //A pointer to the search path sent by the client
 
     struct timeval tv_in, tv_ready;
 
@@ -170,7 +189,11 @@ struct web_client {
     // STATIC-THREADED WEB SERVER MEMBERS
     size_t pollinfo_slot;           // POLLINFO slot of the web client
     size_t pollinfo_filecopy_slot;  // POLLINFO slot of the file read
+#ifdef ENABLE_HTTPS
+    struct netdata_ssl ssl;
+#endif
 };
+
 
 extern uid_t web_files_uid(void);
 extern uid_t web_files_gid(void);

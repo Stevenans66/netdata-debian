@@ -1,0 +1,22 @@
+Author: Daniel Baumann <daniel.baumann@progress-linux.org>
+Description: Removing 'Sign In' infobar on the bottom of the screen (Closes: #930504).
+
+diff -Naurp netdata.orig/web/gui/index.html netdata/web/gui/index.html
+--- netdata.orig/web/gui/index.html
++++ netdata/web/gui/index.html
+@@ -114,6 +114,7 @@
+         <div id="navbar-highlight-content" class="navbar-highlight-content"></div>
+     </div>
+ 
++<!--
+     <div id="sign-in-banner" style="display: none">
+         <div class="container">
+             Like what you see? 
+@@ -124,6 +125,7 @@
+             </div>
+         </div>
+     </div>
++-->
+     
+     <div id="masthead" style="display: none;">
+         <div class="container">

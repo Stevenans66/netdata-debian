@@ -1,7 +1,19 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* netdata dbengine usability */
+#undef ENABLE_DBENGINE
+
+/* netdata HTTPS usability */
+#undef ENABLE_HTTPS
+
 /* compile and link with jemalloc */
 #undef ENABLE_JEMALLOC
+
+/* netdata json-c usability */
+#undef ENABLE_JSONC
+
+/* Prometheus remote write API usability */
+#undef ENABLE_PROMETHEUS_REMOTE_WRITE
 
 /* compile and link with tcmalloc */
 #undef ENABLE_TCMALLOC
@@ -20,6 +32,9 @@
 
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
+
+/* cups usability */
+#undef HAVE_CUPS
 
 /* Define to 1 if glibc mallinfo exists. */
 #undef HAVE_C_MALLINFO
@@ -68,21 +83,32 @@
 /* Define to 1 if you have the <jemalloc/jemalloc.h> header file. */
 #undef HAVE_JEMALLOC_JEMALLOC_H
 
+/* libaws-cpp-sdk-kinesis usability */
+#undef HAVE_KINESIS
+
 /* libmnl usability */
 #undef HAVE_LIBMNL
 
 /* libnetfilter_acct usability */
 #undef HAVE_LIBNETFILTER_ACCT
 
-/* Define to 1 if you have the <linux/netfilter/nfnetlink_conntrack.h> header
-   file. */
-#undef HAVE_LINUX_NETFILTER_NFNETLINK_CONNTRACK_H
+/* libxenlight usability */
+#undef HAVE_LIBXENLIGHT
+
+/* libxenstat usability */
+#undef HAVE_LIBXENSTAT
+
+/* libyajl usability */
+#undef HAVE_LIBYAJL
 
 /* Define to 1 if -flto works. */
 #undef HAVE_LTO
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* libmongoc usability */
+#undef HAVE_MONGOC
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
@@ -168,8 +194,8 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* nfacct plugin usability */
-#undef INTERNAL_PLUGIN_NFACCT
+/* xenstat_vbd_error usability */
+#undef HAVE_XENSTAT_VBD_ERROR
 
 /* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
    */
@@ -274,6 +300,12 @@
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
    #define below would cause a syntax error. */
 #undef _UINT8_T
+
+/* dummy unused attribute */
+#undef __always_unused
+
+/* dummy unused attribute */
+#undef __maybe_unused
 
 /* Link/compile against jemalloc */
 #undef has_jemalloc

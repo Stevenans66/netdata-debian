@@ -65,6 +65,7 @@
 #include <getopt.h>
 #include <grp.h>
 #include <pwd.h>
+#include <limits.h>
 #include <locale.h>
 #include <net/if.h>
 #include <poll.h>
@@ -81,6 +82,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
+#include <spawn.h>
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -202,6 +204,9 @@
 #endif
 #define abs(x) (((x) < 0)? (-(x)) : (x))
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 #define GUID_LEN 36
 
 extern void netdata_fix_chart_id(char *s);
@@ -283,8 +288,8 @@ extern void recursive_config_double_dir_load(
 
 
 extern void netdata_cleanup_and_exit(int ret) NORETURN;
+extern void send_statistics(const char *action, const char *action_result, const char *action_data);
 extern char *netdata_configured_host_prefix;
-
 #include "os.h"
 #include "storage_number/storage_number.h"
 #include "threads/threads.h"
@@ -295,6 +300,9 @@ extern char *netdata_configured_host_prefix;
 #include "clocks/clocks.h"
 #include "popen/popen.h"
 #include "simple_pattern/simple_pattern.h"
+#ifdef ENABLE_HTTPS
+# include "socket/security.h"
+#endif
 #include "socket/socket.h"
 #include "config/appconfig.h"
 #include "log/log.h"
@@ -304,5 +312,8 @@ extern char *netdata_configured_host_prefix;
 #include "statistical/statistical.h"
 #include "adaptive_resortable_list/adaptive_resortable_list.h"
 #include "url/url.h"
+#include "json/json.h"
+#include "health/health.h"
+#include "string/utf8.h"
 
 #endif // NETDATA_LIB_H
